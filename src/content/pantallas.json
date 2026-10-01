@@ -1,62 +1,317 @@
 {
-  "_nota": "Textos de las pantallas de la app recreadas en HTML (dentro de marcos de celular). Son ilustrativas: los precios usan el ejemplo de tarifas.json.",
-  "nav": ["Inicio", "Agenda", "Mensajes", "Cuenta"],
-  "inicioApp": {
-    "saludo": "¿Qué necesitás hoy?",
-    "urgencia": "Urgencia",
-    "ejemplosTitulo": "Por ejemplo…",
-    "ejemplos": ["Pierde una canilla", "Saltó la térmica", "Me quedé afuera"]
+  "_nota": "Textos de las pantallas de la app recreadas en HTML (referencia visual: assets/fotos). Son ilustrativas. Los montos salen de tarifas.json (presupuesto de ejemplo); los demás precios llevan precio fijo acá.",
+  "estado": {
+    "hora": "9:41"
   },
-  "pedido": {
-    "titulo": "Nuevo pedido",
-    "rubro": "Plomería",
-    "queLabel": "¿Qué pasó?",
-    "que": "Pierde la canilla de la cocina",
-    "tipoLabel": "Tipo de pedido",
-    "cuandoLabel": "Día y franja",
-    "cuando": "Jueves · de 16 a 18 h",
-    "fotos": "Agregar fotos",
-    "boton": "Pedir presupuestos"
+  "nav": [
+    {
+      "texto": "Inicio",
+      "icono": "casa"
+    },
+    {
+      "texto": "Turnos",
+      "icono": "calendario"
+    },
+    {
+      "texto": "Mensajes",
+      "icono": "chat"
+    },
+    {
+      "texto": "Cuenta",
+      "icono": "usuario"
+    }
+  ],
+  "verMas": "Ver más información",
+  "inicioApp": {
+    "titulo": "¿Qué necesitás hoy?",
+    "quieroTitulo": "Quiero…",
+    "quiero": [
+      {
+        "texto": "Cambiar un flexible",
+        "icono": "canilla"
+      },
+      {
+        "texto": "Service del aire",
+        "icono": "aire"
+      },
+      {
+        "texto": "Cambiar un enchufe",
+        "icono": "rayo"
+      },
+      {
+        "texto": "Abrir la puerta",
+        "icono": "llave"
+      },
+      {
+        "texto": "Arreglar humedad",
+        "icono": "ladrillos"
+      },
+      {
+        "texto": "Más",
+        "icono": "mas"
+      }
+    ],
+    "urgencia": "Urgencia"
+  },
+  "opciones": {
+    "titulo": "Elegí una opción",
+    "items": [
+      {
+        "texto": "Urgencia",
+        "detalle": "Para lo que no puede esperar",
+        "icono": "alerta"
+      },
+      {
+        "texto": "Programado",
+        "detalle": "Elegís el día y la franja",
+        "icono": "calendario"
+      },
+      {
+        "texto": "Obra",
+        "detalle": "Trabajos grandes, con visita",
+        "icono": "ladrillos"
+      }
+    ]
   },
   "presupuestos": {
     "titulo": "Presupuestos",
-    "subtitulo": "Plomería · canilla de la cocina",
+    "pedido": "Plomería · pierde la canilla",
+    "panel": "Te llegaron 3",
     "verificado": "Verificado",
     "items": [
-      { "nombre": "Especialista 1", "horario": "Hoy, de 16 a 18 h", "precio": 45000 },
-      { "nombre": "Especialista 2", "horario": "Mañana, de 9 a 11 h", "precio": 48000 }
+      {
+        "nombre": "Especialista 1",
+        "horario": "Hoy, de 16 a 18 h",
+        "precio": 45000
+      },
+      {
+        "nombre": "Especialista 2",
+        "horario": "Mañana, de 9 a 11 h",
+        "precio": 48000
+      },
+      {
+        "nombre": "Especialista 3",
+        "horario": "Jueves, de 14 a 16 h",
+        "precio": 43500
+      }
     ],
-    "boton": "Elegir",
+    "elegir": "Elegir este presupuesto",
     "nota": "Cada especialista pone su precio."
   },
   "seguimiento": {
-    "titulo": "Tu pedido",
-    "estado": "Tu especialista salió para tu casa",
+    "calles": [
+      "Av. Pedro Luro",
+      "25 de Mayo",
+      "Villa Primera",
+      "Rawson",
+      "Mitre"
+    ],
+    "estado": "Tu especialista va para tu casa",
     "horarioLabel": "Horario que declaró",
-    "horario": "16:00 a 18:00",
-    "pasos": ["Confirmado", "En camino", "Llegó"],
-    "boton": "Confirmar llegada"
+    "horario": "16:00 – 18:00",
+    "especialistaLabel": "Tu especialista es",
+    "especialista": "Especialista 1 · verificado"
   },
-  "especialistaPedido": {
+  "handia": {
+    "nombre": "HandIA",
+    "subtitulo": "Asistente de Handy",
+    "mensajes": [
+      {
+        "de": "ia",
+        "texto": "¡Hola! Soy HandIA. Contame qué pasó en tu casa."
+      },
+      {
+        "de": "vos",
+        "texto": "Se tapó la pileta de la cocina y sale agua por abajo"
+      },
+      {
+        "de": "ia",
+        "texto": "Uh, qué embole. Parece un tema de plomería. ¿Me mandás una foto de abajo de la pileta?"
+      },
+      {
+        "de": "vos",
+        "foto": true,
+        "texto": "Así está"
+      },
+      {
+        "de": "ia",
+        "texto": "Gracias. Armé tu pedido de Plomería con la foto. ¿Lo mandamos para recibir presupuestos?"
+      }
+    ],
+    "acciones": [
+      "Pedir presupuestos",
+      "Programar turno"
+    ],
+    "input": "Escribile a HandIA…"
+  },
+  "turnos": {
+    "mes": "Noviembre",
+    "anio": "2026",
+    "dias": 30,
+    "hoy": 14,
+    "marcados": [
+      {
+        "dia": 3,
+        "icono": "rayo",
+        "estilo": "noche"
+      },
+      {
+        "dia": 7,
+        "icono": "llama",
+        "estilo": "amarillo"
+      },
+      {
+        "dia": 12,
+        "icono": "canilla",
+        "estilo": "azul"
+      },
+      {
+        "dia": 18,
+        "icono": "aire",
+        "estilo": "noche"
+      },
+      {
+        "dia": 24,
+        "icono": "llave",
+        "estilo": "azul"
+      },
+      {
+        "dia": 27,
+        "icono": "ladrillos",
+        "estilo": "azul"
+      }
+    ],
+    "panel": "Últimos turnos",
+    "items": [
+      {
+        "rubro": "Plomería",
+        "icono": "canilla",
+        "tipo": "Programado",
+        "fecha": "12/11/2026",
+        "precio": 45000
+      },
+      {
+        "rubro": "Electricidad",
+        "icono": "rayo",
+        "tipo": "Urgencia",
+        "fecha": "03/11/2026",
+        "precio": 32000
+      }
+    ]
+  },
+  "pagos": {
+    "titulo": "Tus pagos",
+    "tarjeta": {
+      "tipo": "Débito",
+      "numero": "•••• •••• •••• 9010",
+      "vence": "12/29",
+      "titular": "TU NOMBRE"
+    },
+    "agregar": "Agregar tarjeta",
+    "panel": "Tus movimientos",
+    "items": [
+      {
+        "texto": "Pagaste Plomería",
+        "fecha": "12/11/2026",
+        "medio": "Débito ••••9010",
+        "presupuesto": true
+      },
+      {
+        "texto": "Pagaste Electricidad",
+        "fecha": "03/11/2026",
+        "medio": "Débito ••••9010",
+        "precio": 33600
+      }
+    ]
+  },
+  "espPedido": {
     "disponible": "Disponible",
-    "titulo": "Nuevo pedido",
-    "rubro": "Plomería",
+    "titulo": "Trabajo de plomería",
     "tipo": "Programado",
-    "detalle": "Pierde la canilla de la cocina",
-    "zona": "Zona: La Perla",
     "sugeridoLabel": "Precio sugerido por Handy",
-    "nota": "El precio final lo ponés vos",
-    "aceptar": "Enviar con este precio",
-    "cambiar": "Cambiar mi precio"
+    "desde": "Tu ubicación",
+    "hasta": "Pedido en La Perla · a 2,3 km",
+    "aceptar": "Aceptar trabajo",
+    "cambiar": "Aceptar y cambiar precio"
   },
-  "cobro": {
-    "titulo": "Tu cuenta",
+  "espPrecio": {
+    "titulo": "Tu precio",
+    "opciones": [
+      "Dejar el sugerido",
+      "$ 48.000"
+    ],
+    "input": "$ 48.000",
+    "boton": "Poner mi precio",
+    "nota": "Handy sugiere. El precio lo ponés vos."
+  },
+  "espAgenda": {
+    "panel": "Próximos trabajos",
+    "items": [
+      {
+        "rubro": "Plomería",
+        "icono": "canilla",
+        "tipo": "Programado",
+        "fecha": "12/11/2026",
+        "precio": 40500
+      },
+      {
+        "rubro": "Gas",
+        "icono": "llama",
+        "tipo": "Programado",
+        "fecha": "07/11/2026",
+        "precio": 36000
+      }
+    ]
+  },
+  "espChat": {
+    "contacto": "Cliente · La Perla",
+    "mensajes": [
+      {
+        "de": "cli",
+        "texto": "Hola, ¿a qué hora pasás?"
+      },
+      {
+        "de": "esp",
+        "texto": "Entre las 16 y las 18, como figura en el turno."
+      },
+      {
+        "de": "esp",
+        "texto": "Hola, soy el especialista. ¿Me mandás una foto de la pérdida?"
+      },
+      {
+        "de": "cli",
+        "foto": true,
+        "texto": "Es el caño de abajo de la pileta"
+      },
+      {
+        "de": "esp",
+        "texto": "Perfecto, ya sé qué llevar. Paso en la franja que acordamos."
+      }
+    ],
+    "turno": "Ver el turno",
+    "input": "Escribí un mensaje…"
+  },
+  "espCaja": {
+    "titulo": "Tu caja",
     "cuentaLabel": "CBU / alias",
     "alias": "tu.alias.de.siempre",
-    "movimientosLabel": "Último trabajo",
-    "trabajo": "Plomería · canilla de la cocina",
+    "editar": "Editar alias o CBU",
+    "panel": "Movimientos",
+    "trabajo": "Plomería · 12/11/2026",
     "presupuesto": "Presupuesto",
     "tarifa": "Tarifa Handy",
-    "acreditado": "A tu cuenta"
+    "acreditado": "A tu cuenta",
+    "otro": {
+      "trabajo": "Gas",
+      "fecha": "07/11/2026",
+      "neto": 36000
+    }
+  },
+  "espFin": {
+    "titulo": "¡Terminaste el trabajo!",
+    "ganaste": "Ganaste",
+    "texto": "La plata va a tu cuenta. Handy retiene solo su tarifa.",
+    "inicio": "Volver al inicio",
+    "ayuda": "Centro de ayuda"
   }
 }

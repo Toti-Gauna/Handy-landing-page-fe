@@ -1,14 +1,21 @@
 {
+  "_nota": "En los títulos, ==texto== se resalta con el marcador amarillo.",
   "meta": {
     "titulo": "Handy Especialistas · Tus herramientas. Tu precio.",
     "descripcion": "Recibí pedidos de vecinos de Mar del Plata, mandá tu presupuesto con tu precio y cobrá directo en tu cuenta. Camada fundadora: 50 lugares con 5% durante 12 meses."
   },
   "hero": {
     "etiqueta": "Handy Especialistas",
-    "titulo": "Tus herramientas. Tu precio.",
+    "titulo": "Tus herramientas. ==Tu precio.==",
     "bajada": "Recibí pedidos de vecinos de Mar del Plata, mandá tu presupuesto y cobrá directo en tu cuenta.",
-    "ctaPrimario": { "texto": "Quiero sumarme", "href": "/registro/?tipo=especialista" },
-    "ctaSecundario": { "texto": "Cómo cobrás", "href": "#como-cobras" }
+    "ctaPrimario": {
+      "texto": "Quiero sumarme",
+      "href": "/registro/?tipo=especialista"
+    },
+    "ctaSecundario": {
+      "texto": "Cómo cobrás",
+      "href": "#como-cobras"
+    }
   },
   "herramientas": {
     "titulo": "Todo para tu laburo, en una app",
@@ -16,29 +23,35 @@
       {
         "icono": "interruptor",
         "titulo": "Disponible cuando querés",
-        "texto": "Prendés y apagás tu disponibilidad. Recibís pedidos solo cuando vos decidís."
+        "texto": "Prendés y apagás tu disponibilidad. Recibís pedidos solo cuando vos decidís.",
+        "pantalla": "espPedido"
       },
       {
         "icono": "etiqueta",
         "titulo": "Presupuestos con tu precio",
-        "texto": "Handy te sugiere un precio de referencia. El precio final lo ponés vos."
+        "texto": "Handy te sugiere un precio de referencia. El precio final lo ponés vos.",
+        "pantalla": "espPrecio"
       },
       {
         "icono": "calendario",
         "titulo": "Agenda",
-        "texto": "Tus trabajos programados en un solo lugar, con día, franja y dirección."
+        "texto": "Tus trabajos programados en un solo lugar, con día, franja y dirección.",
+        "pantalla": "espAgenda"
       },
       {
         "icono": "chat",
         "titulo": "Chat separado de tu WhatsApp",
-        "texto": "Hablás con cada cliente desde la app, sin mezclarlo con tus contactos."
+        "texto": "Hablás con cada cliente desde la app, sin mezclarlo con tus contactos.",
+        "pantalla": "espChat"
       },
       {
         "icono": "caja",
         "titulo": "Caja y registro de cada trabajo",
-        "texto": "Cada trabajo queda anotado: cuánto cobraste y cuánto retuvo Handy."
+        "texto": "Cada trabajo queda anotado: cuánto cobraste y cuánto retuvo Handy.",
+        "pantalla": "espCaja"
       }
-    ]
+    ],
+    "bajada": "Una app hecha para el oficio, no para la oficina."
   },
   "trailer": {
     "titulo": "Handy Especialistas en un minuto",
@@ -62,15 +75,24 @@
     "destacado": "{lugares} lugares · {tarifaFundadora} durante {meses} meses",
     "texto": "Los primeros {lugares} especialistas que se suman pagan una tarifa de {tarifaFundadora} en vez de {tarifaEspecialista} durante sus primeros {meses} meses.",
     "tarifaNormal": "Tarifa normal: {tarifaEspecialista} especialista + {tarifaCliente} cliente",
-    "cta": { "texto": "Quiero mi lugar", "href": "/registro/?tipo=especialista" }
+    "cta": {
+      "texto": "Quiero mi lugar",
+      "href": "/registro/?tipo=especialista"
+    },
+    "numero": "{lugares}",
+    "numeroLabel": "lugares"
   },
   "preguntas": {
     "id": "preguntas",
-    "titulo": "Preguntas del oficio"
+    "titulo": "Preguntas del oficio",
+    "bajada": "Lo que tenés que saber antes de sumarte."
   },
   "bandaFinal": {
-    "titulo": "Sumate antes del 28/10",
+    "titulo": "Sumate ==antes del 28/10.==",
     "texto": "Anotate, contanos tus rubros y te avisamos cuando abra el alta.",
-    "cta": { "texto": "Anotarme como especialista", "href": "/registro/?tipo=especialista" }
+    "cta": {
+      "texto": "Anotarme como especialista",
+      "href": "/registro/?tipo=especialista"
+    }
   }
 }

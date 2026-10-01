@@ -1,11 +1,12 @@
 {
+  "_nota": "En los títulos, ==texto== se resalta con el marcador amarillo.",
   "meta": {
     "titulo": "Handy · Especialistas del hogar en Mar del Plata",
     "descripcion": "¿Se rompió algo en casa? Especialistas verificados de Mar del Plata. Ves el precio antes de confirmar. Sale el 28/10: anotate y te avisamos."
   },
   "hero": {
     "etiqueta": "Mar del Plata · sale el 28/10",
-    "titulo": "¿Se rompió algo en casa?",
+    "titulo": "¿Se rompió algo ==en\u00a0casa?==",
     "bajada": "Especialistas verificados de Mar del Plata. Ves el precio antes de confirmar.",
     "ctaPrimario": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" },
     "ctaSecundario": { "texto": "Soy especialista", "href": "/especialistas/" }
@@ -13,25 +14,39 @@
   "comoFunciona": {
     "id": "como-funciona",
     "titulo": "Cómo funciona",
-    "bajada": "Tres pasos y listo. Sin llamar a nadie, sin vueltas.",
+    "bajada": "Tres pasos. Sin llamar a nadie, sin vueltas.",
     "pasos": [
       {
+        "pantalla": "opciones",
         "titulo": "Pedís",
         "texto": "Elegís el rubro, contás qué pasó y el tipo de pedido.",
         "tipos": [
-          { "nombre": "Urgencia", "texto": "Para lo que no puede esperar." },
-          { "nombre": "Programado", "texto": "Elegís el día y la franja." },
-          { "nombre": "Obra", "texto": "Trabajos más grandes, con visita." }
+          { "nombre": "Urgencia", "texto": "Para lo que no puede esperar", "icono": "alerta" },
+          { "nombre": "Programado", "texto": "Elegís el día y la franja", "icono": "calendario" },
+          { "nombre": "Obra", "texto": "Trabajos grandes, con visita", "icono": "ladrillos" }
         ]
       },
       {
+        "pantalla": "presupuestos",
         "titulo": "Recibís presupuestos y elegís",
         "texto": "Cada especialista te manda su precio. Comparás, mirás sus datos y elegís con quién seguir."
       },
       {
+        "pantalla": "seguimiento",
         "titulo": "Seguís la llegada y confirmás",
         "texto": "Ves cuándo sale para tu casa, dentro del horario que declaró, y confirmás cuando termina el trabajo."
       }
+    ]
+  },
+  "handia": {
+    "id": "handia",
+    "etiqueta": "HandIA",
+    "titulo": "Contale qué pasó, ==como te salga.==",
+    "texto": "HandIA es el asistente de Handy. Le describís el problema con tus palabras o con una foto y te ayuda a armar el pedido para el rubro que corresponde.",
+    "puntos": [
+      "Sin términos técnicos: contalo como se lo contarías a un amigo.",
+      "Si hace falta, te pide una foto.",
+      "El precio lo siguen poniendo los especialistas."
     ]
   },
   "trailer": {
@@ -42,8 +57,23 @@
     "portadaAlt": "Los Handys, los personajes de la app"
   },
   "rubros": {
-    "titulo": "Rubros",
-    "bajada": "Arrancamos con seis rubros del hogar."
+    "titulo": "Seis rubros para arrancar",
+    "bajada": "Los arreglos de todos los días, con especialistas de la ciudad."
+  },
+  "appPorDentro": {
+    "titulo": "Todo el arreglo, ==en un lugar.==",
+    "items": [
+      {
+        "pantalla": "turnos",
+        "titulo": "Turnos",
+        "texto": "Tus turnos en un calendario: qué rubro, qué día y cuánto pagaste."
+      },
+      {
+        "pantalla": "pagos",
+        "titulo": "Pagos",
+        "texto": "Tus tarjetas y cada pago, con el detalle de lo que fue al especialista y la tarifa de Handy."
+      }
+    ]
   },
   "confianza": {
     "titulo": "Pensado para que estés tranquilo",
@@ -67,15 +97,16 @@
   },
   "bandaEspecialista": {
     "texto": "¿Sos especialista?",
-    "link": "Conocé Handy Especialistas\u00a0→",
+    "link": "Conocé Handy Especialistas",
     "href": "/especialistas/"
   },
   "preguntas": {
     "id": "preguntas",
-    "titulo": "Preguntas"
+    "titulo": "Preguntas",
+    "bajada": "Tocá una y te contamos."
   },
   "bandaFinal": {
-    "titulo": "Anotate y te avisamos el 28/10",
+    "titulo": "Anotate y te avisamos ==el 28/10.==",
     "texto": "Dejá tus datos y sé de los primeros en usar Handy en Mar del Plata.",
     "cta": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" }
   }

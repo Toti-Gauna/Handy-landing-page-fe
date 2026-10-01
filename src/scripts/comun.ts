@@ -2,6 +2,7 @@
 
 import '../styles/main.css';
 import { iniciarAnimaciones } from './animaciones';
+import { iniciarIntro } from './intro';
 
 function header() {
   const h = document.querySelector<HTMLElement>('[data-header]');
@@ -73,6 +74,7 @@ function cuentaRegresiva() {
 }
 
 export function iniciarComun() {
+  iniciarIntro();
   header();
   menu();
   cuentaRegresiva();

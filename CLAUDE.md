@@ -30,6 +30,17 @@ Objetivo único de la landing: **pre-registros reales** de usuarios y especialis
 - `src/scripts/`: comportamiento por página. `animaciones.ts` tiene todo lo de GSAP (respeta `prefers-reduced-motion`).
 - `src/img/`: webp generados desde `assets/brand` con `npm run imagenes` (ImageMagick).
 
+## Lenguaje visual (evitar lo genérico)
+
+Todo sale de la app de Handy, no de plantillas: mosaicos grises (`--color-mosaico`) como la grilla de rubros,
+botones cuadrados azules, hojas azul UI con manija, tarjetas blancas con franja gris ("Ver más información"),
+pastillas azules del Centro de ayuda (preguntas), cupones (camada fundadora) y el calendario de turnos.
+- Títulos en Archivo 900 ensanchado (`font-stretch`), texto en DM Sans. `==texto==` en un título = marcador amarillo.
+- Botones "táctiles" con base que se hunde. Nada de bordes laterales de color, manchas de gradiente ni vidrio esmerilado.
+- Celulares con proporción real (9:19.5) y pantallas completas (`src/render/pantallas.ts`), fieles a `assets/fotos`.
+- `vitrina()`: en pantallas anchas el celular queda fijo y cambia de pantalla con el scroll; en el celular cada paso trae la suya.
+- Pantalla de carga (`src/scripts/intro.ts`): una vez por sesión (`sessionStorage`), nunca con "reducir movimiento", máximo 5 s.
+
 ## Reglas del registro
 
 - POST `FORM_ENDPOINT + '/preregistro'`; contador con GET `FORM_ENDPOINT + '/preregistro/contador'` → `{ usuarios, especialistas }`.
