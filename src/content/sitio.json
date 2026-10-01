@@ -1,0 +1,51 @@
+{
+  "nombre": "Handy",
+  "bajada": "Soluciones, no problemas",
+  "ciudad": "Mar del Plata",
+  "lanzamiento": {
+    "fecha": "2026-10-28T00:00:00-03:00",
+    "corta": "28/10",
+    "larga": "28 de octubre de 2026"
+  },
+  "header": {
+    "inicioAria": "Handy, ir al inicio",
+    "saltar": "Ir al contenido",
+    "navAria": "Principal",
+    "menuAbrir": "Abrir menú",
+    "menuCerrar": "Cerrar menú",
+    "nav": [
+      { "texto": "Cómo funciona", "href": "/#como-funciona" },
+      { "texto": "Especialistas", "href": "/especialistas/", "pagina": "especialistas" },
+      { "texto": "Preguntas", "href": "/#preguntas" }
+    ],
+    "cta": { "texto": "Anotarme", "href": "/registro/", "pagina": "registro" }
+  },
+  "footer": {
+    "producto": "Handy es un producto de Eclipse",
+    "contacto": "Contacto",
+    "contactoPendiente": "Contacto: próximamente",
+    "privacidad": "Privacidad",
+    "lugar": "Hecho en Mar del Plata"
+  },
+  "contacto": {
+    "email": "PENDIENTE"
+  },
+  "cuentaRegresiva": {
+    "titulo": "Sale el 28/10 en tiendas",
+    "dias": "días",
+    "horas": "horas",
+    "minutos": "min",
+    "segundos": "seg",
+    "lanzado": "¡Ya salió! Buscá Handy en tu tienda de apps."
+  },
+  "trailer": {
+    "proximamente": "Próximamente",
+    "noSoportado": "Tu navegador no puede reproducir este video."
+  },
+  "pantallaIlustrativa": "Pantalla ilustrativa",
+  "noEncontrado": {
+    "titulo": "Esta página no existe",
+    "texto": "Puede que el link esté mal escrito. Volvé al inicio y seguí desde ahí.",
+    "cta": { "texto": "Ir al inicio", "href": "/" }
+  }
+}

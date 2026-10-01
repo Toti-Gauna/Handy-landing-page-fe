@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "titulo": "Handy Especialistas · Tus herramientas. Tu precio.",
+    "descripcion": "Recibí pedidos de vecinos de Mar del Plata, mandá tu presupuesto con tu precio y cobrá directo en tu cuenta. Camada fundadora: 50 lugares con 5% durante 12 meses."
+  },
+  "hero": {
+    "etiqueta": "Handy Especialistas",
+    "titulo": "Tus herramientas. Tu precio.",
+    "bajada": "Recibí pedidos de vecinos de Mar del Plata, mandá tu presupuesto y cobrá directo en tu cuenta.",
+    "ctaPrimario": { "texto": "Quiero sumarme", "href": "/registro/?tipo=especialista" },
+    "ctaSecundario": { "texto": "Cómo cobrás", "href": "#como-cobras" }
+  },
+  "herramientas": {
+    "titulo": "Todo para tu laburo, en una app",
+    "items": [
+      {
+        "icono": "interruptor",
+        "titulo": "Disponible cuando querés",
+        "texto": "Prendés y apagás tu disponibilidad. Recibís pedidos solo cuando vos decidís."
+      },
+      {
+        "icono": "etiqueta",
+        "titulo": "Presupuestos con tu precio",
+        "texto": "Handy te sugiere un precio de referencia. El precio final lo ponés vos."
+      },
+      {
+        "icono": "calendario",
+        "titulo": "Agenda",
+        "texto": "Tus trabajos programados en un solo lugar, con día, franja y dirección."
+      },
+      {
+        "icono": "chat",
+        "titulo": "Chat separado de tu WhatsApp",
+        "texto": "Hablás con cada cliente desde la app, sin mezclarlo con tus contactos."
+      },
+      {
+        "icono": "caja",
+        "titulo": "Caja y registro de cada trabajo",
+        "texto": "Cada trabajo queda anotado: cuánto cobraste y cuánto retuvo Handy."
+      }
+    ]
+  },
+  "trailer": {
+    "titulo": "Handy Especialistas en un minuto",
+    "bajada": "Cómo llega un pedido y cómo mandás tu presupuesto.",
+    "video": "",
+    "poster": "",
+    "portadaAlt": "Los Handys, los personajes de la app"
+  },
+  "comoCobras": {
+    "id": "como-cobras",
+    "titulo": "Cómo cobrás",
+    "texto": "La plata va directo a tu cuenta, por CBU o alias. Handy no la toca: retiene solo su tarifa.",
+    "ejemploTitulo": "Ejemplo",
+    "presupuesto": "Tu presupuesto",
+    "tarifa": "Tarifa Handy ({tarifaEspecialista})",
+    "recibis": "Recibís",
+    "notaFundadora": "En la camada fundadora, con {tarifaFundadora}, recibirías {montoFundador}."
+  },
+  "camada": {
+    "etiqueta": "Camada fundadora",
+    "destacado": "{lugares} lugares · {tarifaFundadora} durante {meses} meses",
+    "texto": "Los primeros {lugares} especialistas que se suman pagan una tarifa de {tarifaFundadora} en vez de {tarifaEspecialista} durante sus primeros {meses} meses.",
+    "tarifaNormal": "Tarifa normal: {tarifaEspecialista} especialista + {tarifaCliente} cliente",
+    "cta": { "texto": "Quiero mi lugar", "href": "/registro/?tipo=especialista" }
+  },
+  "preguntas": {
+    "id": "preguntas",
+    "titulo": "Preguntas del oficio"
+  },
+  "bandaFinal": {
+    "titulo": "Sumate antes del 28/10",
+    "texto": "Anotate, contanos tus rubros y te avisamos cuando abra el alta.",
+    "cta": { "texto": "Anotarme como especialista", "href": "/registro/?tipo=especialista" }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "titulo": "Privacidad · Handy",
+    "descripcion": "Qué datos guarda el pre-registro de Handy, para qué, dónde se guardan y cómo pedir la baja."
+  },
+  "titulo": "Privacidad",
+  "bajada": "Qué hacemos con los datos que dejás en el pre-registro, en criollo.",
+  "secciones": [
+    {
+      "titulo": "Qué datos guardamos",
+      "parrafos": [
+        "Si te anotás como usuario: nombre, email, barrio y, si los completás, tu WhatsApp y lo que necesitarías arreglar.",
+        "Si te anotás como especialista: nombre, WhatsApp, email, rubros, zona donde trabajás y si tenés CUIT.",
+        "También guardamos la fecha en que te anotaste y que aceptaste estas condiciones."
+      ]
+    },
+    {
+      "titulo": "Para qué los usamos",
+      "parrafos": [
+        "Para avisarte cuando Handy salga en tiendas ({fechaLarga}). Si sos especialista, también para contarte cómo seguir con el alta.",
+        "No los usamos para nada más."
+      ]
+    },
+    {
+      "titulo": "Dónde se guardan",
+      "parrafos": [
+        "En servidores ubicados en Estados Unidos, fuera de Argentina. Por eso te pedimos que lo aceptes expresamente al anotarte."
+      ]
+    },
+    {
+      "id": "baja",
+      "titulo": "Cómo pedir la baja",
+      "parrafos": [
+        "Escribinos a {email} desde el email con el que te anotaste y borramos tus datos. También podés pedir ver o corregir lo que guardamos.",
+        "Estos derechos te los da la Ley 25.326 de Protección de Datos Personales."
+      ]
+    },
+    {
+      "titulo": "Quién es responsable",
+      "parrafos": ["Handy es un producto de Eclipse."]
+    }
+  ],
+  "emailPendiente": "nuestro email de contacto (lo publicamos en esta página antes del lanzamiento)"
+}

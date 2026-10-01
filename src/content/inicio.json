@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "titulo": "Handy · Especialistas del hogar en Mar del Plata",
+    "descripcion": "¿Se rompió algo en casa? Especialistas verificados de Mar del Plata. Ves el precio antes de confirmar. Sale el 28/10: anotate y te avisamos."
+  },
+  "hero": {
+    "etiqueta": "Mar del Plata · sale el 28/10",
+    "titulo": "¿Se rompió algo en casa?",
+    "bajada": "Especialistas verificados de Mar del Plata. Ves el precio antes de confirmar.",
+    "ctaPrimario": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" },
+    "ctaSecundario": { "texto": "Soy especialista", "href": "/especialistas/" }
+  },
+  "comoFunciona": {
+    "id": "como-funciona",
+    "titulo": "Cómo funciona",
+    "bajada": "Tres pasos y listo. Sin llamar a nadie, sin vueltas.",
+    "pasos": [
+      {
+        "titulo": "Pedís",
+        "texto": "Elegís el rubro, contás qué pasó y el tipo de pedido.",
+        "tipos": [
+          { "nombre": "Urgencia", "texto": "Para lo que no puede esperar." },
+          { "nombre": "Programado", "texto": "Elegís el día y la franja." },
+          { "nombre": "Obra", "texto": "Trabajos más grandes, con visita." }
+        ]
+      },
+      {
+        "titulo": "Recibís presupuestos y elegís",
+        "texto": "Cada especialista te manda su precio. Comparás, mirás sus datos y elegís con quién seguir."
+      },
+      {
+        "titulo": "Seguís la llegada y confirmás",
+        "texto": "Ves cuándo sale para tu casa, dentro del horario que declaró, y confirmás cuando termina el trabajo."
+      }
+    ]
+  },
+  "trailer": {
+    "titulo": "Handy en un minuto",
+    "bajada": "Así se pide un arreglo desde el celular.",
+    "video": "",
+    "poster": "",
+    "portadaAlt": "Los Handys, los personajes de la app"
+  },
+  "rubros": {
+    "titulo": "Rubros",
+    "bajada": "Arrancamos con seis rubros del hogar."
+  },
+  "confianza": {
+    "titulo": "Pensado para que estés tranquilo",
+    "items": [
+      {
+        "icono": "escudo",
+        "titulo": "Especialistas verificados",
+        "texto": "Cada especialista pasa por una verificación antes de recibir pedidos."
+      },
+      {
+        "icono": "telefono",
+        "titulo": "Tu teléfono no se comparte",
+        "texto": "Hablás con el especialista por el chat de la app. Tu número queda entre vos y Handy."
+      },
+      {
+        "icono": "billetera",
+        "titulo": "La plata va directo al especialista",
+        "texto": "Lo que pagás va a la cuenta del especialista. Handy solo cobra su tarifa, que ves antes de confirmar."
+      }
+    ]
+  },
+  "bandaEspecialista": {
+    "texto": "¿Sos especialista?",
+    "link": "Conocé Handy Especialistas\u00a0→",
+    "href": "/especialistas/"
+  },
+  "preguntas": {
+    "id": "preguntas",
+    "titulo": "Preguntas"
+  },
+  "bandaFinal": {
+    "titulo": "Anotate y te avisamos el 28/10",
+    "texto": "Dejá tus datos y sé de los primeros en usar Handy en Mar del Plata.",
+    "cta": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" }
+  }
+}

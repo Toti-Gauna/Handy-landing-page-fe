@@ -1,0 +1,62 @@
+{
+  "_nota": "Textos de las pantallas de la app recreadas en HTML (dentro de marcos de celular). Son ilustrativas: los precios usan el ejemplo de tarifas.json.",
+  "nav": ["Inicio", "Agenda", "Mensajes", "Cuenta"],
+  "inicioApp": {
+    "saludo": "¿Qué necesitás hoy?",
+    "urgencia": "Urgencia",
+    "ejemplosTitulo": "Por ejemplo…",
+    "ejemplos": ["Pierde una canilla", "Saltó la térmica", "Me quedé afuera"]
+  },
+  "pedido": {
+    "titulo": "Nuevo pedido",
+    "rubro": "Plomería",
+    "queLabel": "¿Qué pasó?",
+    "que": "Pierde la canilla de la cocina",
+    "tipoLabel": "Tipo de pedido",
+    "cuandoLabel": "Día y franja",
+    "cuando": "Jueves · de 16 a 18 h",
+    "fotos": "Agregar fotos",
+    "boton": "Pedir presupuestos"
+  },
+  "presupuestos": {
+    "titulo": "Presupuestos",
+    "subtitulo": "Plomería · canilla de la cocina",
+    "verificado": "Verificado",
+    "items": [
+      { "nombre": "Especialista 1", "horario": "Hoy, de 16 a 18 h", "precio": 45000 },
+      { "nombre": "Especialista 2", "horario": "Mañana, de 9 a 11 h", "precio": 48000 }
+    ],
+    "boton": "Elegir",
+    "nota": "Cada especialista pone su precio."
+  },
+  "seguimiento": {
+    "titulo": "Tu pedido",
+    "estado": "Tu especialista salió para tu casa",
+    "horarioLabel": "Horario que declaró",
+    "horario": "16:00 a 18:00",
+    "pasos": ["Confirmado", "En camino", "Llegó"],
+    "boton": "Confirmar llegada"
+  },
+  "especialistaPedido": {
+    "disponible": "Disponible",
+    "titulo": "Nuevo pedido",
+    "rubro": "Plomería",
+    "tipo": "Programado",
+    "detalle": "Pierde la canilla de la cocina",
+    "zona": "Zona: La Perla",
+    "sugeridoLabel": "Precio sugerido por Handy",
+    "nota": "El precio final lo ponés vos",
+    "aceptar": "Enviar con este precio",
+    "cambiar": "Cambiar mi precio"
+  },
+  "cobro": {
+    "titulo": "Tu cuenta",
+    "cuentaLabel": "CBU / alias",
+    "alias": "tu.alias.de.siempre",
+    "movimientosLabel": "Último trabajo",
+    "trabajo": "Plomería · canilla de la cocina",
+    "presupuesto": "Presupuesto",
+    "tarifa": "Tarifa Handy",
+    "acreditado": "A tu cuenta"
+  }
+}

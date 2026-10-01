@@ -1,0 +1,44 @@
+{
+  "_nota": "Textos con [texto](/ruta/) se convierten en links. Valores entre llaves salen de tarifas.json y sitio.json. estado PENDIENTE = respuesta provisoria hasta confirmar.",
+  "usuario": [
+    {
+      "pregunta": "¿Cuánto cuesta?",
+      "respuesta": "Bajar Handy y anotarte es gratis. Cada trabajo tiene el precio que pone el especialista y lo ves antes de confirmar. A eso se suma una tarifa de servicio de Handy del {tarifaCliente}, que también ves desglosada antes de confirmar."
+    },
+    {
+      "pregunta": "¿Cómo gana Handy?",
+      "respuesta": "Con una tarifa por cada trabajo hecho: el especialista deja el {tarifaEspecialista} de su presupuesto y el cliente paga un {tarifaCliente} de servicio. La plata del trabajo no pasa por Handy: va directo a la cuenta del especialista."
+    },
+    {
+      "pregunta": "¿En qué zonas?",
+      "respuesta": "Arrancamos en Mar del Plata. Cada especialista declara las zonas donde trabaja, así que vas a ver a los que cubren tu barrio."
+    },
+    {
+      "pregunta": "¿Cuándo sale?",
+      "respuesta": "El {fechaLarga}, en las tiendas de apps para Android y iPhone. Si te anotás, te avisamos ese día."
+    },
+    {
+      "pregunta": "¿Qué hacen con mis datos?",
+      "respuesta": "Los usamos solo para avisarte del lanzamiento. Se guardan en servidores en Estados Unidos y podés pedir la baja cuando quieras. Todo el detalle está en la [política de privacidad](/privacidad/)."
+    }
+  ],
+  "especialista": [
+    {
+      "pregunta": "¿Necesito CUIT?",
+      "respuesta": "Sí, lo vas a necesitar para el alta como especialista. Si todavía no lo tenés o está en trámite, anotate igual y avisanos en el formulario."
+    },
+    {
+      "pregunta": "¿Me penalizan si rechazo un trabajo?",
+      "respuesta": "No. Aceptás los trabajos que te sirven y rechazás los que no, sin penalización."
+    },
+    {
+      "pregunta": "¿Hay exclusividad u horarios?",
+      "respuesta": "No. Te ponés disponible cuando querés y podés seguir trabajando por tu cuenta o con quien quieras."
+    },
+    {
+      "pregunta": "¿Cuándo cobro?",
+      "respuesta": "Estamos definiendo los plazos de acreditación. Te los confirmamos antes del lanzamiento.",
+      "estado": "PENDIENTE"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "_nota": "Porcentajes. Los textos que los mencionan los interpolan con {tarifaEspecialista}, {tarifaCliente}, {tarifaFundadora}, {lugares}, {meses}.",
+  "normal": {
+    "especialista": 10,
+    "cliente": 5
+  },
+  "camadaFundadora": {
+    "lugares": 50,
+    "especialista": 5,
+    "meses": 12
+  },
+  "ejemplo": {
+    "presupuesto": 45000
+  }
+}
