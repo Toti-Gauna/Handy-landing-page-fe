@@ -1,0 +1,11 @@
+{
+  "_nota": "Los id tienen que coincidir con RUBROS en src/schema/preregistro.ts. corto = nombre en la pantalla del celular.",
+  "rubros": [
+    { "id": "electricidad", "nombre": "Electricidad", "icono": "rayo", "ejemplo": "Enchufes, térmicas, cortes de luz" },
+    { "id": "plomeria", "nombre": "Plomería", "icono": "canilla", "ejemplo": "Pérdidas, canillas, desagües" },
+    { "id": "gas", "nombre": "Gas", "icono": "llama", "ejemplo": "Calefones, estufas, cocinas" },
+    { "id": "cerrajeria", "nombre": "Cerrajería", "icono": "llave", "ejemplo": "Cerraduras, llaves, aperturas" },
+    { "id": "albanileria", "nombre": "Albañilería", "icono": "ladrillos", "ejemplo": "Humedad, revoques, arreglos" },
+    { "id": "aire_acondicionado", "nombre": "Aire acondicionado", "corto": "Aire acond.", "icono": "aire", "ejemplo": "Instalación, limpieza, service" }
+  ]
+}

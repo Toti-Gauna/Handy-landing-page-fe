@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "titulo": "Anotate en Handy · Pre-registro",
+    "descripcion": "Dejá tus datos y te avisamos el 28/10, cuando Handy salga en tiendas. Para usuarios y especialistas de Mar del Plata."
+  },
+  "titulo": "Anotate en Handy",
+  "bajada": "Te avisamos el 28/10, cuando salga en tiendas.",
+  "pestanasAria": "Tipo de registro",
+  "pestanas": {
+    "usuario": "Quiero usar Handy",
+    "especialista": "Soy especialista"
+  },
+  "contador": {
+    "usuario": "Ya se anotaron {n} vecinos",
+    "especialista": "Ya se anotaron {n} especialistas",
+    "sumate": "Sumate a la lista"
+  },
+  "deshabilitado": {
+    "titulo": "Registro habilitado en breve",
+    "texto": "Estamos terminando de conectar el formulario. Volvé en unos días.",
+    "boton": "Registro habilitado en breve"
+  },
+  "opcional": "opcional",
+  "campos": {
+    "nombre": { "label": "Nombre", "placeholder": "Cómo te llamás" },
+    "email": { "label": "Email", "placeholder": "tu@email.com" },
+    "whatsapp": { "label": "WhatsApp", "placeholder": "223 123 4567" },
+    "barrio": { "label": "Barrio", "placeholder": "Ej.: La Perla" },
+    "necesidad": { "label": "¿Qué necesitarías arreglar?", "placeholder": "Ej.: una pérdida en el baño" },
+    "rubros": { "label": "Rubros", "ayuda": "Marcá todos los que hacés." },
+    "zona": { "label": "Zona donde trabajás", "placeholder": "Ej.: Centro, Güemes, Puerto" },
+    "cuit": {
+      "label": "¿Tenés CUIT?",
+      "opciones": { "si": "Sí", "no": "No", "en_tramite": "En trámite" }
+    },
+    "acepta": {
+      "texto": "Acepto que mis datos se guarden en servidores fuera de Argentina para avisarme del lanzamiento.",
+      "link": "Ver política de privacidad"
+    },
+    "honeypot": { "label": "No completes este campo" }
+  },
+  "enviar": "Anotarme",
+  "enviando": "Enviando…",
+  "errores": {
+    "resumen": "Revisá los campos marcados.",
+    "nombre": "Escribí tu nombre.",
+    "email": "Revisá el email: parece que le falta algo.",
+    "whatsapp": "Revisá el número: van entre 8 y 15 dígitos.",
+    "barrio": "Contanos en qué barrio estás.",
+    "necesidad": "Usá menos de 500 caracteres.",
+    "rubros": "Elegí al menos un rubro.",
+    "zona": "Contanos en qué zona trabajás.",
+    "cuit": "Elegí una opción.",
+    "acepta": "Necesitamos tu permiso para guardar tus datos."
+  },
+  "error": {
+    "titulo": "No pudimos guardar tus datos",
+    "texto": "Puede ser la conexión o un problema nuestro. Tus datos siguen en el formulario.",
+    "reintentar": "Reintentar"
+  },
+  "exito": {
+    "titulo": "¡Listo, {nombre}!",
+    "texto": "Te avisamos el 28/10.",
+    "textoEspecialista": "Te avisamos el 28/10 y te contamos cómo seguir con el alta.",
+    "compartir": "Compartir por WhatsApp",
+    "mensajeWhatsapp": "Me anoté en Handy, la app para encontrar especialistas del hogar verificados en Mar del Plata. Sale el 28/10: {url}",
+    "volver": "Volver al inicio"
+  }
+}
