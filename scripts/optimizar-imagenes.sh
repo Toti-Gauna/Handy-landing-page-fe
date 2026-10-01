@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 OUT=src/img
 mkdir -p "$OUT"
 
-for f in handy-engranaje handy-gota-y-cano handy-lamparita handy-llave handys-grupo; do
+for f in handy-engranaje handy-lamparita handy-llave handys-grupo; do
   convert "assets/brand/$f.png" -strip -resize '600x600>' -quality 82 -define webp:alpha-quality=90 "$OUT/$f.webp"
 done
 
