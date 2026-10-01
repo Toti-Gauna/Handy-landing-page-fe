@@ -14,18 +14,36 @@
     "menuAbrir": "Abrir menú",
     "menuCerrar": "Cerrar menú",
     "nav": [
-      { "texto": "Cómo funciona", "href": "/#como-funciona" },
-      { "texto": "Especialistas", "href": "/especialistas/", "pagina": "especialistas" },
-      { "texto": "Preguntas", "href": "/#preguntas" }
+      {
+        "texto": "Cómo funciona",
+        "href": "/#como-funciona"
+      },
+      {
+        "texto": "Especialistas",
+        "href": "/especialistas/",
+        "pagina": "especialistas"
+      },
+      {
+        "texto": "Preguntas",
+        "href": "/#preguntas"
+      }
     ],
-    "cta": { "texto": "Anotarme", "href": "/registro/", "pagina": "registro" }
+    "cta": {
+      "texto": "Anotarme",
+      "href": "/registro/",
+      "pagina": "registro"
+    }
   },
   "footer": {
     "producto": "Handy es un producto de Eclipse",
     "contacto": "Contacto",
     "contactoPendiente": "Contacto: próximamente",
     "privacidad": "Privacidad",
-    "lugar": "Hecho en Mar del Plata"
+    "lugar": "Hecho en Mar del Plata",
+    "cta": {
+      "texto": "Anotarme",
+      "href": "/registro/"
+    }
   },
   "contacto": {
     "email": "PENDIENTE"
@@ -46,6 +64,14 @@
   "noEncontrado": {
     "titulo": "Esta página no existe",
     "texto": "Puede que el link esté mal escrito. Volvé al inicio y seguí desde ahí.",
-    "cta": { "texto": "Ir al inicio", "href": "/" }
-  }
+    "cta": {
+      "texto": "Ir al inicio",
+      "href": "/"
+    }
+  },
+  "intro": {
+    "aria": "Cargando Handy",
+    "saltar": "Saltar"
+  },
+  "pantallasIlustrativas": "Pantallas ilustrativas. Los precios son de ejemplo."
 }

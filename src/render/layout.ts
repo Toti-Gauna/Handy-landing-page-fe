@@ -1,6 +1,7 @@
 import sitio from '../content/sitio.json' with { type: 'json' };
 import { tipografia, variablesCss } from '../brand/tokens.ts';
 import { icono } from './iconos.ts';
+import { handy, intro } from './componentes.ts';
 import { type Ctx, type Enlace, emailContacto, esc, plano, url } from './util.ts';
 
 export interface Meta {
@@ -21,8 +22,19 @@ export function head(_ctx: Ctx, meta: Meta): string {
 <link rel="apple-touch-icon" href="/src/img/icono.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="${esc(tipografia.googleFonts)}" />
-<style>${variablesCss()}</style>`;
+<link rel="preload" as="style" href="${esc(tipografia.googleFonts)}" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="${esc(tipografia.googleFonts)}" /></noscript>
+<style>${variablesCss()}</style>
+<script>
+  // Pantalla de carga: una vez por sesión, solo si no se pidió reducir el movimiento.
+  // Si algo falla, a los 7 s se saca sola para no tapar la página.
+  try {
+    if (!sessionStorage.getItem('handy-intro') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('con-intro');
+      setTimeout(function () { document.documentElement.classList.remove('con-intro'); }, 7000);
+    }
+  } catch (e) {}
+</script>`;
 }
 
 function logo(ctx: Ctx, clase = ''): string {
@@ -67,22 +79,28 @@ export function footer(ctx: Ctx): string {
     ? `<a href="mailto:${esc(email)}">${esc(f.contacto)}: ${esc(email)}</a>`
     : `<span>${esc(f.contactoPendiente)}</span>`;
   return `<footer class="footer">
+  <div class="footer__handys" aria-hidden="true">
+    ${handy('engranaje', { clase: 'footer__engranaje', data: 'engranaje-footer' })}
+    ${handy('lamparita', { clase: 'footer__lamparita', data: 'lamparita-footer' })}
+  </div>
   <div class="contenedor footer__grilla">
-    <div class="footer__marca">
-      ${logo(ctx, 'logo--blanco footer__logo')}
-      <p>${esc(f.producto)}</p>
-    </div>
+    <p class="footer__producto">${esc(f.producto)}</p>
     <ul class="footer__links">
       <li>${contacto}</li>
       <li><a href="${esc(url(ctx, '/privacidad/'))}"${ctx.pagina === 'privacidad' ? ' aria-current="page"' : ''}>${esc(f.privacidad)}</a></li>
       <li><span>${esc(f.lugar)}</span></li>
     </ul>
   </div>
+  <div class="contenedor footer__marca">
+    <img class="footer__wordmark" src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" />
+    <span class="footer__bajada">${esc(sitio.bajada)}</span>
+  </div>
 </footer>`;
 }
 
 export function documento(ctx: Ctx, cuerpo: string, opciones: { header?: 'claro' | 'azul' } = {}): string {
-  return `${header(ctx, opciones.header)}
+  return `${intro()}
+${header(ctx, opciones.header)}
 <main id="contenido" tabindex="-1">
 ${cuerpo}
 </main>

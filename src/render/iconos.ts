@@ -29,6 +29,16 @@ const trazos: Record<string, string> = {
   caja:
     '<path d="M3 10h18v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9Z"/><path d="M5 10 7 4h10l2 6"/><path d="M9 15h6"/><path d="M10 7h4"/>',
   // Interfaz
+  mas: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  enviar: '<path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5L21 3Z"/>',
+  imagen: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+  prohibido: '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>',
+  caminar: '<circle cx="13" cy="4.5" r="2"/><path d="M10 21l2-6 3 3v3"/><path d="M8 11l3-3h3l2 4 3 1"/><path d="m12 8-1.5 5"/>',
+  abajo: '<path d="m6 9 6 6 6-6"/>',
+  izquierda: '<path d="m15 6-6 6 6 6"/>',
+  derecha: '<path d="m9 6 6 6-6 6"/>',
+  maletin: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
   camara: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',

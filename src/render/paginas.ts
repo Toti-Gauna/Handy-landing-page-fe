@@ -14,19 +14,14 @@ import {
   canoConGota,
   cuentaRegresiva,
   encabezado,
+  etiqueta,
   handy,
   preguntas,
+  telefono,
   trailer,
+  vitrina,
 } from './componentes.ts';
-import {
-  pantallaCobro,
-  pantallaEspecialistaPedido,
-  pantallaInicio,
-  pantallaPedido,
-  pantallaPresupuestos,
-  pantallaSeguimiento,
-} from './pantallas.ts';
-import { type Ctx, emailContacto, esc, formatoPesos, plano, rico, url, variables } from './util.ts';
+import { type Ctx, emailContacto, esc, formatoPesos, plano, rico, titular, url, variables } from './util.ts';
 import type { Meta } from './layout.ts';
 
 export interface PaginaRender {
@@ -46,26 +41,8 @@ if (idsContenido !== RUBROS.join(',')) {
 export function paginaInicio(ctx: Ctx): PaginaRender {
   const h = inicio.hero;
   const cf = inicio.comoFunciona;
-  const pantallasPasos = [pantallaPedido(), pantallaPresupuestos(), pantallaSeguimiento()];
-
-  const pasos = cf.pasos
-    .map((paso, i) => {
-      const tipos = paso.tipos
-        ? `<ul class="tipos">${paso.tipos
-            .map((t) => `<li class="tipos__item"><strong>${plano(t.nombre)}</strong><span>${plano(t.texto)}</span></li>`)
-            .join('')}</ul>`
-        : '';
-      return `<li class="paso" data-revelar>
-  <div class="paso__texto">
-    <span class="paso__numero" aria-hidden="true">${i + 1}</span>
-    <h3 class="paso__titulo">${plano(paso.titulo)}</h3>
-    <p>${plano(paso.texto)}</p>
-    ${tipos}
-  </div>
-  <div class="paso__pantalla">${pantallasPasos[i]}${i === 1 ? `<p class="nota-ilustrativa">${esc(sitio.pantallaIlustrativa)}</p>` : ''}</div>
-</li>`;
-    })
-    .join('');
+  const ia = inicio.handia;
+  const apd = inicio.appPorDentro;
 
   const tarjetasRubros = rubros.rubros
     .map(
@@ -86,23 +63,33 @@ export function paginaInicio(ctx: Ctx): PaginaRender {
     )
     .join('');
 
+  const porDentro = apd.items
+    .map(
+      (it, i) => `<li class="por-dentro__item" data-revelar>
+  ${telefono(it.pantalla as 'turnos' | 'pagos', i === 0 ? 'telefono--inclinado-izq' : 'telefono--inclinado-der')}
+  <div class="por-dentro__texto"><h3>${plano(it.titulo)}</h3><p>${plano(it.texto)}</p></div>
+</li>`,
+    )
+    .join('');
+
   const be = inicio.bandaEspecialista;
 
   const cuerpo = `
 <section class="hero" aria-labelledby="hero-titulo">
   <div class="contenedor hero__grilla">
     <div class="hero__texto">
-      <p class="etiqueta" data-hero>${plano(h.etiqueta)}</p>
-      <h1 class="hero__titulo" id="hero-titulo" data-hero>${plano(h.titulo)}</h1>
+      <div data-hero>${etiqueta(h.etiqueta)}</div>
+      <h1 class="hero__titulo" id="hero-titulo" data-hero>${titular(h.titulo)}</h1>
       <p class="hero__bajada" data-hero>${plano(h.bajada)}</p>
       <div class="hero__ctas" data-hero>
-        ${boton(ctx, h.ctaPrimario, 'azul', 'boton--grande')}
+        ${boton(ctx, h.ctaPrimario, 'azul', 'boton--grande', true)}
         ${boton(ctx, h.ctaSecundario, 'contorno', 'boton--grande')}
       </div>
-      ${cuentaRegresiva('hero__cuenta')}
+      <div data-hero>${cuentaRegresiva('hero__cuenta')}</div>
     </div>
     <div class="hero__escena" data-escena>
-      ${pantallaInicio()}
+      <div class="mosaicos-fondo" aria-hidden="true"></div>
+      ${telefono('inicioApp', 'telefono--hero')}
       ${canoConGota({ clase: 'escena__cano', eager: true })}
       ${handy('lamparita', { clase: 'escena__lamparita', eager: true })}
       ${handy('engranaje', { clase: 'escena__engranaje', eager: true })}
@@ -113,48 +100,63 @@ export function paginaInicio(ctx: Ctx): PaginaRender {
 
 <section class="seccion seccion--como" id="${esc(cf.id)}" aria-labelledby="${esc(cf.id)}-titulo" data-espiar>
   <div class="contenedor">
-    <div class="encabezado" data-revelar>
-      <h2 class="encabezado__titulo" id="${esc(cf.id)}-titulo">${plano(cf.titulo)}</h2>
-      <p class="encabezado__bajada">${plano(cf.bajada)}</p>
+    ${encabezado(cf.titulo, `${cf.id}-titulo`, cf.bajada)}
+    ${vitrina(cf.pasos, { numerada: true, decorado: handy('engranaje', { clase: 'vitrina__handy', data: 'engranaje-vitrina' }) })}
+  </div>
+</section>
+
+<section class="seccion seccion--handia" id="${esc(ia.id)}" aria-labelledby="${esc(ia.id)}-titulo">
+  <div class="contenedor handia">
+    <div class="handia__texto" data-revelar>
+      ${etiqueta(ia.etiqueta, 'chat', 'etiqueta--amarilla')}
+      <h2 class="titulo-seccion" id="${esc(ia.id)}-titulo">${titular(ia.titulo)}</h2>
+      <p class="handia__bajada">${plano(ia.texto)}</p>
+      <ul class="handia__puntos">${ia.puntos.map((t) => `<li>${icono('check')}<span>${plano(t)}</span></li>`).join('')}</ul>
     </div>
-    <div class="pasos-carril">
-      ${handy('engranaje', { clase: 'pasos-carril__engranaje', data: 'engranaje-carril' })}
-      <ol class="pasos">${pasos}</ol>
+    <div class="handia__escena" data-revelar>
+      <span class="handia__halo" aria-hidden="true"></span>
+      ${telefono('handia', 'telefono--handia')}
+      ${handy('lamparita', { clase: 'handia__lamparita', data: 'lamparita-handia' })}
     </div>
+  </div>
+</section>
+
+<section class="seccion seccion--rubros" aria-labelledby="rubros-titulo">
+  <div class="contenedor">
+    ${encabezado(inicio.rubros.titulo, 'rubros-titulo', inicio.rubros.bajada)}
+    <div class="rubros-caja">
+      ${handy('llave', { clase: 'rubros__llave', data: 'llave-rubros' })}
+      <ul class="rubros">${tarjetasRubros}</ul>
+    </div>
+  </div>
+</section>
+
+<section class="seccion seccion--por-dentro" aria-labelledby="por-dentro-titulo">
+  <div class="contenedor">
+    ${encabezado(apd.titulo, 'por-dentro-titulo')}
+    <ul class="por-dentro">${porDentro}</ul>
+    <p class="nota-ilustrativa">${esc(sitio.pantallasIlustrativas)}</p>
   </div>
 </section>
 
 ${trailer(inicio.trailer, 'trailer-usuario')}
 
-<section class="seccion seccion--rubros" aria-labelledby="rubros-titulo">
-  <div class="contenedor">
-    <div class="encabezado" data-revelar>
-      <h2 class="encabezado__titulo" id="rubros-titulo">${plano(inicio.rubros.titulo)}</h2>
-      <p class="encabezado__bajada">${plano(inicio.rubros.bajada)}</p>
-    </div>
-    <ul class="rubros">${tarjetasRubros}</ul>
-  </div>
-</section>
-
 <section class="seccion seccion--confianza" aria-labelledby="confianza-titulo">
   <div class="contenedor confianza">
-    <div class="confianza__lado">
-      ${encabezado(inicio.confianza.titulo, 'confianza-titulo')}
-      ${handy('llave', { clase: 'confianza__llave', data: 'llave-confianza' })}
-    </div>
+    ${encabezado(inicio.confianza.titulo, 'confianza-titulo')}
     <ul class="confianza__lista">${confianza}</ul>
   </div>
 </section>
 
-<aside class="banda-especialista" aria-label="${plano(be.texto)}">
-  <a class="contenedor banda-especialista__link" href="${esc(url(ctx, be.href))}">
-    <span class="banda-especialista__texto">${plano(be.texto)}</span>
-    <span class="banda-especialista__cta">${plano(be.link)}</span>
+<aside class="contenedor banda-especialista" aria-label="${plano(be.texto)}">
+  <a class="banda-especialista__link" href="${esc(url(ctx, be.href))}" data-revelar>
     ${handy('engranaje', { clase: 'banda-especialista__handy', data: 'engranaje-banda' })}
+    <span class="banda-especialista__texto"><small>${plano(be.texto)}</small><strong>${plano(be.link)}</strong></span>
+    <span class="banda-especialista__boton" aria-hidden="true">${icono('flecha')}</span>
   </a>
 </aside>
 
-${preguntas(ctx, inicio.preguntas.id, inicio.preguntas.titulo, preguntasJson.usuario)}
+${preguntas(ctx, inicio.preguntas, preguntasJson.usuario)}
 
 ${bandaFinal(ctx, inicio.bandaFinal)}
 `;
@@ -170,31 +172,22 @@ export function paginaEspecialistas(ctx: Ctx): PaginaRender {
   const cam = e.camada;
   const retencion = (tarifas.ejemplo.presupuesto * tarifas.normal.especialista) / 100;
 
-  const herramientas = e.herramientas.items
-    .map(
-      (it) => `<li class="herramienta" data-revelar>
-  <span class="herramienta__icono">${icono(it.icono)}</span>
-  <h3>${plano(it.titulo)}</h3>
-  <p>${plano(it.texto)}</p>
-</li>`,
-    )
-    .join('');
-
   const cuerpo = `
 <section class="hero hero--azul" aria-labelledby="hero-titulo">
   <div class="contenedor hero__grilla">
     <div class="hero__texto">
-      <p class="etiqueta etiqueta--amarilla" data-hero>${plano(h.etiqueta)}</p>
-      <h1 class="hero__titulo" id="hero-titulo" data-hero>${plano(h.titulo)}</h1>
+      <div data-hero>${etiqueta(h.etiqueta, 'maletin', 'etiqueta--amarilla')}</div>
+      <h1 class="hero__titulo" id="hero-titulo" data-hero>${titular(h.titulo)}</h1>
       <p class="hero__bajada" data-hero>${plano(h.bajada)}</p>
       <div class="hero__ctas" data-hero>
-        ${boton(ctx, h.ctaPrimario, 'amarillo', 'boton--grande')}
+        ${boton(ctx, h.ctaPrimario, 'amarillo', 'boton--grande', true)}
         ${boton(ctx, h.ctaSecundario, 'contorno-blanco', 'boton--grande')}
       </div>
-      ${cuentaRegresiva('hero__cuenta cuenta--azul')}
+      <div data-hero>${cuentaRegresiva('hero__cuenta cuenta--azul')}</div>
     </div>
     <div class="hero__escena" data-escena>
-      ${pantallaEspecialistaPedido()}
+      <div class="mosaicos-fondo mosaicos-fondo--oscuro" aria-hidden="true"></div>
+      ${telefono('espPedido', 'telefono--hero')}
       ${handy('llave', { clase: 'escena__llave escena__llave--esp', eager: true })}
       ${handy('engranaje', { clase: 'escena__engranaje escena__engranaje--esp', eager: true })}
     </div>
@@ -203,8 +196,8 @@ export function paginaEspecialistas(ctx: Ctx): PaginaRender {
 
 <section class="seccion seccion--herramientas" aria-labelledby="herramientas-titulo">
   <div class="contenedor">
-    ${encabezado(e.herramientas.titulo, 'herramientas-titulo')}
-    <ul class="herramientas">${herramientas}</ul>
+    ${encabezado(e.herramientas.titulo, 'herramientas-titulo', e.herramientas.bajada)}
+    ${vitrina(e.herramientas.items, { decorado: handy('llave', { clase: 'vitrina__handy vitrina__handy--llave', data: 'llave-vitrina' }) })}
   </div>
 </section>
 
@@ -213,36 +206,42 @@ ${trailer(e.trailer, 'trailer-especialista')}
 <section class="seccion seccion--cobro" id="${esc(cc.id)}" aria-labelledby="${esc(cc.id)}-titulo">
   <div class="contenedor cobro">
     <div class="cobro__texto" data-revelar>
-      <h2 class="encabezado__titulo" id="${esc(cc.id)}-titulo">${plano(cc.titulo)}</h2>
+      <h2 class="titulo-seccion" id="${esc(cc.id)}-titulo">${titular(cc.titulo)}</h2>
       <p class="encabezado__bajada">${plano(cc.texto)}</p>
-      <div class="ejemplo" aria-label="${plano(cc.ejemploTitulo)}">
-        <p class="ejemplo__titulo">${plano(cc.ejemploTitulo)}</p>
-        <dl class="ejemplo__filas">
+      <div class="costo" role="group" aria-label="${plano(cc.ejemploTitulo)}">
+        <p class="costo__titulo">${plano(cc.ejemploTitulo)}${icono('info')}</p>
+        <dl class="costo__filas">
           <div><dt>${plano(cc.presupuesto)}</dt><dd>${esc(variables.presupuesto)}</dd></div>
           <div><dt>${plano(cc.tarifa)}</dt><dd>− ${esc(formatoPesos(retencion))}</dd></div>
-          <div class="ejemplo__total"><dt>${plano(cc.recibis)}</dt><dd data-contar="${tarifas.ejemplo.presupuesto - retencion}">${esc(variables.recibis)}</dd></div>
+          <div class="costo__total"><dt>${plano(cc.recibis)}</dt><dd data-contar="${tarifas.ejemplo.presupuesto - retencion}">${esc(variables.recibis)}</dd></div>
         </dl>
-        <p class="ejemplo__nota">${plano(cc.notaFundadora)}</p>
       </div>
+      <p class="cobro__nota">${plano(cc.notaFundadora)}</p>
     </div>
-    <div class="cobro__pantalla" data-revelar>${pantallaCobro()}</div>
+    <div class="cobro__pantalla" data-revelar>${telefono('espFin')}</div>
   </div>
 </section>
 
 <section class="seccion seccion--camada" aria-labelledby="camada-titulo">
   <div class="contenedor">
-    <div class="camada" data-revelar>
-      <p class="etiqueta etiqueta--azul">${plano(cam.etiqueta)}</p>
-      <h2 class="camada__destacado" id="camada-titulo">${plano(cam.destacado)}</h2>
-      <p class="camada__texto">${plano(cam.texto)}</p>
-      <p class="camada__normal">${plano(cam.tarifaNormal)}</p>
-      ${boton(ctx, cam.cta, 'azul', 'boton--grande')}
-      ${canoConGota({ clase: 'camada__handy' })}
+    <div class="cupon" data-revelar>
+      <div class="cupon__izq">
+        <span class="cupon__numero">${plano(cam.numero)}</span>
+        <span class="cupon__numero-label">${plano(cam.numeroLabel)}</span>
+      </div>
+      <div class="cupon__der">
+        ${etiqueta(cam.etiqueta, 'etiqueta', 'etiqueta--azul')}
+        <h2 class="cupon__destacado" id="camada-titulo">${titular(cam.destacado)}</h2>
+        <p class="cupon__texto">${plano(cam.texto)}</p>
+        <p class="cupon__normal">${plano(cam.tarifaNormal)}</p>
+        ${boton(ctx, cam.cta, 'azul', 'boton--grande', true)}
+      </div>
+      ${canoConGota({ clase: 'cupon__handy' })}
     </div>
   </div>
 </section>
 
-${preguntas(ctx, e.preguntas.id, e.preguntas.titulo, preguntasJson.especialista)}
+${preguntas(ctx, e.preguntas, preguntasJson.especialista)}
 
 ${bandaFinal(ctx, e.bandaFinal)}
 `;
@@ -315,7 +314,7 @@ export function paginaRegistro(ctx: Ctx): PaginaRender {
 <section class="registro" aria-labelledby="registro-titulo">
   <div class="contenedor registro__caja">
     <div class="registro__cabecera">
-      <h1 class="registro__titulo" id="registro-titulo">${plano(r.titulo)}</h1>
+      <h1 class="registro__titulo" id="registro-titulo">${titular(r.titulo)}</h1>
       <p class="registro__bajada">${plano(r.bajada)}</p>
       <p class="registro__contador" data-contador hidden></p>
     </div>
@@ -402,7 +401,7 @@ export function paginaPrivacidad(ctx: Ctx): PaginaRender {
   const cuerpo = `
 <article class="legal contenedor">
   <header class="legal__cabecera">
-    <h1>${plano(p.titulo)}</h1>
+    <h1>${titular(p.titulo)}</h1>
     <p>${plano(p.bajada)}</p>
   </header>
   ${secciones}
@@ -417,7 +416,7 @@ export function pagina404(ctx: Ctx): PaginaRender {
   const cuerpo = `
 <section class="no-encontrado contenedor">
   ${handy('llave', { clase: 'no-encontrado__handy', eager: true })}
-  <h1>${plano(n.titulo)}</h1>
+  <h1>${titular(n.titulo)}</h1>
   <p>${plano(n.texto)}</p>
   ${boton(ctx, n.cta, 'azul', 'boton--grande')}
 </section>`;

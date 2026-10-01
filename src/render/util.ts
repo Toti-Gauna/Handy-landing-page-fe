@@ -79,5 +79,13 @@ export function rico(ctx: Ctx, texto: string, extra: Record<string, string> = {}
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, t: string, h: string) => `<a href="${esc(url(ctx, h.replace(/&amp;/g, '&')))}">${t}</a>`);
 }
 
+/** Para títulos: escapa, interpola y convierte ==texto== en el marcador amarillo. */
+export function titular(texto: string, extra: Record<string, string> = {}): string {
+  return esc(interpolar(texto, extra)).replace(/==(.+?)==/g, '<mark class="marca">$1</mark>');
+}
+
+/** Texto sin los ==marcadores== (para meta tags y aria-label). */
+export const sinMarcas = (texto: string) => texto.replace(/==/g, '');
+
 /** Igual que rico() pero sin markup: para atributos y meta tags. */
 export const plano = (texto: string, extra: Record<string, string> = {}) => esc(interpolar(texto, extra));
