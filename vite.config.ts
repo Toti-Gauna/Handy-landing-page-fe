@@ -28,6 +28,7 @@ export default defineConfig({
         especialistas: raiz('./especialistas/index.html'),
         registro: raiz('./registro/index.html'),
         privacidad: raiz('./privacidad/index.html'),
+        demo: raiz('./demo/index.html'),
         '404': raiz('./404.html'),
       },
     },

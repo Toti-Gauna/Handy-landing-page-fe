@@ -11,12 +11,14 @@ import {
   paginaRegistro,
 } from './paginas.ts';
 import type { Ctx, Pagina } from './util.ts';
+import { paginaDemo } from './demo/pagina.ts';
 
 const PAGINAS: Record<Pagina, (ctx: Ctx) => PaginaRender> = {
   inicio: paginaInicio,
   especialistas: paginaEspecialistas,
   registro: paginaRegistro,
   privacidad: paginaPrivacidad,
+  demo: paginaDemo,
   '404': pagina404,
 };
 

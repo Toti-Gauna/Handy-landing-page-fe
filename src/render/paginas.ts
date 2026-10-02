@@ -6,9 +6,11 @@ import preguntasJson from '../content/preguntas.json' with { type: 'json' };
 import tarifas from '../content/tarifas.json' with { type: 'json' };
 import registro from '../content/registro.json' with { type: 'json' };
 import privacidad from '../content/privacidad.json' with { type: 'json' };
+import demo from '../content/demo.json' with { type: 'json' };
 import { RUBROS, OPCIONES_CUIT } from '../schema/preregistro.ts';
 import { icono } from './iconos.ts';
 import {
+  bandaDemo,
   bandaFinal,
   boton,
   canoConGota,
@@ -105,6 +107,8 @@ export function paginaInicio(ctx: Ctx): PaginaRender {
   </div>
 </section>
 
+${bandaDemo(ctx, demo.banda.usuario)}
+
 <section class="seccion seccion--handia" id="${esc(ia.id)}" aria-labelledby="${esc(ia.id)}-titulo">
   <div class="contenedor handia">
     <div class="handia__texto" data-revelar>
@@ -200,6 +204,8 @@ export function paginaEspecialistas(ctx: Ctx): PaginaRender {
     ${vitrina(e.herramientas.items, { decorado: handy('llave', { clase: 'vitrina__handy vitrina__handy--llave', data: 'llave-vitrina' }) })}
   </div>
 </section>
+
+${bandaDemo(ctx, demo.banda.especialista)}
 
 ${trailer(e.trailer, 'trailer-especialista')}
 

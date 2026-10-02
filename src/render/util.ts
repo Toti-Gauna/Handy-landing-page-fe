@@ -3,7 +3,7 @@
 import sitio from '../content/sitio.json' with { type: 'json' };
 import tarifas from '../content/tarifas.json' with { type: 'json' };
 
-export type Pagina = 'inicio' | 'especialistas' | 'registro' | 'privacidad' | '404';
+export type Pagina = 'inicio' | 'especialistas' | 'registro' | 'privacidad' | 'demo' | '404';
 
 export interface Ctx {
   base: string;
@@ -35,6 +35,9 @@ const pesos = new Intl.NumberFormat('es-AR', {
 export function formatoPesos(n: number): string {
   return pesos.format(n).replace(/ /g, ' ');
 }
+
+/** "$ 45.000" sin corte entre "$" y el número (para montos dentro de oraciones). */
+export const formatoPesosJunto = (n: number): string => formatoPesos(n).replace(/ /g, '\u00a0');
 
 export const porcentaje = (n: number) => `${n}%`;
 

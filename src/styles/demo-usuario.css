@@ -1,0 +1,2107 @@
+/* Demo · lado del usuario. Clases propias con prefijo .du-; las de la app (.app-*) están en main.css.
+   Todo en em: escala con el ancho del celular (font-size = ancho / 22.5). */
+
+/* ── Comunes ──────────────────────────────────────────────────────────── */
+
+/* Las hojas (.app-sheet) no están dentro de .app: les damos la misma base. */
+.demo-pantalla[data-rol='usuario'] .demo-hoja {
+  color: #111;
+  font-family: var(--fuente);
+  line-height: 1.2;
+  text-align: left;
+  scrollbar-width: none;
+}
+
+.demo-pantalla[data-rol='usuario'] .demo-hoja .icono {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.demo-pantalla[data-rol='usuario'] button.app-boton,
+.demo-pantalla[data-rol='usuario'] button.app-mosaico {
+  width: 100%;
+}
+
+.demo-pantalla[data-rol='usuario'] button:disabled {
+  cursor: default;
+}
+
+.app-cuerpo .du-abajo,
+.du-abajo {
+  margin-top: auto;
+}
+
+/* Guía (lo próximo para tocar): el amarillo de marca con un aro más oscuro, para que se vea también sobre blanco. */
+.demo-pantalla[data-rol='usuario'] .demo-guia {
+  animation-name: du-guia;
+}
+
+@keyframes du-guia {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(245 245 154 / 0.95),
+      0 0 0 0.18em #e2d84a;
+  }
+  70% {
+    box-shadow:
+      0 0 0 0.9em rgb(245 245 154 / 0),
+      0 0 0 0.18em #e2d84a;
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(245 245 154 / 0),
+      0 0 0 0.18em #e2d84a;
+  }
+}
+
+/* Dentro de tarjetas y de la rueda el aro de afuera queda recortado (overflow): va por dentro. */
+.demo-pantalla[data-rol='usuario'] .app-tarjeta .demo-guia,
+.demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+  z-index: 1;
+  animation-name: du-guia-adentro;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+  border-radius: 0.6em;
+}
+
+@keyframes du-guia-adentro {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0.2em #e2d84a;
+    background-color: rgb(245 245 154 / 0.55);
+  }
+  50% {
+    box-shadow: inset 0 0 0 0.38em #e2d84a;
+    background-color: rgb(245 245 154 / 0.85);
+  }
+}
+
+/* Y la tarjeta entera se marca con el aro de afuera (la lista deja lugar para que no se recorte). */
+.demo-pantalla[data-rol='usuario'] .app-tarjeta:has(.demo-guia) {
+  box-shadow: 0 0 0 0.18em #e2d84a;
+}
+
+.du-ico {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+.du-ico .icono {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.du-label {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 0.84em;
+  color: #333;
+}
+
+.du-nota {
+  margin-top: 0.45em;
+  text-align: center;
+  font-size: 0.68em;
+  font-weight: 700;
+  color: #666;
+}
+
+.du-nota--izq {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 0;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.du-nota--izq .icono {
+  width: 1.7em;
+  height: 1.7em;
+  flex: none;
+  color: var(--color-azul);
+}
+
+.du-nota--clara {
+  margin: 0;
+  color: rgb(255 255 255 / 0.82);
+}
+
+.du-grilla2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5em;
+}
+
+.du-grilla2--ancha {
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.du-grilla2 > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  min-width: 0;
+}
+
+.du-ficha {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15em;
+  flex: 1;
+  min-width: 0;
+  padding: 0.6em 0.75em;
+  border-radius: 1em;
+  color: #fff;
+}
+
+.du-ficha--azul {
+  background: var(--color-azul-ui);
+}
+
+.du-ficha--clara {
+  background: #8fa8d0;
+}
+
+.du-ficha small {
+  font-size: 0.66em;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.du-ficha strong {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-weight: 900;
+  font-size: 0.92em;
+}
+
+.du-ficha > span {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.68em;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.du-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  padding: 0.7em 0.85em;
+  border-radius: 1em;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.1em #cfcfcf;
+}
+
+.du-campo p {
+  font-size: 0.8em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.du-campo small {
+  font-size: 0.66em;
+  font-weight: 600;
+  color: #8a8a8a;
+}
+
+.du-lugar {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  width: 100%;
+  text-align: left;
+  padding: 0.6em 0.8em;
+  border-radius: 1em;
+  background: #dcdcdc;
+}
+
+.du-lugar > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.du-lugar strong {
+  font-weight: 900;
+  font-size: 0.88em;
+}
+
+.du-lugar small {
+  overflow: hidden;
+  font-size: 0.68em;
+  font-weight: 700;
+  color: #666;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.du-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  width: 100%;
+}
+
+.du-botones .app-boton,
+.du-botones .app-boton + .app-boton {
+  margin: 0;
+}
+
+.du-boton-verde {
+  background: var(--color-exito);
+}
+
+.du-boton-rojo {
+  background: var(--color-error);
+}
+
+.du-boton-celeste {
+  background: #3f86e8;
+}
+
+.du-boton-amarillo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  background: var(--color-amarillo);
+  color: var(--color-azul);
+}
+
+.du-boton-blanco {
+  background: #fff;
+  color: var(--color-azul);
+}
+
+.du-boton-blanco:disabled {
+  color: #8d9bb3;
+}
+
+.du-boton-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+}
+
+.du-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+}
+
+.du-chips--centro {
+  justify-content: center;
+}
+
+.du-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.45em 0.8em;
+  border-radius: 2em;
+  background: var(--color-mosaico);
+  color: #111;
+  font-size: 0.76em;
+  font-weight: 800;
+}
+
+.du-chip--azul {
+  background: var(--color-azul);
+  color: #fff;
+}
+
+.du-chip--boton {
+  background: #fff;
+  box-shadow: inset 0 0 0 0.1em #c8c8c8;
+}
+
+.du-chip--boton[aria-pressed='true'] {
+  background: var(--color-azul);
+  color: #fff;
+  box-shadow: none;
+}
+
+.du-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Un poco de aire para que el aro de la guía alrededor de una tarjeta no se recorte. */
+  margin: -0.25em;
+  padding: 0.25em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.du-scroll::-webkit-scrollbar,
+.demo-pantalla[data-rol='usuario'] .demo-hoja::-webkit-scrollbar {
+  display: none;
+}
+
+.du-scroll > * {
+  flex: none;
+}
+
+.du-hoja-sub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  font-size: 0.84em;
+  font-weight: 700;
+  color: #555;
+}
+
+.du-hoja-sub strong {
+  color: var(--color-azul);
+  font-weight: 800;
+}
+
+.du-hoja-texto {
+  padding: 0.2em 0.4em;
+  text-align: center;
+  font-size: 0.86em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #333;
+}
+
+.du-manija {
+  margin-bottom: 0.1em;
+}
+
+.du-costo {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5em 0.85em;
+  border-radius: 1.1em;
+  background: var(--color-azul-ui);
+  color: #fff;
+}
+
+.du-costo__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.2em 0;
+  font-size: 0.74em;
+  font-weight: 700;
+}
+
+.du-costo__fila > span:last-child {
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.du-costo__total {
+  margin-top: 0.2em;
+  padding-top: 0.45em;
+  border-top: 1px solid rgb(255 255 255 / 0.5);
+  font-size: 0.84em;
+  font-weight: 900;
+}
+
+.du-costo--claro {
+  width: 100%;
+  background: var(--color-mosaico);
+  color: #111;
+  text-align: left;
+}
+
+.du-costo--claro .du-costo__total {
+  border-color: #bdbdbd;
+}
+
+/* Aviso flotante ("En la demo esto no hace nada todavía") */
+.du-toast {
+  position: absolute;
+  z-index: 8;
+  left: 1em;
+  right: 1em;
+  top: 9.6em;
+  padding: 0.75em 1em;
+  border-radius: 1em;
+  background: var(--color-tinta);
+  color: #fff;
+  font-size: 0.74em;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 0.6em 1.4em -0.4em rgb(0 0 0 / 0.45);
+  animation: du-aparecer 0.25s ease-out both;
+}
+
+@keyframes du-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(0.6em) scale(0.96);
+  }
+}
+
+/* En las hojas, el aviso va abajo de todo. */
+.demo-hoja .du-toast {
+  position: sticky;
+  top: auto;
+  bottom: 0.6em;
+  margin-top: 0.6em;
+}
+
+/* ── Inicio ───────────────────────────────────────────────────────────── */
+
+.du-inicio {
+  gap: 0.65em;
+  padding-top: 0.3em;
+}
+
+.du-handia {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  width: 100%;
+  padding: 0.5em 0.9em 0.5em 0.5em;
+  border-radius: 1.2em;
+  background: var(--color-azul);
+  color: #fff;
+  text-align: left;
+}
+
+.du-handia__ia {
+  display: grid;
+  place-items: end center;
+  width: 2.7em;
+  height: 2.7em;
+  overflow: hidden;
+  border-radius: 0.8em;
+  background: var(--color-azul-personajes);
+  flex: none;
+}
+
+.du-handia__ia img {
+  width: 52%;
+  margin-bottom: -18%;
+}
+
+.du-handia__textos {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.du-handia__textos small {
+  font-size: 0.66em;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.du-handia__textos strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-size: 1em;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-tareas .app-mosaico {
+  aspect-ratio: 1 / 0.8;
+}
+
+/* ── Hojas: opciones y urgencia ───────────────────────────────────────── */
+
+.du-opcion {
+  width: 100%;
+  text-align: left;
+}
+
+.du-opcion > span {
+  flex: 1;
+}
+
+.du-opcion > .icono:last-child {
+  width: 1.1em;
+  opacity: 0.7;
+}
+
+.du-opcion[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 0.2em var(--color-amarillo);
+}
+
+.du-urgencia {
+  gap: 0.45em;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-mini {
+  aspect-ratio: auto;
+  padding: 0.75em 0.3em;
+  border-radius: 1.1em;
+  background: #fff;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-mini .icono {
+  width: 2.3em;
+  height: 2.3em;
+}
+
+/* ── Programar: rueda de día y franja ─────────────────────────────────── */
+
+.du-programar {
+  gap: 0.8em;
+}
+
+.du-rueda {
+  --du-fila: 2.25em;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  height: calc(var(--du-fila) * 7);
+  overflow: hidden;
+  font-size: 1.06em;
+  -webkit-mask-image: linear-gradient(transparent, #000 36%, #000 64%, transparent);
+  mask-image: linear-gradient(transparent, #000 36%, #000 64%, transparent);
+}
+
+.du-rueda::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--du-fila) * 3);
+  height: var(--du-fila);
+  border-radius: 0.6em;
+  background: #ececec;
+}
+
+.du-rueda__col {
+  position: relative;
+  min-width: 0;
+}
+
+.du-rueda__lista {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc((3 - var(--du-i)) * var(--du-fila)));
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.du-rueda__op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--du-fila);
+  color: #a7a7a7;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.du-rueda__op[aria-pressed='true'] {
+  color: #111;
+  font-weight: 800;
+}
+
+.du-info {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: 0.76em;
+  line-height: 1.35;
+  color: #333;
+}
+
+.du-info .icono {
+  width: 2.3em;
+  height: 2.3em;
+  flex: none;
+  color: #111;
+}
+
+.du-pastillas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55em 0.6em;
+}
+
+.du-pastilla {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  min-width: 0;
+}
+
+.du-pastilla small {
+  padding-left: 0.5em;
+  font-size: 0.8em;
+  font-weight: 800;
+}
+
+.du-pastilla strong {
+  overflow: hidden;
+  padding: 0.7em 0.6em;
+  border-radius: 2em;
+  background: var(--color-azul-ui);
+  color: #fff;
+  text-align: center;
+  font-size: 0.86em;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Contanos qué pasó ────────────────────────────────────────────────── */
+
+.du-describir {
+  gap: 0.7em;
+}
+
+.du-describir .du-campo {
+  justify-content: space-between;
+  min-height: 6.4em;
+}
+
+.du-fotos {
+  display: flex;
+  gap: 0.5em;
+}
+
+.du-foto {
+  display: grid;
+  place-items: center;
+  width: 5.4em;
+  height: 5.4em;
+  overflow: hidden;
+  border-radius: 1em;
+  background: #dce3ec;
+  flex: none;
+}
+
+/* "Foto" del problema: ilustración con el ícono del rubro elegido. */
+.du-ilus {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(#c9d2de 0 24%, #dce3ec 24%);
+  color: #7d8a9c;
+}
+
+.du-ilus::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 12%;
+  height: 8%;
+  border-radius: 50%;
+  background: rgb(125 138 156 / 0.25);
+}
+
+.du-ilus__icono {
+  display: grid;
+  place-items: center;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-ilus__icono .icono {
+  width: 2.5em;
+  height: 2.5em;
+  stroke-width: 1.6;
+}
+
+.du-foto--2 .du-ilus__icono {
+  transform: rotate(-14deg) scale(1.2);
+}
+
+.du-ilus--chat {
+  width: 9em;
+  height: 6.6em;
+  border-radius: 0.7em;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-ilus--chat .du-ilus__icono .icono {
+  width: 3.4em;
+  height: 3.4em;
+}
+
+.du-foto:not(.du-foto--agregar) {
+  animation: du-aparecer 0.3s ease-out both;
+}
+
+.du-foto--agregar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.12em #9aa6b6;
+  color: var(--color-azul);
+}
+
+.du-foto--agregar span {
+  font-size: 0.6em;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* ── Buscando ─────────────────────────────────────────────────────────── */
+
+.du-panel {
+  gap: 0.5em;
+  padding-top: 0.6em;
+}
+
+.du-radar {
+  position: absolute;
+  left: 44%;
+  top: calc(34% - 1.3em);
+  width: 0;
+  height: 0;
+}
+
+.du-radar i {
+  position: absolute;
+  left: -4.5em;
+  top: -4.5em;
+  width: 9em;
+  height: 9em;
+  border-radius: 50%;
+  background: rgb(229 57 53 / 0.12);
+  border: 0.12em solid rgb(229 57 53 / 0.5);
+  animation: du-radar 2.4s ease-out infinite;
+}
+
+.du-radar i + i {
+  animation-delay: 1.2s;
+}
+
+@keyframes du-radar {
+  from {
+    opacity: 1;
+    transform: scale(0.15);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+.du-busqueda__estado {
+  text-align: center;
+  font-size: 0.86em;
+  font-weight: 800;
+  color: var(--color-amarillo);
+}
+
+.du-avatares {
+  display: flex;
+  justify-content: center;
+  gap: 0.35em;
+  min-height: 2.2em;
+}
+
+.du-avatares .app-avatar {
+  animation: du-aparecer 0.3s ease-out both;
+}
+
+.du-pedido-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.5em 0.8em;
+  border-radius: 2em;
+  background: #4f86e0;
+  font-size: 0.78em;
+  font-weight: 800;
+}
+
+/* ── Presupuestos y perfil ────────────────────────────────────────────── */
+
+.du-franja-doble {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.du-franja-doble .app-tarjeta__franja + .app-tarjeta__franja {
+  border-left: 1px solid rgb(0 0 0 / 0.12);
+}
+
+.app-tarjeta__franja.du-franja--azul {
+  background: var(--color-azul);
+  color: #fff;
+}
+
+.du-oferta__dato {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.du-oferta__dato .icono {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+
+.app-tarjeta__monto.du-sel {
+  padding: 0.15em 0.4em;
+  border-radius: 0.4em;
+  background: var(--color-amarillo);
+}
+
+.du-perfil-pantalla {
+  gap: 0.8em;
+}
+
+.du-perfil-pantalla .du-perfil__avatar {
+  width: 6em;
+  height: 6em;
+}
+
+.du-perfil-pantalla .du-perfil__avatar > .icono {
+  width: 3.7em;
+  height: 3.7em;
+}
+
+.du-perfil-pantalla .du-dato-fila {
+  padding: 0.7em 0.9em;
+}
+
+.du-perfil-pantalla .du-precio {
+  padding: 0.85em;
+}
+
+.du-perfil-pantalla .du-abajo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.du-perfil-pantalla .du-nota {
+  margin: 0;
+}
+
+.du-perfil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2em;
+  text-align: center;
+}
+
+.du-perfil__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 5.2em;
+  height: 5.2em;
+  border-radius: 50%;
+  background: #5c9bff;
+  color: #fff;
+  flex: none;
+}
+
+.du-perfil__avatar > .icono {
+  width: 3.2em;
+  height: 3.2em;
+  stroke-width: 1.6;
+}
+
+.du-perfil__avatar--chico {
+  width: 4.2em;
+  height: 4.2em;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-perfil__avatar--chico > .icono {
+  width: 2.6em;
+  height: 2.6em;
+}
+
+.du-perfil__sello {
+  position: absolute;
+  right: 0;
+  bottom: 0.1em;
+  display: grid;
+  place-items: center;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-exito);
+}
+
+.du-perfil__sello .icono {
+  width: 1.35em;
+  height: 1.35em;
+}
+
+.du-perfil__nombre {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.3em;
+  color: var(--color-azul);
+}
+
+.du-perfil__verificado {
+  font-size: 0.78em;
+  font-weight: 800;
+}
+
+.du-dato-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  padding: 0.5em 0.8em;
+  border-radius: 1em;
+  background: var(--color-mosaico);
+}
+
+.du-dato-fila > .icono {
+  width: 1.5em;
+  height: 1.5em;
+  color: var(--color-azul);
+}
+
+.du-dato-fila small {
+  display: block;
+  font-size: 0.66em;
+  font-weight: 700;
+  color: #666;
+}
+
+.du-dato-fila strong {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 800;
+}
+
+.du-precio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2em;
+  padding: 0.65em;
+  border-radius: 1.2em;
+  background: var(--color-azul);
+  color: #fff;
+  text-align: center;
+}
+
+.du-precio small {
+  font-size: 0.7em;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.du-precio strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-size: 1.7em;
+  line-height: 1;
+}
+
+.du-precio span {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--color-amarillo);
+}
+
+/* ── Confirmar ────────────────────────────────────────────────────────── */
+
+.du-confirmar {
+  gap: 0.62em;
+}
+
+.du-confirmar .du-ficha {
+  padding-block: 0.75em;
+}
+
+.du-confirmar .du-costo {
+  padding: 0.65em 0.9em;
+}
+
+.du-confirmar .du-pago {
+  padding-block: 0.7em;
+}
+
+.du-pagos-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45em;
+}
+
+.du-pago {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.55em 0.4em;
+  border-radius: 0.9em;
+  background: var(--color-azul-ui);
+  color: #fff;
+  font-size: 0.76em;
+  font-weight: 800;
+}
+
+.du-pago[aria-pressed='true'] {
+  background: var(--color-noche);
+  box-shadow: inset 0 0 0 0.18em var(--color-amarillo);
+}
+
+/* ── Seguimiento ──────────────────────────────────────────────────────── */
+
+.du-seguimiento .app-panel {
+  gap: 0.45em;
+}
+
+.du-seg-avanzar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  width: 100%;
+  padding: 0.2em 0.3em 0.45em;
+  border-radius: 1em;
+  color: #fff;
+  text-align: center;
+}
+
+.du-seg-titulo {
+  display: grid;
+  place-items: center;
+  min-height: 2.4em;
+}
+
+.du-progreso {
+  display: grid;
+  grid-template-columns: 1fr 1.7fr 1fr;
+  gap: 0.3em;
+  align-items: end;
+  margin-top: 1.5em;
+}
+
+.du-tramo {
+  position: relative;
+  height: 0.28em;
+  border-radius: 1em;
+  background: rgb(255 255 255 / 0.35);
+  transition: background-color 0.4s ease;
+}
+
+.du-tramo .icono {
+  position: absolute;
+  bottom: 0.5em;
+  left: 50%;
+  width: 1.4em;
+  height: 1.4em;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+[data-du-seg] .du-tramo--1,
+[data-du-seg='2'] .du-tramo--2,
+[data-du-seg='3'] .du-tramo--2,
+[data-du-seg='2'] .du-tramo--3,
+[data-du-seg='3'] .du-tramo--3 {
+  background: #fff;
+}
+
+[data-du-seg='1'] .du-tramo--2 {
+  background: linear-gradient(90deg, #fff 55%, rgb(255 255 255 / 0.35) 55%);
+}
+
+[data-du-seg='0'] .du-tramo--1 .icono,
+[data-du-seg='1'] .du-tramo--2 .icono,
+[data-du-seg='2'] .du-tramo--3 .icono,
+[data-du-seg='3'] .du-tramo--3 .icono {
+  opacity: 1;
+}
+
+[data-du-seg='1'] .du-tramo--2 .icono {
+  left: 55%;
+}
+
+.du-seg-mapa .app-pin--a {
+  fill: #e53935;
+}
+
+.du-pin-esp {
+  transition:
+    left 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+    top 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-du-seg='1'] .du-pin-esp {
+  left: 62%;
+  top: 64%;
+}
+
+[data-du-seg='2'] .du-pin-esp,
+[data-du-seg='3'] .du-pin-esp {
+  left: 46%;
+  top: 84%;
+  opacity: 0;
+  transition:
+    left 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+    top 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease 1.2s;
+}
+
+.du-seg-mapa .app-mapa > path:last-of-type {
+  transition: opacity 0.4s ease;
+}
+
+:is([data-du-seg='2'], [data-du-seg='3']) .du-seg-mapa .app-mapa > path:last-of-type {
+  opacity: 0;
+}
+
+.du-seg-avanzar:disabled {
+  cursor: default;
+}
+
+.du-llegada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  text-align: center;
+}
+
+.du-llegada small {
+  font-size: 0.68em;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* ── Chats ────────────────────────────────────────────────────────────── */
+
+.du-chat .app-chat__mensajes {
+  gap: 0.5em;
+}
+
+.du-chat .app-burbuja--foto {
+  align-items: center;
+}
+
+.du-rapidas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35em;
+  padding: 0.5em 0.5em 0.55em;
+  background: #d4d4d4;
+}
+
+.du-rapida {
+  font-size: 0.68em;
+}
+
+.du-rapidas--final .du-rapida {
+  padding: 0.65em 1em;
+  font-size: 0.74em;
+}
+
+.du-bienvenida {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0.4em 1.2em auto;
+  padding: 1em 1em 1.1em;
+  border-radius: 1.2em;
+  background: #ececec;
+  text-align: center;
+}
+
+.du-bienvenida__ia,
+.du-bienvenida__icono {
+  display: grid;
+  place-items: end center;
+  width: 3.6em;
+  height: 3.6em;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--color-azul);
+  color: #fff;
+}
+
+.du-bienvenida__icono {
+  place-items: center;
+}
+
+.du-bienvenida__ia img {
+  width: 52%;
+  margin-bottom: -14%;
+}
+
+.du-bienvenida strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-size: 1.05em;
+  color: var(--color-azul);
+}
+
+.du-bienvenida small {
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #555;
+}
+
+.du-x-chat {
+  position: static;
+  flex: none;
+}
+
+.du-nueva {
+  animation: du-aparecer 0.3s ease-out both;
+}
+
+.du-escribiendo {
+  display: flex;
+  gap: 0.3em;
+  padding: 0.8em 0.95em;
+}
+
+.du-escribiendo i {
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: #fff;
+  animation: du-punto 1s ease-in-out infinite;
+}
+
+.du-escribiendo i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.du-escribiendo i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes du-punto {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-0.2em);
+  }
+}
+
+/* ── Terminado y calificación ─────────────────────────────────────────── */
+
+.du-terminado {
+  justify-content: flex-start;
+  gap: 0.8em;
+  padding-top: 1.2em;
+}
+
+.du-terminado__handys {
+  width: 15.5em;
+}
+
+.du-terminado .du-esp-fila {
+  width: 100%;
+  text-align: left;
+}
+
+.du-esp-fila__der {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15em;
+  min-width: 0;
+  text-align: right;
+}
+
+.du-esp-fila__der strong {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  max-width: 100%;
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.du-esp-fila__der strong > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.du-esp-fila__der small {
+  font-size: 0.66em;
+  font-weight: 700;
+  color: #666;
+  white-space: nowrap;
+}
+
+.du-esp-fila--blanca {
+  background: #fff;
+  box-shadow: inset 0 0 0 0.1em #dedede;
+}
+
+.du-terminado .du-botones {
+  margin-top: auto;
+}
+
+.du-resena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45em;
+  text-align: center;
+}
+
+.du-resena__nombre {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.2em;
+  color: var(--color-azul);
+}
+
+.du-resena__rubro {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  margin-top: -0.3em;
+  font-size: 0.84em;
+  font-weight: 800;
+  color: #777;
+}
+
+.du-estrellas {
+  display: flex;
+  gap: 0.2em;
+}
+
+.du-estrella {
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 0.7em;
+  color: #3a3a3a;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-estrella .icono {
+  width: 2.25em;
+  height: 2.25em;
+  transition:
+    transform 0.2s ease,
+    fill 0.2s ease;
+}
+
+.du-estrella[aria-pressed='true'] {
+  color: #d99a00;
+}
+
+.du-estrella[aria-pressed='true'] .icono {
+  fill: #ffcf33;
+  transform: scale(1.06);
+}
+
+.du-resena__ayuda {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: #666;
+}
+
+.du-resena__extra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  width: 100%;
+}
+
+.du-resena__pregunta {
+  font-size: 0.88em;
+  font-weight: 800;
+  color: var(--color-azul);
+}
+
+.du-campo--vacio {
+  width: 100%;
+  min-height: 3.6em;
+  text-align: left;
+}
+
+.du-resena--gracias {
+  padding-block: 0.4em;
+}
+
+.du-resena__handy {
+  width: 3.6em;
+}
+
+.du-resena__texto {
+  max-width: 18em;
+  font-size: 0.8em;
+  line-height: 1.35;
+  color: #555;
+}
+
+/* ── Turnos ───────────────────────────────────────────────────────────── */
+
+.du-calendario .app-dia {
+  width: 100%;
+}
+
+.du-cal-sel {
+  display: flex;
+}
+
+.app-tarjeta__monto.du-a-pagar {
+  color: #444;
+}
+
+.du-calendario .app-dia:disabled {
+  opacity: 1;
+}
+
+.du-dia__icono {
+  display: grid;
+  place-items: center;
+}
+
+.du-calendario .app-dia:disabled .du-dia__icono {
+  display: none;
+}
+
+.du-detalle {
+  gap: 0.42em;
+}
+
+.du-esp-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.45em 0.7em;
+  border-radius: 1em;
+  background: var(--color-mosaico);
+}
+
+.du-esp-fila__datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  flex: 1;
+  min-width: 0;
+}
+
+.du-esp-fila__datos strong {
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+
+.du-esp-fila__datos small {
+  font-size: 0.66em;
+  font-weight: 700;
+}
+
+.du-estado {
+  padding: 0.3em 0.65em;
+  border-radius: 2em;
+  background: var(--color-azul);
+  color: #fff;
+  font-size: 0.66em;
+  font-weight: 800;
+}
+
+.du-estado--verde {
+  background: var(--color-exito);
+}
+
+.du-estado--rojo {
+  background: var(--color-error);
+}
+
+.du-pagado {
+  margin-left: 0.3em;
+  padding: 0.1em 0.55em;
+  border-radius: 1em;
+  background: #8fdcae;
+  color: #0b4d2a;
+  font-size: 0.8em;
+}
+
+.du-aviso {
+  padding: 0.55em 0.75em;
+  border-radius: 0.9em;
+  background: var(--color-amarillo);
+  color: #333;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.du-aviso--rojo {
+  background: #fde2e0;
+  color: var(--color-error);
+}
+
+/* ── Mensajes ─────────────────────────────────────────────────────────── */
+
+.du-mensajes {
+  gap: 0.5em;
+  padding: 0.3em 0 0.8em;
+}
+
+.du-chats {
+  display: flex;
+  flex-direction: column;
+  padding-inline: 1em;
+}
+
+.du-chats__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  width: 100%;
+  padding: 0.75em 0.15em;
+  border-bottom: 1px solid #c9c9c9;
+  text-align: left;
+}
+
+.du-chats__avatar {
+  display: grid;
+  place-items: center;
+  width: 2.8em;
+  height: 2.8em;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e1e1e1;
+  color: #111;
+  flex: none;
+}
+
+.du-chats__avatar .icono {
+  width: 1.7em;
+  height: 1.7em;
+}
+
+.du-chats__avatar--ia {
+  place-items: end center;
+  background: var(--color-azul);
+}
+
+.du-chats__avatar--ia img {
+  width: 52%;
+  margin-bottom: -14%;
+}
+
+.du-chats__textos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  flex: 1;
+  min-width: 0;
+}
+
+.du-chats__textos strong {
+  font-size: 0.92em;
+  font-weight: 800;
+}
+
+.du-chats__textos small {
+  overflow: hidden;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #9a9a9a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.du-badge {
+  display: grid;
+  place-items: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  border-radius: 1em;
+  background: var(--color-azul);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: 800;
+}
+
+.du-mensajes__pie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  margin: auto 2em 0;
+}
+
+.du-mensajes__nota {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4em;
+  text-align: center;
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #9a9a9a;
+}
+
+.du-mensajes__nota .icono {
+  width: 1.7em;
+  height: 1.7em;
+}
+
+.du-mensajes__handy {
+  width: 3.6em;
+}
+
+/* ── Cuenta y datos ───────────────────────────────────────────────────── */
+
+.du-cuenta {
+  gap: 0.2em;
+  padding-top: 0.4em;
+}
+
+.du-perfil__camara {
+  position: absolute;
+  right: -0.2em;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  background: #d6d6d6;
+  color: #111;
+}
+
+.du-perfil__camara .icono {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.du-perfil__zona {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  font-size: 0.74em;
+  font-weight: 700;
+  color: #555;
+}
+
+.du-perfil__zona .icono {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.du-seccion {
+  margin-top: 0.35em;
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.2em;
+  color: var(--color-azul);
+}
+
+.du-filas {
+  display: flex;
+  flex-direction: column;
+}
+
+.du-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  width: 100%;
+  padding: 0.6em 0.1em;
+  border-bottom: 1px solid var(--color-azul-ui);
+  font-size: 0.86em;
+  font-weight: 600;
+  text-align: left;
+}
+
+.du-fila:last-child {
+  border-bottom: 0;
+}
+
+.du-fila > span {
+  flex: 1;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-fila > .icono:first-child {
+  width: 1.55em;
+  height: 1.55em;
+}
+
+.du-fila > .icono:last-child {
+  color: var(--color-azul);
+}
+
+.du-datos {
+  gap: 0.6em;
+}
+
+.du-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.du-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  padding: 0.55em 0.85em;
+  border-radius: 1em;
+  background: var(--color-mosaico);
+}
+
+.du-dato small {
+  font-size: 0.66em;
+  font-weight: 800;
+  color: #666;
+}
+
+.du-dato span {
+  font-size: 0.86em;
+  font-weight: 700;
+}
+
+.du-datos__handy {
+  align-self: center;
+  width: 3.6em;
+  margin-top: auto;
+}
+
+/* ── Pagos ────────────────────────────────────────────────────────────── */
+
+.du-pagos {
+  gap: 0.6em;
+}
+
+.du-tarjeta,
+.du-agregar {
+  align-self: center;
+  width: 86%;
+}
+
+.du-mov {
+  margin: 0 0.85em;
+  padding: 0.35em 0 0.5em;
+  border-top: 1px dashed #cfcfcf;
+}
+
+.du-mov .du-costo__fila {
+  font-size: 0.7em;
+  color: #333;
+}
+
+/* ── Centro de ayuda ──────────────────────────────────────────────────── */
+
+.du-ayuda {
+  gap: 0.6em;
+}
+
+.du-ayuda__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+
+.du-ayuda__cabecera > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-right: 2.1em;
+  text-align: center;
+}
+
+.du-ayuda__cabecera strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-size: 1.2em;
+}
+
+.du-ayuda__cabecera small {
+  font-size: 0.68em;
+  font-weight: 700;
+  color: #888;
+}
+
+.du-preguntas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+}
+
+.du-pregunta {
+  width: 100%;
+  padding: 0.95em 1em;
+  border-radius: 2em;
+  background: var(--color-azul);
+  color: #fff;
+  text-align: center;
+  font-size: 0.76em;
+  font-weight: 800;
+  box-shadow: 0 0.25em 0 #133c76;
+}
+
+.du-separador {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 0.3em;
+  font-size: 0.68em;
+  font-weight: 700;
+  color: #888;
+  text-align: center;
+}
+
+.du-separador::before,
+.du-separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-azul);
+}
+
+.du-respuesta {
+  overflow: hidden;
+  border-radius: 1.2em;
+  background: #e6e2e2;
+}
+
+.du-respuesta__pregunta {
+  padding: 0.8em 1em;
+  background: var(--color-azul);
+  color: #fff;
+  text-align: center;
+  font-size: 0.92em;
+  font-weight: 800;
+}
+
+.du-respuesta__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding: 0.85em 1em 1em;
+}
+
+.du-respuesta__cuerpo p {
+  font-size: 0.8em;
+  font-weight: 600;
+  line-height: 1.42;
+}
+
+.du-sirvio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  margin: 0.3em 1.4em 0;
+  padding-top: 0.9em;
+  border-top: 0.12em solid #111;
+}
+
+.du-sirvio > p {
+  font-size: 0.86em;
+  font-weight: 800;
+  color: #555;
+}
+
+.du-sirvio__botones {
+  display: flex;
+  gap: 0.6em;
+}
+
+.du-pill {
+  padding: 0.55em 2.2em;
+  border-radius: 2em;
+  box-shadow: inset 0 0 0 0.12em #111;
+  font-size: 0.82em;
+  font-weight: 800;
+}
+
+.du-pill--rojo {
+  background: #e53935;
+  color: #fff;
+}
+
+.du-pill--verde {
+  background: #2bd96b;
+  color: #0b3d1e;
+}
+
+.du-sirvio__gracias {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.86em;
+  font-weight: 800;
+  color: var(--color-exito);
+}
+
+.du-ayuda__pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.du-ayuda__handy {
+  align-self: center;
+  width: 3.6em;
+}
+
+.du-otras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+.du-pregunta--chica {
+  padding: 0.7em 1em;
+  background: var(--color-azul-ui);
+  font-size: 0.72em;
+  box-shadow: 0 0.2em 0 #2f5795;
+}
+
+/* ── Notificaciones ───────────────────────────────────────────────────── */
+
+.du-avisos {
+  gap: 0.6em;
+}
+
+.du-borrar {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 0.4em;
+  padding: 0.45em 0.9em;
+  border-radius: 2em;
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 0.1em #cfcfcf,
+    0 0.2em 0.6em rgb(0 0 0 / 0.1);
+  font-size: 0.74em;
+  font-weight: 800;
+}
+
+.du-avisos__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.du-aviso-card {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 1.2em;
+  background: var(--color-azul);
+  color: #fff;
+  animation: du-aparecer 0.3s ease-out both;
+}
+
+.du-aviso-card__icono {
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  margin: 0.6em;
+  border-radius: 0.7em;
+  background: #fff;
+  color: #111;
+  flex: none;
+}
+
+.du-aviso-card__texto {
+  flex: 1;
+  align-self: center;
+  padding: 0.55em 0.2em 0.55em 0;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.du-aviso-card__x {
+  display: grid;
+  place-items: center;
+  width: 2.5em;
+  background: #5b6cff;
+  color: #fff;
+  flex: none;
+}
+
+.du-aviso-card--amarillo {
+  background: #eef06a;
+  color: #111;
+}
+
+.du-aviso-card--amarillo .du-aviso-card__icono {
+  color: #d99a00;
+}
+
+.du-aviso-card--amarillo .du-aviso-card__x {
+  background: #d8cb3c;
+  color: #111;
+}
+
+.du-avisos__vacio {
+  margin-top: 0.4em;
+  padding-top: 1em;
+  border-top: 0.1em solid #d0d0d0;
+  text-align: center;
+  font-size: 0.92em;
+  font-weight: 800;
+  color: #9a9a9a;
+}
+
+/* ── Sin movimiento ───────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-pantalla[data-rol='usuario'] .demo-guia {
+    animation: none;
+    box-shadow: 0 0 0 0.2em #e2d84a;
+  }
+
+  .demo-pantalla[data-rol='usuario'] .app-tarjeta .demo-guia,
+  .demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+    box-shadow: inset 0 0 0 0.26em #e2d84a;
+    background-color: rgb(245 245 154 / 0.7);
+  }
+
+  .du-seg-mapa .app-mapa > path:last-of-type,
+  [data-du-seg] .du-pin-esp {
+    transition: none;
+  }
+
+  .du-rueda__lista,
+  .du-pin-esp,
+  .du-tramo,
+  .du-tramo .icono {
+    transition: none;
+  }
+
+  .du-nueva,
+  .du-toast,
+  .du-foto,
+  .du-avatares .app-avatar,
+  .du-aviso-card,
+  .du-escribiendo i {
+    animation: none;
+  }
+
+  .du-radar {
+    display: none;
+  }
+}
