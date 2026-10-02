@@ -1,5 +1,5 @@
 {
-  "_nota": "Demo · lado del especialista: textos de las pantallas, de las hojas y del recorrido. Los porcentajes salen de tarifas.json ({tarifaEspecialista}); el pedido principal usa el presupuesto de ejemplo de tarifas.json y los demás trabajos llevan precio fijo acá. Datos de ejemplo: sin nombres de personas reales.",
+  "_nota": "Demo · lado del especialista: textos de las pantallas, de las hojas y del recorrido. Los porcentajes salen de tarifas.json ({tarifaEspecialista}); el pedido principal usa el presupuesto de ejemplo de tarifas.json y los demás trabajos llevan precio fijo acá. Datos de ejemplo: sin nombres de personas reales. PENDIENTE de confirmar con el dueño: en la demo la tarifa de Handy se calcula solo sobre el presupuesto y los repuestos pasan enteros al especialista.",
   "recorrido": [
     {
       "pantalla": "e-inicio",
@@ -19,57 +19,68 @@
     },
     {
       "pantalla": "e-en-camino",
+      "base": "e-aceptado",
       "titulo": "Vas para allá",
       "texto": "Ves la ruta y el barrio del cliente, sin pasarse los teléfonos: hablan por el chat de Handy."
     },
     {
       "pantalla": "e-chat",
+      "base": "e-en-camino",
       "titulo": "Chat con el cliente",
       "texto": "Coordinan todo desde la app, separado de tu WhatsApp, con respuestas rápidas para escribir menos."
     },
     {
       "pantalla": "e-trabajo",
+      "base": "e-chat",
       "titulo": "Trabajo en curso",
       "texto": "Al llegar arranca el cronómetro. Si hace falta un repuesto, lo sumás y el total se actualiza."
     },
     {
       "pantalla": "e-fin",
+      "base": "e-trabajo",
       "titulo": "Terminaste y cobrás",
       "texto": "La plata va directo a tu cuenta, por CBU o alias. Handy retiene solo su tarifa del {tarifaEspecialista}."
     },
     {
       "pantalla": "e-turnos",
+      "base": "e-fin",
       "titulo": "Tu agenda",
       "texto": "Tus trabajos programados en un calendario, con lo que te queda de cada uno."
     },
     {
       "pantalla": "e-turno-detalle",
+      "base": "e-turnos",
       "titulo": "Detalle del turno",
       "texto": "Tipo de trabajo, día, franja y costo. Desde acá chateás con el cliente, cambiás la fecha o cancelás."
     },
     {
       "pantalla": "e-cambiar-fecha",
+      "base": "e-turno-detalle",
       "titulo": "Cambiás la fecha",
       "texto": "Elegís el motivo y proponés otro día y otra franja. El cliente confirma el cambio."
     },
     {
       "pantalla": "e-notificaciones",
+      "base": "e-cambiar-fecha",
       "titulo": "Tus avisos",
-      "texto": "Pedidos nuevos, recordatorios de turnos y cobros acreditados, todo en un mismo lugar."
+      "texto": "Pedidos nuevos, recordatorios de turnos y tus cobros, todo en un mismo lugar."
     },
     {
       "pantalla": "e-pedido-programado",
+      "base": "e-notificaciones",
       "titulo": "Pedidos programados",
-      "texto": "También te llegan trabajos para otro día, con el día y la franja que eligió el cliente. Si no te sirve, lo rechazás sin penalización."
+      "texto": "También te llegan trabajos para otra fecha, con el día y la franja que eligió el cliente. Si no te sirve, lo rechazás sin penalización."
     },
     {
       "pantalla": "e-cuenta",
+      "base": "e-pedido-programado",
       "titulo": "Tu cuenta",
       "texto": "Tu perfil verificado, tus rubros, tus zonas y tus datos de cobro."
     },
     {
       "pantalla": "e-caja",
-      "titulo": "Tu caja",
+      "base": "e-cuenta",
+      "titulo": "Tus cobros",
       "texto": "Cada trabajo queda registrado: tu presupuesto, la tarifa de Handy y lo que fue a tu cuenta."
     }
   ],
@@ -99,7 +110,9 @@
       "sábado"
     ],
     "cerrar": "Cerrar",
-    "volver": "Volver"
+    "volver": "Volver",
+    "verMasDe": "{rubro}, {fecha}",
+    "zonas": "Tus zonas de trabajo"
   },
   "mapa": {
     "barrio": "LA PERLA",
@@ -117,7 +130,7 @@
   "inicio": {
     "titulo": "Inicio",
     "apagadoTitulo": "No estás recibiendo pedidos",
-    "apagadoTexto": "Prendé «Disponible» cuando quieras trabajar. Lo apagás cuando quieras.",
+    "apagadoTexto": "Prendé «Disponible» cuando quieras trabajar y apagalo cuando termines.",
     "buscandoTitulo": "Estás disponible",
     "buscandoTexto": "Buscando pedidos de tus rubros cerca tuyo…",
     "rechazadoTexto": "Rechazaste el pedido, sin penalización. Seguimos buscando…",
@@ -131,8 +144,8 @@
       "sugeridoLabel": "Precio sugerido por Handy",
       "desde": "Tu ubicación · Güemes",
       "hasta": "Cliente en La Perla · a 2,3 km",
-      "aceptar": "Aceptar trabajo",
-      "cambiar": "Aceptar y cambiar precio",
+      "aceptar": "Mandar presupuesto",
+      "cambiar": "Cambiar precio y mandar",
       "pie": "Pedido de urgencia",
       "rechazar": "Rechazar pedido"
     }
@@ -152,9 +165,9 @@
         "corto": "18 a 20 h"
       },
       {
-        "texto": "Mañana, de 9 a 11 h",
-        "dia": "Mañana",
-        "corto": "9 a 11 h"
+        "texto": "Hoy, de 20 a 22 h",
+        "dia": "Hoy",
+        "corto": "20 a 22 h"
       }
     ],
     "sugeridoLabel": "Precio sugerido por Handy:",
@@ -168,10 +181,11 @@
     "subir": "Subir {monto}",
     "bajar": "Bajar {monto}",
     "campoLabel": "Tu precio",
-    "boton": "Poner mi precio",
+    "boton": "Mandar presupuesto",
     "recibis": "Recibís",
     "retiene": "Handy retiene {tarifaEspecialista}: {monto}",
-    "nota": "Handy sugiere. El precio lo ponés vos."
+    "nota": "Handy sugiere. El precio lo ponés vos.",
+    "anuncio": "Tu precio: {precio}. Recibís {recibis}."
   },
   "aceptado": {
     "titulo": "Presupuesto enviado",
@@ -181,7 +195,7 @@
     "esperando": "El cliente compara los presupuestos y elige.",
     "irAlla": "Ir para allá",
     "avisoTitulo": "¡El cliente te eligió!",
-    "avisoTexto": "Lo ves también en tu agenda.",
+    "avisoTexto": "Ya podés ir para allá.",
     "anuncio": "El cliente te eligió. Ya podés ir para allá."
   },
   "camino": {
@@ -201,7 +215,8 @@
     "rapidasLabel": "Respuestas rápidas",
     "llegue": "Llegué al domicilio",
     "verTurno": "Ver el turno",
-    "anuncio": "El cliente respondió: {texto}"
+    "anuncio": "El cliente respondió: {texto}",
+    "enviar": "Enviar mensaje"
   },
   "chats": {
     "perla": {
@@ -229,7 +244,8 @@
         {
           "chip": "Ya salí",
           "texto": "¡Hola! Ya salí para allá. Llego en la franja que te marqué.",
-          "respuesta": "¡Genial! Te espero."
+          "respuesta": "¡Genial! Te espero.",
+          "antesDeLlegar": true
         },
         {
           "chip": "Llave de paso",
@@ -239,7 +255,8 @@
         {
           "chip": "¿Me abrís?",
           "texto": "Llegué, ¿me abrís?",
-          "respuesta": "¡Ya bajo!"
+          "respuesta": "¡Ya bajo!",
+          "antesDeLlegar": true
         }
       ]
     },
@@ -316,7 +333,7 @@
     "centro": {
       "nombre": "Cliente · Centro",
       "sub": "Gas · viernes 27/11",
-      "dia": "Lunes",
+      "dia": "Sábado",
       "noLeidos": 0,
       "turno": 2,
       "mensajes": [
@@ -361,15 +378,16 @@
         "monto": 6000
       }
     ],
-    "sinMas": "Ya sumaste los repuestos de ejemplo",
+    "sinMas": "Repuestos cargados",
     "quitar": "Quitar {nombre}",
     "costoLabel": "Costo",
     "chatear": "Chatear con el cliente",
     "cancelar": "Cancelar",
     "terminar": "Terminar trabajo",
-    "anuncioExtra": "Sumaste {nombre}. Ahora recibís {monto}.",
+    "anuncioExtra": "Sumaste: {nombre}. Ahora recibís {monto}.",
     "pedidoLabel": "Lo que pidió el cliente",
-    "ayuda": "Centro de ayuda"
+    "ayuda": "Centro de ayuda",
+    "anuncioQuitar": "Quitaste: {nombre}. Ahora recibís {monto}."
   },
   "fin": {
     "titulo": "¡Terminaste el trabajo!",
@@ -436,7 +454,7 @@
     "repuestosLabel": "Repuestos",
     "ninguno": "Ninguno por ahora",
     "costoLabel": "Costo",
-    "pendiente": "Todavía no se hizo",
+    "pendiente": "Confirmado",
     "cancelado": "Turno cancelado. Le avisamos al cliente.",
     "chatear": "Chatear con el cliente",
     "cambiar": "Cambiar fecha",
@@ -476,13 +494,19 @@
     "mensajeLabel": "Mensaje para el cliente (opcional)",
     "mensaje": "Escribile por qué la cambiás…",
     "elegirDia": "Proponer el {dia} {fecha}",
-    "semanaLabel": "Días de la semana"
+    "semanaLabel": "Días de la semana",
+    "mensajes": [
+      "Perdón, no llego en ese horario. ¿Te sirve el nuevo día?",
+      "Como me pediste, te propongo otro día.",
+      "Me surgió otro trabajo. ¿Te sirve el nuevo día?",
+      "Te propongo cambiar el día del turno. ¿Te sirve?"
+    ]
   },
   "avisos": {
     "titulo": "Notificaciones",
     "configurar": "Configurar notificaciones",
     "borrar": "Borrar todas",
-    "quitar": "Borrar este aviso",
+    "quitar": "Borrar el aviso: {corto}",
     "nadaMas": "Parece que no hay nada más por acá.",
     "vacio": "No tenés notificaciones.",
     "items": [
@@ -490,24 +514,35 @@
         "icono": "llama",
         "texto": "Nuevo pedido programado: gas en Los Troncos para el jueves 26/11.",
         "destino": "e-pedido-programado",
-        "guia": true
+        "guia": true,
+        "corto": "pedido programado de gas"
       },
       {
         "icono": "billetera",
-        "texto": "Te acreditamos {neto} del trabajo de plomería en La Perla.",
+        "texto": "Cobraste {neto} por el trabajo de plomería en La Perla: va directo a tu cuenta.",
         "destino": "e-caja",
-        "neto": true
+        "neto": true,
+        "corto": "cobro del trabajo en La Perla"
+      },
+      {
+        "icono": "alerta",
+        "texto": "Te llegó un pedido de urgencia de plomería en La Perla.",
+        "raiz": "e-inicio",
+        "urgencia": true,
+        "corto": "pedido de urgencia"
       },
       {
         "icono": "calendario",
         "texto": "Recordatorio: el jueves 19/11 tenés gas en Punta Mogotes, de 9 a 11 h.",
         "destino": "e-turno-detalle",
-        "turno": 0
+        "turno": 0,
+        "corto": "recordatorio del 19/11"
       },
       {
         "icono": "verificado",
         "texto": "Verificamos tu identidad. ¡Ya podés recibir pedidos!",
-        "destino": "e-cuenta"
+        "destino": "e-cuenta",
+        "corto": "identidad verificada"
       }
     ]
   },
@@ -534,7 +569,7 @@
         "on": true
       },
       {
-        "texto": "Cobros acreditados",
+        "texto": "Cobros de tus trabajos",
         "on": true
       },
       {
@@ -546,7 +581,7 @@
   "programado": {
     "titulo": "Trabajo de gas",
     "icono": "llama",
-    "detalle": "«El calefón se apaga solo.»",
+    "detalle": "«Quiero instalar un anafe nuevo en la cocina.»",
     "sugeridoLabel": "Precio sugerido por Handy",
     "sugerido": 36000,
     "diaLabel": "Día y franja que eligió el cliente",
@@ -554,8 +589,8 @@
     "franja": "9 a 11 h",
     "ubicacionLabel": "Ubicación",
     "ubicacion": "Los Troncos · a 3,1 km",
-    "aceptar": "Aceptar trabajo",
-    "cambiar": "Aceptar y cambiar precio",
+    "aceptar": "Mandar presupuesto",
+    "cambiar": "Cambiar precio y mandar",
     "pie": "Pedido programado",
     "rechazar": "Rechazar pedido",
     "rechazadoTitulo": "Rechazaste el pedido",
@@ -572,13 +607,13 @@
     "seccionConfig": "Configuración",
     "datos": "Datos personales",
     "rubros": "Rubros y zonas",
-    "cobro": "Datos de cobro",
+    "cobro": "Cobros",
     "notificaciones": "Notificaciones",
     "salir": "Cerrar sesión",
     "ayuda": "Centro de ayuda"
   },
   "caja": {
-    "titulo": "Tu caja",
+    "titulo": "Cobros",
     "cbuLabel": "CBU / CVU",
     "cbu": "•••• •••• •••• •••• 4521",
     "aliasLabel": "Alias",
@@ -593,7 +628,7 @@
         "rubro": "Plomería",
         "icono": "canilla",
         "fecha": "12/11/2026",
-        "presupuesto": 40500
+        "presupuesto": 42000
       },
       {
         "rubro": "Gas",
@@ -695,7 +730,7 @@
     "listo": "Listo"
   },
   "cobro": {
-    "titulo": "Datos de cobro",
+    "titulo": "Editar datos de cobro",
     "cbuLabel": "CBU / CVU",
     "aliasLabel": "Alias",
     "nota": "Cada trabajo se cobra en esta cuenta. Handy retiene solo su tarifa del {tarifaEspecialista}.",
@@ -721,21 +756,23 @@
     "chat": "Chat con el cliente",
     "trabajo": "Trabajo en curso",
     "fin": "Terminaste el trabajo",
-    "turnos": "Agenda",
+    "turnos": "Turnos",
     "detalle": "Detalle del turno",
     "cambio": "Cambiar la fecha",
     "mensajes": "Mensajes",
     "cuenta": "Cuenta",
-    "caja": "Tu caja",
+    "caja": "Cobros",
     "notificaciones": "Notificaciones",
     "config": "Configurar notificaciones",
     "programado": "Pedido programado",
-    "cancelar": "Cancelar",
+    "cancelar": "¿Querés cancelar?",
     "contactos": "Mis contactos",
     "ayuda": "Centro de ayuda",
     "rubros": "Rubros y zonas",
     "datos": "Datos personales",
-    "cobro": "Datos de cobro",
-    "salir": "Cerrar sesión"
+    "cobro": "Editar datos de cobro",
+    "salir": "¿Cerrás sesión?",
+    "conversacion": "Chat",
+    "precioProgramado": "Tu precio para el pedido programado"
   }
 }

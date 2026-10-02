@@ -17,12 +17,14 @@ const recibis = ejemplo.presupuesto - retencion;
 
 // ── Piezas comunes ────────────────────────────────────────────────────────
 
-export const estado = (claro = false) => `<div class="app-estado${claro ? ' app-estado--claro' : ''}">
+/** Barra de estado (hora, señal, batería): decorativa, los lectores de pantalla la saltean. */
+export const estado = (claro = false) => `<div class="app-estado${claro ? ' app-estado--claro' : ''}" aria-hidden="true">
   <span>${esc(p.estado.hora)}</span>
   <span class="app-estado__iconos"><i class="app-senal"></i><i class="app-wifi"></i><i class="app-bateria"></i></span>
 </div>`;
 
-export const logo = `<span class="app-logo"><img src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" /><small>${esc(sitio.bajada)}</small></span>`;
+/** Logo de la app: se lee "Handy" (la bajada es decorativa). */
+export const logo = `<span class="app-logo"><img src="/src/img/logo-handy.webp" alt="${esc(sitio.nombre)}" width="720" height="194" loading="lazy" decoding="async" /><small aria-hidden="true">${esc(sitio.bajada)}</small></span>`;
 
 export function cabecera(variante: 'blanca' | 'azul', botones: string[] = ['campana', 'pin']): string {
   const bs = botones.map((b) => `<span class="app-cuadrado">${icono(b)}</span>`).join('');

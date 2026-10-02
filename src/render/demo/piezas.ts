@@ -48,15 +48,23 @@ export function boton(t: Toque, contenido: string, clase = ''): string {
   return `<button type="button" class="${clase}" ${atributos(t)}>${contenido}</button>`;
 }
 
-/** Cabecera de la app (blanca o azul) con la campana que lleva a <p>-notificaciones. */
-export function cabeceraDemo(rol: RolDemo, variante: 'blanca' | 'azul', conPin = true): string {
+/**
+ * Cabecera de la app (blanca o azul) con la campana que lleva a <p>-notificaciones.
+ * `conPin`: true = el pin decorativo; un Toque = el pin es un botón (con su etiqueta); false = sin pin.
+ */
+export function cabeceraDemo(rol: RolDemo, variante: 'blanca' | 'azul', conPin: boolean | Toque = true): string {
   const pre = prefijo(rol);
   const campana = boton(
     { ir: `${pre}-notificaciones`, etiqueta: demo.ui.notificaciones },
     icono('campana'),
     'app-cuadrado',
   );
-  const pinBtn = conPin ? `<span class="app-cuadrado" aria-hidden="true">${icono('pin')}</span>` : '';
+  const pinBtn =
+    typeof conPin === 'object'
+      ? boton(conPin, icono('pin'), 'app-cuadrado')
+      : conPin
+        ? `<span class="app-cuadrado" aria-hidden="true">${icono('pin')}</span>`
+        : '';
   return `<div class="app-cabecera app-cabecera--${variante}">
   ${estado(variante === 'azul')}
   <div class="app-cabecera__fila">${logo}<span class="app-cabecera__botones">${campana}${pinBtn}</span></div>

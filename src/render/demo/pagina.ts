@@ -3,7 +3,7 @@
 import demo from '../../content/demo.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
 import { boton as botonSitio, etiqueta } from '../componentes.ts';
-import { type Ctx, esc, plano, titular } from '../util.ts';
+import { type Ctx, esc, plano, titular, url } from '../util.ts';
 import type { PaginaRender } from '../paginas.ts';
 import { demoUsuario } from './usuario.ts';
 import { demoEspecialista } from './especialista.ts';
@@ -43,7 +43,7 @@ function pantalla(rol: RolDemo, p: PantallaDemo, visible: boolean): string {
   if (p.tipo === 'hoja') {
     return `<div class="demo-pantalla demo-pantalla--hoja" data-tipo="hoja" ${comunes}>
   <button type="button" class="demo-velo" data-volver tabindex="-1" aria-label="${esc(demo.ui.cerrar)}"></button>
-  <div class="app-sheet demo-hoja" role="dialog" aria-label="${esc(p.titulo)}" tabindex="-1">${p.html}</div>
+  <div class="app-sheet demo-hoja" role="dialog" aria-modal="true" aria-label="${esc(p.titulo)}" tabindex="-1">${p.html}</div>
 </div>`;
   }
   return `<div class="demo-pantalla" data-tipo="pantalla" tabindex="-1" ${comunes}>${p.html}</div>`;
@@ -75,6 +75,20 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
   const pantallas = ROLES.flatMap((r) =>
     datos[r].pantallas.map((p) => pantalla(r, p, r === 'usuario' && p.id === datos.usuario.inicio)),
   ).join('\n');
+
+  // Aviso de fin del recorrido (se ve con .demo--fin): sumarse o pasar al otro lado.
+  const f = demo.finAviso;
+  const fin = `<div class="demo-fin" data-demo-fin>${ROLES.map((r) => {
+    const otro = ROLES.find((x) => x !== r)!;
+    return `<div class="demo-fin__caja" data-demo-fin-rol="${r}"${r === 'usuario' ? '' : ' hidden'}>
+  <p class="demo-fin__titulo">${icono('check')}<span>${esc(f.titulo)}</span></p>
+  <p class="demo-fin__texto">${esc(f.texto)}</p>
+  <div class="demo-fin__acciones">
+    <a class="demo-fin__cta" href="${esc(url(ctx, demo.cta[r].href))}">${esc(demo.cta[r].texto)}</a>
+    <button type="button" class="demo-fin__otro" data-demo-otro-rol="${otro}">${esc(f.otro[otro])}${icono('flecha')}</button>
+  </div>
+</div>`;
+  }).join('')}</div>`;
 
   const control = (accion: string, ic: string, texto: string, clase = '') =>
     `<button type="button" class="demo-control ${clase}" data-demo-control="${accion}" aria-label="${esc(texto)}" title="${esc(texto)}">${
@@ -111,6 +125,7 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
               ${pantallas}
               <span class="telefono__isla" aria-hidden="true"></span>
               <span class="demo-dedo" aria-hidden="true" data-demo-dedo></span>
+              ${fin}
             </div>
           </div>
         </figure>

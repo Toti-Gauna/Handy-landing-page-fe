@@ -5,9 +5,16 @@
 //   data-du-tpl="{esp} va para tu casa"  → texto con variables (se vuelve a armar con cada cambio)
 //   data-du-icono="rubro"                → ícono del rubro elegido
 //   data-du-ver="cond" / "!cond"         → visible solo si se cumple la condición
+//   data-du-guia="cond"                  → lleva data-guia (lo próximo para tocar) solo si se cumple
 //   data-du-habilitar="cond"             → botón habilitado solo si se cumple
+//   data-du-clase="cond:clase …"         → clase puesta solo si se cumple
 //   data-du-grupo="dia"                  → opción de un grupo (aria-pressed o clase du-sel)
-// El HTML sale con el estado inicial (demo-usuario.json → inicial), así que sin JS se ve igual.
+//   data-du-rueda / data-du-dia / data-du-aria → rueda de días y franjas, y días del calendario
+//
+// Cada pantalla tiene un contexto (demo-usuario.json → contextos): las del pedido muestran el pedido en curso
+// y el presupuesto elegido; las del turno, el turno confirmado (al principio, uno de ejemplo armado con
+// "inicial"); HandIA, lo que se le contó. Así, armar un pedido nuevo no cambia el turno que ya está confirmado.
+// El HTML sale con el estado inicial, así que sin JS se ve igual.
 
 import d from '../../content/demo-usuario.json' with { type: 'json' };
 import demo from '../../content/demo.json' with { type: 'json' };
@@ -15,7 +22,7 @@ import rubrosJson from '../../content/rubros.json' with { type: 'json' };
 import tarifas from '../../content/tarifas.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
 import { esc, formatoPesos, variables } from '../util.ts';
-import { fotoCano, inputChat, mapa, pin } from '../pantallas.ts';
+import { mapa, pin } from '../pantallas.ts';
 import { boton, cabeceraDemo, navDemo, tituloHoja, volverDemo, type Toque } from './piezas.ts';
 import type { DemoRol, PantallaDemo } from './tipos.ts';
 
@@ -34,6 +41,15 @@ const franjas = d.programar.franjas;
 const items = d.presupuestos.items;
 const pasados = d.turnos.pasados;
 const f = d.formatos;
+const T = d.titulos;
+
+type Contexto = 'pedido' | 'turno' | 'ia';
+const CONTEXTOS = d.contextos as Record<string, string>;
+const contextoDe = (id: string): Contexto => (CONTEXTOS[id] as Contexto | undefined) ?? 'turno';
+for (const [id, ctx] of Object.entries(CONTEXTOS)) {
+  if (!(id in T)) throw new Error(`Demo usuario: contextos menciona "${id}", que no es una pantalla`);
+  if (!['pedido', 'turno', 'ia'].includes(ctx)) throw new Error(`Demo usuario: contexto desconocido "${ctx}" en "${id}"`);
+}
 
 const tarifaDe = (p: number) => Math.round((p * tarifas.normal.cliente) / 100);
 const totalDe = (p: number) => p + tarifaDe(p);
@@ -41,6 +57,18 @@ const precioDe = (i: number) => {
   const it = items[i];
   return 'precio' in it && typeof it.precio === 'number' ? it.precio : tarifas.ejemplo.presupuesto;
 };
+
+items.forEach((it) => {
+  const { franja, urgencia } = it.propone;
+  if ((franja !== null && !franjas[franja]) || !franjas[urgencia]) throw new Error(`Demo usuario: "${it.nombre}" propone una franja que no existe`);
+});
+
+/** Horario que propone el presupuesto i para un pedido (índices de día y franja). Igual que en el navegador. */
+function propuesta(tipo: number, dia: number, franja: number, i: number) {
+  const pr = items[i].propone;
+  if (tipo === 0) return { dia: 0, franja: pr.urgencia };
+  return { dia: Math.min(dia + pr.dia, dias.length - 1), franja: pr.franja ?? franja };
+}
 
 /** Reemplaza {clave} con los valores dados; las variables globales ({tarifaCliente}…) también valen. */
 function completar(texto: string, vars: Record<string, string>): string {
@@ -51,21 +79,29 @@ function completar(texto: string, vars: Record<string, string>): string {
   });
 }
 
-/** Igual que en el navegador: valores de los textos dinámicos para el estado inicial. */
-function valoresIniciales(): Record<string, string> {
+// Turno confirmado de ejemplo (el navegador lo reemplaza al confirmar uno).
+const pIni = propuesta(ini.tipo, ini.dia, ini.franja, ini.presupuesto);
+const turnoIni = { rubro: ini.rubro, tipo: ini.tipo, dia: pIni.dia, franja: pIni.franja, pres: ini.presupuesto, pago: ini.pago };
+const cambioDiaIni = Math.min(turnoIni.dia + 1, dias.length - 1);
+/** Condiciones que dependen del estado inicial (las demás arrancan como dice cada pantalla). */
+const condIni: Record<string, boolean> = { pagoHecho: turnoIni.pago === 0 };
+
+/** Igual que en el navegador: valores del pedido en curso y del presupuesto elegido. */
+function valoresPedido(): Record<string, string> {
   const r = rubro(ini.rubro);
-  const dia = dias[ini.dia];
-  const sig = dias[Math.min(ini.dia + 1, dias.length - 1)];
+  const urgencia = ini.tipo === 0;
+  const dia = dias[urgencia ? 0 : ini.dia];
   const it = items[ini.presupuesto];
   const p = precioDe(ini.presupuesto);
   const v: Record<string, string> = {
     rubro: r.nombre,
+    rubroCorto: r.corto ?? r.nombre,
     tipo: d.opciones.items[ini.tipo].texto,
     dia: dia.largo,
     diaCorto: dia.corto,
-    diaSiguiente: sig.corto,
     fecha: dia.fecha,
-    franja: franjas[ini.franja],
+    franja: urgencia ? d.urgencia.franja : franjas[ini.franja],
+    problema: d.problemas[ini.rubro as keyof typeof d.problemas],
     esp: it.nombre,
     zona: it.zona,
     declaro: it.declaro,
@@ -73,13 +109,44 @@ function valoresIniciales(): Record<string, string> {
     precio: formatoPesos(p),
     tarifa: formatoPesos(tarifaDe(p)),
     total: formatoPesos(totalDe(p)),
-    problema: d.problemas[ini.rubro as keyof typeof d.problemas],
+  };
+  items.forEach((_, i) => {
+    const pr = propuesta(ini.tipo, ini.dia, ini.franja, i);
+    v[`horario${i}`] = completar(f.cuando, { diaCorto: dias[pr.dia].corto, franja: franjas[pr.franja] });
+  });
+  Object.assign(v, {
+    horarioEsp: v[`horario${ini.presupuesto}`],
+    propDia: dias[pIni.dia].largo,
+    propFecha: dias[pIni.dia].fecha,
+    propFranja: franjas[pIni.franja],
+  });
+  return v;
+}
+
+/** Igual que en el navegador: valores del turno confirmado (y del que se ve en "Tu turno"). */
+function valoresTurno(): Record<string, string> {
+  const t = turnoIni;
+  const r = rubro(t.rubro);
+  const dia = dias[t.dia];
+  const it = items[t.pres];
+  const p = precioDe(t.pres);
+  const v: Record<string, string> = {
+    rubro: r.nombre,
+    rubroCorto: r.corto ?? r.nombre,
+    tipo: d.opciones.items[t.tipo].texto,
+    dia: dia.largo,
+    diaCorto: dia.corto,
+    fecha: dia.fecha,
+    franja: franjas[t.franja],
+    problema: d.problemas[t.rubro as keyof typeof d.problemas],
+    esp: it.nombre,
+    zona: it.zona,
+    precio: formatoPesos(p),
+    tarifa: formatoPesos(tarifaDe(p)),
+    total: formatoPesos(totalDe(p)),
     estado: d.turnos.estados.confirmado,
   };
   v.cuando = completar(f.cuando, v);
-  v.horarioEsp = completar(it.horario, v);
-  items.forEach((x, i) => (v[`horario${i}`] = completar(x.horario, v)));
-  // Turno que se ve en "Tu turno" (al principio, el del recorrido).
   Object.assign(v, {
     tRubro: v.rubro,
     tTipo: v.tipo,
@@ -91,21 +158,28 @@ function valoresIniciales(): Record<string, string> {
     tTarifa: v.tarifa,
     tTotal: v.total,
     tEstado: v.estado,
-    cambio: completar(f.cuando, { diaCorto: dias[Math.min(ini.dia + 1, dias.length - 1)].corto, franja: v.franja }),
+    cambio: completar(f.cuando, { diaCorto: dias[cambioDiaIni].corto, franja: v.franja }),
   });
   return v;
 }
 
-const V = valoresIniciales();
+const VALORES: Record<Contexto, Record<string, string>> = {
+  pedido: valoresPedido(),
+  turno: valoresTurno(),
+  // Al principio HandIA no sabe nada: mismos valores que el pedido.
+  ia: valoresPedido(),
+};
+/** Valores del contexto de la pantalla que se está armando (ver demoUsuario()). */
+let V = VALORES.pedido;
 const rellenar = (texto: string) => completar(texto, V);
 /** Deja resueltas solo las variables globales; las de la demo las completa el navegador. */
 const soloGlobales = (texto: string) => texto.replace(/\{(\w+)\}/g, (m, k: string) => (k in variables ? variables[k] : m));
 
-/** Texto (del JSON) que puede cambiar en el navegador. */
-function tpl(texto: string, tag = 'span', clase = ''): string {
-  const c = clase ? ` class="${clase}"` : '';
-  if (!/\{\w+\}/.test(soloGlobales(texto))) return `<${tag}${c}>${esc(rellenar(texto))}</${tag}>`;
-  return `<${tag}${c} data-du-tpl="${esc(soloGlobales(texto))}">${esc(rellenar(texto))}</${tag}>`;
+/** Texto (del JSON) que puede cambiar en el navegador. `extra`: atributos ya escapados. */
+function tpl(texto: string, tag = 'span', clase = '', extra = ''): string {
+  const a = `${clase ? ` class="${clase}"` : ''}${extra ? ' ' + extra : ''}`;
+  if (!/\{\w+\}/.test(soloGlobales(texto))) return `<${tag}${a}>${esc(rellenar(texto))}</${tag}>`;
+  return `<${tag}${a} data-du-tpl="${esc(soloGlobales(texto))}">${esc(rellenar(texto))}</${tag}>`;
 }
 
 const iconoRubro = (clave = 'rubro', id = ini.rubro, clase = 'du-ico') =>
@@ -118,10 +192,7 @@ const img = (nombre: string, w: number, h: number, clase = '') =>
   `<img${clase ? ` class="${clase}"` : ''} src="/src/img/${nombre}.webp" alt="" width="${w}" height="${h}" decoding="async" />`;
 const lamparita = (clase = '') => img('handy-lamparita', 202, 346, clase);
 
-const ESTRELLA =
-  '<svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.4 6.3-.9Z"/></svg>';
 
-const T = d.titulos;
 const app = (contenido: string, clase = '') => `<div class="app${clase ? ' ' + clase : ''}">${contenido}</div>`;
 const pantalla = (id: keyof typeof T, html: string, tipo: 'pantalla' | 'hoja' = 'pantalla'): PantallaDemo => ({
   id,
@@ -132,23 +203,53 @@ const pantalla = (id: keyof typeof T, html: string, tipo: 'pantalla' | 'hoja' = 
 
 const label = (texto: string) => `<p class="du-label">${esc(texto)}</p>`;
 const fila = (izq: string, der: string, clase = '') => `<div class="du-costo__fila${clase ? ' ' + clase : ''}"><span>${izq}</span><span>${der}</span></div>`;
+const menos = (monto: string) => completar(f.menos, { monto });
 
 // ── Piezas propias ─────────────────────────────────────────────────────────
+
+/** Cabecera con la campana y el pin de la dirección (un botón que avisa a dónde van los pedidos). */
+function cabecera(variante: 'blanca' | 'azul', conPin = true): string {
+  const html = cabeceraDemo('usuario', variante, false);
+  if (!conPin) return html;
+  const i = html.lastIndexOf('</span></div>');
+  if (i < 0) throw new Error('Demo usuario: no encontré dónde poner el pin de la cabecera');
+  const pinBtn = boton({ accion: 'aviso', valor: 'ubicacion', etiqueta: d.comun.ubicacionAria }, icono('pin'), 'app-cuadrado');
+  return html.slice(0, i) + pinBtn + html.slice(i);
+}
 
 /** Ficha azul (como "Specialist"/"Date" en la pantalla de confirmar). */
 const ficha = (clase: string, ...lineas: string[]) => `<div class="du-ficha du-ficha--${clase}">${lineas.join('')}</div>`;
 
+/** Fila de la dirección (en la demo no se puede cambiar: muestra un aviso). */
 const direccion = () => {
   const x = d.describir;
-  return `<div class="du-lugar">${icono('casa')}<span><strong>${esc(x.casa)}</strong><small>${esc(x.calle)}</small></span>${icono('derecha')}</div>`;
+  return boton(
+    { accion: 'aviso' },
+    `${icono('casa')}<span><strong>${esc(x.casa)}</strong><small>${esc(x.calle)}</small></span>${icono('derecha')}`,
+    'du-lugar',
+  );
 };
+
+/** "Foto" del problema: ilustración con el ícono del rubro (cambia con el rubro elegido). */
+const foto = (clase = '') =>
+  `<span class="du-ilus${clase ? ' ' + clase : ''}" role="img" aria-label="${esc(d.comun.fotoAria)}">${iconoRubro('rubro', ini.rubro, 'du-ilus__icono')}</span>`;
 
 /** Burbuja del chat (el texto puede llevar variables de la demo). */
 const burbuja = (m: { de: string; texto: string; foto?: boolean }) =>
-  `<div class="app-burbuja ${m.de === 'vos' ? 'app-burbuja--propia' : 'app-burbuja--otra'}${m.foto ? ' app-burbuja--foto' : ''}">${m.foto ? fotoCano : ''}${tpl(m.texto)}</div>`;
+  `<div class="app-burbuja ${m.de === 'vos' ? 'app-burbuja--propia' : 'app-burbuja--otra'}${m.foto ? ' app-burbuja--foto' : ''}">${m.foto ? foto('du-ilus--chat') : ''}${tpl(m.texto)}</div>`;
+
+type IdChat = 'u-chat' | 'u-handia' | 'u-soporte';
+
+/** Campo del chat: el avión de enviar manda la primera respuesta rápida. */
+const entrada = (id: IdChat, texto: string) =>
+  `<div class="app-input"><span class="app-input__campo">${esc(texto)}${icono('imagen')}</span>${boton(
+    { accion: 'enviar', valor: id, etiqueta: d.comun.enviarAria },
+    icono('enviar'),
+    'app-input__enviar',
+  )}</div>`;
 
 function chat(opciones: {
-  id: 'u-chat' | 'u-handia' | 'u-soporte';
+  id: IdChat;
   cabecera: string;
   bienvenida?: string;
   inicial: { de: string; texto: string; foto?: boolean }[];
@@ -168,10 +269,10 @@ function chat(opciones: {
   const final = opciones.final ? `<div class="du-rapidas du-rapidas--final" ${ver(`final:${id}`, false)}>${opciones.final}</div>` : '';
   return `<div class="app-chat du-chat" data-du-chat="${id}">
   ${opciones.cabecera}
-  <div class="app-chat__mensajes" data-du-mensajes>${opciones.bienvenida ?? ''}${opciones.inicial.map(burbuja).join('')}</div>
+  <div class="app-chat__mensajes" role="log" aria-live="polite" data-du-mensajes>${opciones.bienvenida ?? ''}${opciones.inicial.map(burbuja).join('')}</div>
   ${rapidas}${final}
-  ${inputChat(opciones.input)}
-  <template data-du-foto>${fotoCano}</template>
+  ${entrada(id, opciones.input)}
+  <template data-du-foto>${foto('du-ilus--chat')}</template>
 </div>`;
 }
 
@@ -207,7 +308,7 @@ function inicio(): PantallaDemo {
     .join('');
   return pantalla(
     'u-inicio',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-inicio">
   <p class="app-titulo">${esc(a.titulo)}</p>
   <div class="app-grilla">${rubros}</div>
@@ -265,14 +366,16 @@ ${items}`,
   );
 }
 
+/** Día de la rueda que toca la guía: el siguiente al elegido (se ve cómo gira). Igual que en el navegador. */
+const diaGuia = (dia: number) => (dia + 1 < dias.length ? dia + 1 : dia - 1);
+
 function programar(): PantallaDemo {
   const g = d.programar;
-  // La guía toca el día siguiente al inicial: se ve cómo gira la rueda.
-  const guiaDia = Math.min(ini.dia + 1, dias.length - 1);
+  const guiaDia = diaGuia(ini.dia);
   const ruedaDias = dias
     .map((x, i) =>
       boton(
-        { accion: 'dia', valor: String(i), guia: i === guiaDia, extra: `data-du-grupo="dia" aria-pressed="${i === ini.dia}"` },
+        { accion: 'dia', valor: String(i), guia: i === guiaDia, extra: `data-du-guia="guiaDia${i}" data-du-grupo="dia" aria-pressed="${i === ini.dia}"` },
         esc(x.rueda),
         'du-rueda__op',
       ),
@@ -286,7 +389,7 @@ function programar(): PantallaDemo {
   const pastilla = (titulo: string, valor: string) => `<span class="du-pastilla"><small>${esc(titulo)}</small>${valor}</span>`;
   return pantalla(
     'u-programar',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 <div class="app-cuerpo du-programar">
   ${volverDemo(g.titulo)}
   <p class="app-subtitulo">${iconoRubro()}${tpl(f.rubroTipo)}</p>
@@ -310,7 +413,7 @@ function describir(): PantallaDemo {
   const x = d.describir;
   return pantalla(
     'u-describir',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 <div class="app-cuerpo du-describir">
   ${volverDemo(x.titulo)}
   <div class="du-grilla2">
@@ -321,9 +424,13 @@ function describir(): PantallaDemo {
   <div class="du-campo">${tpl('{problema}', 'p')}<small>${esc(x.ayuda)}</small></div>
   ${label(x.fotos)}
   <div class="du-fotos">
-    <span class="du-foto" ${ver('foto1', false)}>${fotoCano}</span>
-    <span class="du-foto du-foto--2" ${ver('foto2', false)}>${fotoCano}</span>
-    ${boton({ accion: 'foto', guia: true, extra: ver('puedeFoto', true) }, `${icono('camara')}<span>${esc(x.agregarFoto)}</span>`, 'du-foto du-foto--agregar')}
+    <span class="du-foto" ${ver('foto1', false)}>${foto()}</span>
+    <span class="du-foto du-foto--2" ${ver('foto2', false)}>${foto()}</span>
+    ${boton(
+      { accion: 'foto', guia: true, extra: `data-du-guia="fotoGuia" ${ver('puedeFoto', true)}` },
+      `${icono('camara')}<span>${esc(x.agregarFoto)}</span>`,
+      'du-foto du-foto--agregar',
+    )}
   </div>
   ${label(x.direccion)}
   ${direccion()}
@@ -339,7 +446,7 @@ function buscando(): PantallaDemo {
   const b = d.buscando;
   return pantalla(
     'u-buscando',
-    app(`${cabeceraDemo('usuario', 'azul', false)}
+    app(`${cabecera('azul', false)}
 <div class="app-mapa-caja du-busqueda">${mapa(false)}<span class="du-radar" aria-hidden="true"><i></i><i></i></span>${pin('app-pin--rojo')}
   ${boton({ volver: true, etiqueta: demo.ui.volver }, icono('atras'), 'app-flotante')}
 </div>
@@ -377,7 +484,7 @@ function presupuestos(): PantallaDemo {
     .join('');
   return pantalla(
     'u-presupuestos',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo app-cuerpo--ajustado">${volverDemo(q.titulo)}<p class="app-subtitulo">${iconoRubro()}${tpl(f.pedido)}</p></div>
 ${hojaAzul(q.panel, `<div class="app-lista du-scroll">${tarjetas}</div><p class="app-hoja__nota">${esc(q.nota)}</p>`)}`),
   );
@@ -389,7 +496,7 @@ function perfil(): PantallaDemo {
     `<div class="du-dato-fila">${icono(ic)}<span><small>${esc(titulo)}</small>${valor}</span></div>`;
   return pantalla(
     'u-perfil',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 <div class="app-cuerpo du-perfil-pantalla">
   ${volverDemo(x.titulo)}
   <div class="du-perfil">
@@ -398,7 +505,7 @@ function perfil(): PantallaDemo {
     <p class="app-verificado du-perfil__verificado">${icono('verificado')}${esc(x.verificado)}</p>
   </div>
   ${label(x.rubros)}
-  <div class="du-chips"><span class="du-chip du-chip--azul">${iconoRubro()}${tpl('{rubro}')}</span><span class="du-chip" ${ver('hayOtro', V.otro !== '')}>${tpl('{otro}')}</span></div>
+  <div class="du-chips"><span class="du-chip du-chip--azul">${iconoRubro()}${tpl('{rubro}')}</span>${tpl('{otro}', 'span', 'du-chip', ver('hayOtro', V.otro !== ''))}</div>
   ${dato('pin', x.zona, tpl('{zona}', 'strong'))}
   ${dato('reloj', x.horario, tpl('{declaro}', 'strong'))}
   <div class="du-precio"><small>${esc(x.presupuesto)}</small>${tpl('{precio}', 'strong')}${tpl(x.propone)}</div>
@@ -423,12 +530,12 @@ function confirmar(): PantallaDemo {
     .join('');
   return pantalla(
     'u-confirmar',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 <div class="app-cuerpo du-confirmar">
   ${volverDemo(c.titulo)}
   <div class="du-grilla2 du-grilla2--ancha">
     <div>${label(c.especialista)}${ficha('azul', tpl('{esp}', 'strong'), `<span>${iconoRubro()}${tpl(f.rubroTipo)}</span>`)}</div>
-    <div>${label(c.fecha)}${ficha('clara', tpl('{dia}', 'strong'), tpl('{fecha}'), tpl('{franja}'))}</div>
+    <div>${label(c.fecha)}${ficha('clara', tpl('{propDia}', 'strong'), tpl('{propFecha}'), tpl('{propFranja}'))}</div>
   </div>
   ${label(c.direccion)}
   ${direccion()}
@@ -451,25 +558,26 @@ function confirmar(): PantallaDemo {
 
 function seguimiento(): PantallaDemo {
   const s = d.seguimiento;
+  // La flecha lleva al inicio: el turno ya está confirmado, no se vuelve a "Confirmá el turno".
   return pantalla(
     'u-seguimiento',
     app(
-      `${cabeceraDemo('usuario', 'azul', false)}
+      `${cabecera('azul', false)}
 <div class="app-mapa-caja du-seg-mapa">${mapa()}${pin('app-pin--a')}${pin('app-pin--b du-pin-esp')}
-  ${boton({ volver: true, etiqueta: demo.ui.volver }, icono('atras'), 'app-flotante')}
+  ${boton({ raiz: 'u-inicio', etiqueta: s.inicioAria }, icono('atras'), 'app-flotante')}
 </div>
 <div class="app-panel du-panel">
   <span class="app-hoja__manija du-manija"></span>
   ${boton(
-    { accion: 'seg-avanzar', etiqueta: s.avanzar, guia: true, extra: 'data-du-guia="segAntes"' },
-    `<span class="app-panel__titulo du-seg-titulo" aria-live="polite">${s.estados.map((e, i) => tpl(e, 'span', '').replace('<span', `<span ${ver(`seg${i}`, i === 0)}`)).join('')}</span>
-    <span class="app-progreso du-progreso"><span class="du-tramo du-tramo--1">${icono('check')}</span><span class="du-tramo du-tramo--2">${icono('caminar')}</span><span class="du-tramo du-tramo--3">${icono('casa')}</span></span>`,
+    { accion: 'seg-avanzar', guia: true, extra: 'data-du-guia="segAntes" data-du-habilitar="segAntes"' },
+    `<span class="app-panel__titulo du-seg-titulo" aria-live="polite">${s.estados.map((e, i) => tpl(e, 'span', '', ver(`seg${i}`, i === 0))).join('')}</span><span class="sr">${esc(s.avanzar)}</span>
+    <span class="app-progreso du-progreso" aria-hidden="true"><span class="du-tramo du-tramo--1">${icono('check')}</span><span class="du-tramo du-tramo--2">${icono('caminar')}</span><span class="du-tramo du-tramo--3">${icono('casa')}</span></span>`,
     'du-seg-avanzar',
   )}
-  <div ${ver('!segLlego', true)} class="du-seg-horario">
+  <div ${ver('segAntes', true)} class="du-seg-horario">
     <p class="app-panel__label">${esc(s.horarioLabel)}</p>
-    <div class="app-panel__fila">${tpl('{franja}', 'span', 'app-horario')}${boton(
-      { accion: 'turno', valor: '0', ir: 'u-turno-detalle', etiqueta: s.infoAria },
+    <div class="app-panel__fila">${tpl('{cuando}', 'span', 'app-horario')}${boton(
+      { accion: 'turno-seg', ir: 'u-turno-detalle', etiqueta: s.infoAria },
       icono('info'),
       'app-redondo',
     )}${boton({ accion: 'desde', valor: 'seg', ir: 'u-cancelar', etiqueta: s.cancelarAria }, icono('prohibido'), 'app-redondo app-redondo--rojo')}</div>
@@ -493,7 +601,7 @@ function chatEspecialista(): PantallaDemo {
   const c = d.chat;
   return pantalla(
     'u-chat',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 ${chat({
   id: 'u-chat',
   cabecera: chatCabecera('flecha', '{esp}', c.subtitulo, `<span class="app-chat__avatar app-chat__avatar--icono">${icono('usuario')}</span>`),
@@ -510,12 +618,12 @@ function terminado(): PantallaDemo {
   const t = d.terminado;
   return pantalla(
     'u-terminado',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo app-cuerpo--centro du-terminado">
   <p class="app-titulo app-titulo--negro">${esc(t.titulo)}</p>
   ${img('handys-grupo', 600, 311, 'du-terminado__handys')}
-  <div class="du-esp-fila du-esp-fila--blanca"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{esp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span><span class="du-esp-fila__der"><strong>${iconoRubro()}${tpl('{rubro}')}</strong>${tpl('{cuando}', 'small')}</span></div>
-  <p class="app-ganaste"><span ${ver('pagoAhora', ini.pago === 0)}>${esc(t.pagaste)}</span><span ${ver('pagoDespues', ini.pago === 1)}>${esc(t.aPagar)}</span> ${tpl('{total}', 'strong')}</p>
+  <div class="du-esp-fila du-esp-fila--blanca"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{esp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span><span class="du-esp-fila__der"><strong>${iconoRubro()}${tpl('{rubroCorto}')}</strong>${tpl('{cuando}', 'small')}</span></div>
+  <p class="app-ganaste"><span ${ver('pagoAhora', turnoIni.pago === 0)}>${esc(t.pagaste)}</span><span ${ver('pagoDespues', turnoIni.pago === 1)}>${esc(t.aPagar)}</span> ${tpl('{total}', 'strong')}</p>
   <div class="du-costo du-costo--claro">
     ${fila(tpl(t.alEspecialista), tpl('{precio}'))}
     ${fila(esc(t.tarifa), tpl('{tarifa}'))}
@@ -523,7 +631,7 @@ function terminado(): PantallaDemo {
   </div>
   <p class="app-nota-fin">${esc(t.nota)}</p>
   <div class="du-botones">
-    ${boton({ accion: 'pagar', extra: ver('pagoDespues', ini.pago === 1) }, tpl(t.pagar), 'app-boton du-boton-verde')}
+    ${boton({ accion: 'pagar', guia: true, extra: ver('pagoDespues', turnoIni.pago === 1) }, tpl(t.pagar), 'app-boton du-boton-verde')}
     ${boton({ ir: 'u-resena', guia: true }, tpl(t.calificar), 'app-boton')}
     ${boton({ raiz: 'u-inicio' }, esc(t.inicio), 'app-boton app-boton--contorno')}
   </div>
@@ -543,7 +651,7 @@ function resena(): PantallaDemo {
           etiqueta: completar(n === 1 ? r.estrella : r.estrellas, { n: String(n) }),
           extra: 'data-du-grupo="estrellas" aria-pressed="false"',
         },
-        ESTRELLA,
+        icono('estrella'),
         'du-estrella',
       ),
     )
@@ -576,14 +684,19 @@ function resena(): PantallaDemo {
 
 function handia(): PantallaDemo {
   const h = d.handia;
+  // "Pedir para hoy" arma una urgencia y busca presupuestos; "Programar turno" lleva a elegir el día.
   const acciones = h.acciones
     .map((a, i) =>
-      boton({ accion: 'handia-pedir', ir: i === 0 ? 'u-buscando' : 'u-programar' }, esc(a), `app-accion du-rapida${i === 0 ? ' app-accion--principal' : ''}`),
+      boton(
+        { accion: 'handia-pedir', valor: i === 0 ? 'hoy' : 'programar', ir: i === 0 ? 'u-buscando' : 'u-programar' },
+        esc(a),
+        `app-accion du-rapida${i === 0 ? ' app-accion--principal' : ''}`,
+      ),
     )
     .join('');
   return pantalla(
     'u-handia',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 ${chat({
   id: 'u-handia',
   cabecera: chatCabecera('flecha', h.nombre, h.subtitulo, `<span class="app-chat__avatar">${lamparita()}</span>`),
@@ -596,7 +709,7 @@ ${chat({
   );
 }
 
-/** Calendario de turnos: los días del recorrido (hoy en adelante) son botones que se habilitan si el turno cae ahí. */
+/** Calendario de turnos: los días del recorrido (hoy en adelante) son botones; solo el del turno está habilitado. */
 function calendarioTurnos(): string {
   const t = d.turnos;
   let celdas = '';
@@ -611,24 +724,26 @@ function calendarioTurnos(): string {
         `app-dia app-dia--${x.estilo}`,
       );
     } else if (i >= 0) {
-      const sel = i === ini.dia;
+      const sel = i === turnoIni.dia;
+      const aria = completar(t.diaAria, { fecha: dias[i].fecha });
       celdas += boton(
         {
           accion: 'turno',
           valor: '0',
           ir: 'u-turno-detalle',
-          etiqueta: completar(t.diaAria, { fecha: dias[i].fecha }),
-          extra: `data-du-dia="${i}" data-num="${n}"${sel ? '' : ' disabled'}`,
+          etiqueta: sel ? aria : undefined,
+          extra: `data-du-dia="${i}" data-num="${n}" data-du-aria="${esc(aria)}"${sel ? '' : ' disabled'}`,
         },
-        `${n}${iconoRubro('rubro', ini.rubro, 'du-dia__icono')}`,
+        `${n}${iconoRubro('rubro', turnoIni.rubro, 'du-dia__icono')}`,
         `app-dia${sel ? ' app-dia--azul' : n === t.hoy ? ' app-dia--hoy' : ''}`,
       );
     } else {
       celdas += `<span class="app-dia${n === t.hoy ? ' app-dia--hoy' : ''}">${n}</span>`;
     }
   }
+  const selector = (texto: string) => boton({ accion: 'aviso' }, `<span>${esc(texto)}${icono('abajo')}</span>`, 'du-cal-sel');
   return `<div class="app-calendario du-calendario">
-  <p class="app-calendario__cabecera"><span>${esc(t.mes)}${icono('abajo')}</span><span>${esc(t.anio)}${icono('abajo')}</span></p>
+  <p class="app-calendario__cabecera">${selector(t.mes)}${selector(t.anio)}</p>
   <div class="app-calendario__dias">${celdas}</div>
 </div>`;
 }
@@ -637,23 +752,29 @@ function turnos(): PantallaDemo {
   const t = d.turnos;
   const tarjeta = (cuerpo: string, toque: Toque) =>
     `<div class="app-tarjeta"><div class="app-tarjeta__cuerpo">${cuerpo}</div>${boton(toque, esc(d.comun.verMas), 'app-tarjeta__franja')}</div>`;
+  // El monto del turno del recorrido: pagado en rojo, "A pagar" si todavía no se pagó, nada si se canceló.
   const flujo = tarjeta(
     `<span class="app-tarjeta__datos"><strong>${tpl('{rubro}')}${iconoRubro()}</strong>${tpl(f.fechaEstado, 'small')}</span>
-     <span class="app-tarjeta__derecha">${tpl(completar(f.menos, { monto: '{total}' }), 'span', 'app-tarjeta__monto app-tarjeta__monto--rojo')}${tpl('{tipo}', 'small')}</span>`,
+     <span class="app-tarjeta__derecha">${tpl(menos('{total}'), 'span', 'app-tarjeta__monto app-tarjeta__monto--rojo', ver('pagoHecho', condIni.pagoHecho))}${tpl(
+       t.aPagar,
+       'span',
+       'app-tarjeta__monto du-a-pagar',
+       ver('flujoAPagar', !condIni.pagoHecho),
+     )}${tpl('{tipo}', 'small')}</span>`,
     { accion: 'turno', valor: '0', ir: 'u-turno-detalle', guia: true },
   );
   const otros = pasados
     .map((x, i) =>
       tarjeta(
         `<span class="app-tarjeta__datos"><strong>${esc(rubro(x.rubro).nombre)}${icono(rubro(x.rubro).icono)}</strong><small>${esc(completar(f.fechaEstado, { fecha: x.fecha, estado: t.estados.terminado }))}</small></span>
-         <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--rojo">${esc(completar(f.menos, { monto: formatoPesos(totalDe(x.precio)) }))}</span><small>${esc(x.tipo)}</small></span>`,
+         <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--rojo">${esc(menos(formatoPesos(totalDe(x.precio))))}</span><small>${esc(x.tipo)}</small></span>`,
         { accion: 'turno', valor: String(i + 1), ir: 'u-turno-detalle' },
       ),
     )
     .join('');
   return pantalla(
     'u-turnos',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo app-cuerpo--ajustado">${calendarioTurnos()}</div>
 ${hojaAzul(t.panel, `<div class="app-lista du-scroll">${flujo}${otros}</div>`)}
 ${navDemo('usuario', 1)}`),
@@ -662,17 +783,19 @@ ${navDemo('usuario', 1)}`),
 
 function turnoDetalle(): PantallaDemo {
   const x = d.turnoDetalle;
+  // La guía depende de dónde se abrió: desde el seguimiento vuelve a él; desde Turnos sigue a "Ver el pago".
+  const flecha = boton({ volver: true, etiqueta: demo.ui.volver, extra: 'data-du-guia="origenSeg"' }, icono('atras'), 'app-volver__flecha');
   return pantalla(
     'u-turno-detalle',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 <div class="app-cuerpo du-detalle">
-  ${volverDemo(x.titulo)}
+  <p class="app-volver">${flecha}<span>${esc(x.titulo)}</span></p>
   <div class="du-grilla2 du-grilla2--ancha">
     <div>${label(x.rubro)}${ficha('azul', `<strong>${iconoRubro('tRubro')}${tpl('{tRubro}')}</strong>`, tpl('{tTipo}'))}</div>
     <div>${label(x.fecha)}${ficha('clara', tpl('{tDia}', 'strong'), tpl('{tFecha}'), tpl('{tFranja}'))}</div>
   </div>
   ${label(x.especialista)}
-  <div class="du-esp-fila"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{tEsp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span>${tpl('{tEstado}', 'span', 'du-estado').replace('<span', '<span data-du-clase="tTerminado:du-estado--verde tCancelado:du-estado--rojo"')}</div>
+  <div class="du-esp-fila"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{tEsp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span>${tpl('{tEstado}', 'span', 'du-estado', 'data-du-clase="tTerminado:du-estado--verde tCancelado:du-estado--rojo"')}</div>
   ${label(x.direccion)}
   ${direccion()}
   ${label(x.costo)}
@@ -681,13 +804,14 @@ function turnoDetalle(): PantallaDemo {
     ${fila(tpl(x.tarifa), tpl('{tTarifa}'))}
     ${fila(`${esc(x.total)} <span class="du-pagado" ${ver('tPagado', true)}>${esc(x.pagado)}</span>`, tpl('{tTotal}'), 'du-costo__total')}
   </div>
-  ${tpl(x.cambioPedido, 'p', 'du-aviso').replace('<p', `<p ${ver('tCambio', false)}`)}
-  ${tpl(x.cancelado, 'p', 'du-aviso du-aviso--rojo').replace('<p', `<p ${ver('tCancelado', false)}`)}
+  ${tpl(x.cambioPedido, 'p', 'du-aviso', ver('tCambio', false))}
+  ${tpl(x.cancelado, 'p', 'du-aviso du-aviso--rojo', ver('tCancelado', false))}
   <div class="du-abajo du-botones">
     ${boton({ ir: 'u-chat', extra: ver('tFlujo', true) }, esc(x.chatear), 'app-boton app-boton--contorno')}
     ${boton({ ir: 'u-cambiar', extra: ver('tActivo', true) }, esc(x.cambiar), 'app-boton du-boton-celeste')}
     ${boton({ accion: 'desde', valor: 'detalle', ir: 'u-cancelar', extra: ver('tActivo', true) }, esc(x.cancelar), 'app-boton du-boton-rojo')}
-    ${boton({ ir: 'u-pagos', guia: true, extra: ver('tPagado', true) }, esc(x.verPago), 'app-boton')}
+    ${boton({ accion: 'pagar', guia: true, extra: `data-du-guia="origenTurnos" ${ver('tPorPagar', false)}` }, tpl(x.pagar), 'app-boton du-boton-verde')}
+    ${boton({ accion: 'ver-pago', ir: 'u-pagos', guia: true, extra: `data-du-guia="origenTurnos" ${ver('tPagado', condIni.pagoHecho)}` }, esc(x.verPago), 'app-boton')}
   </div>
 </div>`),
   );
@@ -695,17 +819,20 @@ function turnoDetalle(): PantallaDemo {
 
 function cambiar(): PantallaDemo {
   const c = d.cambiar;
-  const diaIni = Math.min(ini.dia + 1, dias.length - 1);
   const chipsDias = dias
     .map((x, i) =>
       i === 0
         ? ''
-        : boton({ accion: 'cambio-dia', valor: String(i), extra: `data-du-grupo="cambioDia" aria-pressed="${i === diaIni}"` }, esc(x.corto), 'du-chip du-chip--boton'),
+        : boton({ accion: 'cambio-dia', valor: String(i), extra: `data-du-grupo="cambioDia" aria-pressed="${i === cambioDiaIni}"` }, esc(x.corto), 'du-chip du-chip--boton'),
     )
     .join('');
   const chipsFranjas = franjas
     .map((x, i) =>
-      boton({ accion: 'cambio-franja', valor: String(i), extra: `data-du-grupo="cambioFranja" aria-pressed="${i === ini.franja}"` }, esc(x), 'du-chip du-chip--boton'),
+      boton(
+        { accion: 'cambio-franja', valor: String(i), extra: `data-du-grupo="cambioFranja" aria-pressed="${i === turnoIni.franja}"` },
+        esc(x),
+        'du-chip du-chip--boton',
+      ),
     )
     .join('');
   return pantalla(
@@ -738,13 +865,14 @@ function mensajes(): PantallaDemo {
   const filas = x.items
     .map((it) => {
       const avatar = it.icono === 'lamparita' ? `<span class="du-chats__avatar du-chats__avatar--ia">${lamparita()}</span>` : `<span class="du-chats__avatar">${icono(it.icono)}</span>`;
-      const badge = 'badge' in it && it.badge ? `<span class="du-badge">${esc(it.badge)}</span>` : '';
+      // La insignia del chat con el especialista se va cuando se lee.
+      const badge = 'badge' in it && it.badge ? `<span class="du-badge" ${ver('!chatLeido', true)}>${esc(it.badge)}</span>` : '';
       return boton({ ir: it.ir }, `${avatar}<span class="du-chats__textos">${tpl(it.nombre, 'strong')}${tpl(it.ultimo, 'small')}</span>${badge}`, 'du-chats__fila');
     })
     .join('');
   return pantalla(
     'u-mensajes',
-    app(`${cabeceraDemo('usuario', 'azul')}
+    app(`${cabecera('azul')}
 <div class="app-cuerpo du-mensajes">
   <div class="du-chats">${filas}</div>
   <div class="du-mensajes__pie">${lamparita('du-mensajes__handy')}<p class="du-mensajes__nota">${icono('escudo')}<span>${esc(x.nota)}</span></p></div>
@@ -761,7 +889,7 @@ function cuenta(): PantallaDemo {
       .join('')}</div>`;
   return pantalla(
     'u-cuenta',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-cuenta">
   <div class="du-perfil">
     <span class="du-perfil__avatar">${icono('usuario')}${boton({ accion: 'aviso', etiqueta: c.fotoAria }, icono('camara'), 'du-perfil__camara')}</span>
@@ -782,7 +910,7 @@ function datos(): PantallaDemo {
   const x = d.datos;
   return pantalla(
     'u-datos',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-datos">
   ${volverDemo(T['u-datos'])}
   <div class="du-campos">${x.campos.map((c) => `<div class="du-dato"><small>${esc(c.label)}</small><span>${esc(c.valor)}</span></div>`).join('')}</div>
@@ -796,19 +924,21 @@ function datos(): PantallaDemo {
 function pagos(): PantallaDemo {
   const g = d.pagos;
   const tj = g.tarjeta;
-  const mov = (i: number, cuerpo: string, desglose: string) =>
-    `<div class="app-tarjeta"><div class="app-tarjeta__cuerpo">${cuerpo}</div>
+  const mov = (i: number, cuerpo: string, desglose: string, extra = '') =>
+    `<div class="app-tarjeta"${extra ? ' ' + extra : ''}><div class="app-tarjeta__cuerpo">${cuerpo}</div>
     <div class="du-mov" data-du-mov="${i}"${i === 0 ? '' : ' hidden'}>${desglose}</div>
     ${boton(
       { accion: 'mov', valor: String(i), extra: `aria-expanded="${i === 0}"` },
       `<span data-du-mas${i === 0 ? ' hidden' : ''}>${esc(d.comun.verMas)}</span><span data-du-menos${i === 0 ? '' : ' hidden'}>${esc(g.verMenos)}</span>`,
       'app-tarjeta__franja',
     )}</div>`;
+  // El pago del turno del recorrido aparece solo si de verdad se pagó.
   const flujo = mov(
     0,
     `<span class="app-tarjeta__datos">${tpl(g.pagaste, 'strong')}${tpl('{fecha}', 'small')}</span>
-     <span class="app-tarjeta__derecha">${tpl(completar(f.menos, { monto: '{total}' }), 'span', 'app-tarjeta__monto app-tarjeta__monto--rojo')}<small>${esc(g.medio)}</small></span>`,
+     <span class="app-tarjeta__derecha">${tpl(menos('{total}'), 'span', 'app-tarjeta__monto app-tarjeta__monto--rojo')}<small>${esc(g.medio)}</small></span>`,
     `${fila(tpl(g.alEspecialista), tpl('{precio}'))}${fila(tpl(g.tarifa), tpl('{tarifa}'))}`,
+    ver('pagoHecho', condIni.pagoHecho),
   );
   const otros = pasados
     .map((x, i) => {
@@ -816,14 +946,14 @@ function pagos(): PantallaDemo {
       return mov(
         i + 1,
         `<span class="app-tarjeta__datos"><strong>${esc(completar(g.pagaste, vars))}</strong><small>${esc(x.fecha)}</small></span>
-         <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--rojo">${esc(completar(f.menos, { monto: formatoPesos(totalDe(x.precio)) }))}</span><small>${esc(g.medio)}</small></span>`,
+         <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--rojo">${esc(menos(formatoPesos(totalDe(x.precio))))}</span><small>${esc(g.medio)}</small></span>`,
         `${fila(esc(completar(g.alEspecialista, vars)), esc(formatoPesos(x.precio)))}${fila(esc(completar(g.tarifa, vars)), esc(formatoPesos(tarifaDe(x.precio))))}`,
       );
     })
     .join('');
   return pantalla(
     'u-pagos',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo app-cuerpo--ajustado du-pagos">
   ${volverDemo(T['u-pagos'])}
   <div class="app-tarjeta-banco du-tarjeta"><span class="app-tarjeta-banco__chip"></span><span class="app-tarjeta-banco__numero">${esc(tj.numero)}</span><span class="app-tarjeta-banco__pie"><span>${esc(tj.titular)}</span><span>${esc(tj.vence)}</span></span><span class="app-tarjeta-banco__tipo">${esc(tj.tipo)}</span></div>
@@ -837,7 +967,7 @@ function ayuda(): PantallaDemo {
   const a = d.ayuda;
   return pantalla(
     'u-ayuda',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-ayuda">
   <div class="du-ayuda__cabecera">${boton({ volver: true, etiqueta: demo.ui.volver }, icono('atras'), 'app-volver__flecha')}<span><strong>${esc(T['u-ayuda'])}</strong><small>${esc(a.subtitulo)}</small></span></div>
   <div class="du-preguntas">${a.preguntas
@@ -864,7 +994,7 @@ function ayudaDetalle(): PantallaDemo {
     .join('');
   return pantalla(
     'u-ayuda-detalle',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-ayuda">
   <p class="du-ayuda__cabecera">${boton({ volver: true, etiqueta: demo.ui.volver }, icono('atras'), 'app-volver__flecha')}</p>
   ${respuestas}
@@ -889,7 +1019,7 @@ function soporte(): PantallaDemo {
   const s = d.soporte;
   return pantalla(
     'u-soporte',
-    app(`${cabeceraDemo('usuario', 'blanca', false)}
+    app(`${cabecera('blanca', false)}
 ${chat({
   id: 'u-soporte',
   cabecera: chatCabecera('x', s.nombre, s.subtitulo, `<span class="app-chat__avatar app-chat__avatar--icono">${icono('usuario')}</span>`),
@@ -904,59 +1034,67 @@ ${chat({
 function notificaciones(): PantallaDemo {
   const n = d.notificaciones;
   const avisos = n.avisos
-    .map(
-      (a, i) =>
-        `<div class="du-aviso-card du-aviso-card--${a.estilo}" ${ver(`aviso${i}`, true)}><span class="du-aviso-card__icono">${icono(a.icono)}</span>${tpl(
-          a.texto,
-          'span',
-          'du-aviso-card__texto',
-        )}${boton({ accion: 'aviso-borrar', valor: String(i), etiqueta: n.borrarAria }, icono('cerrar'), 'du-aviso-card__x')}</div>`,
-    )
+    .map((a, i) => {
+      const si = 'si' in a ? a.si : undefined;
+      if (si !== undefined && !(si in condIni)) throw new Error(`Demo usuario: condición desconocida "${si}" en un aviso`);
+      return `<div class="du-aviso-card du-aviso-card--${a.estilo}" ${ver(`aviso${i}`, si === undefined || condIni[si])}><span class="du-aviso-card__icono">${icono(a.icono)}</span>${tpl(
+        a.texto,
+        'span',
+        'du-aviso-card__texto',
+      )}${boton({ accion: 'aviso-borrar', valor: String(i), etiqueta: n.borrarAria }, icono('cerrar'), 'du-aviso-card__x')}</div>`;
+    })
     .join('');
   return pantalla(
     'u-notificaciones',
-    app(`${cabeceraDemo('usuario', 'blanca')}
+    app(`${cabecera('blanca')}
 <div class="app-cuerpo du-avisos">
   ${volverDemo(T['u-notificaciones'])}
   ${boton({ accion: 'avisos-borrar', extra: ver('!avisosVacio', true) }, `<span>${esc(n.borrar)}</span>${icono('cerrar')}`, 'du-borrar')}
   <div class="du-avisos__lista">${avisos}</div>
-  <p class="du-avisos__vacio">${esc(n.vacio)}</p>
+  <p class="du-avisos__vacio" ${ver('!avisosVacio', true)}>${esc(n.vacio)}</p>
+  <p class="du-avisos__vacio" ${ver('avisosVacio', false)}>${esc(n.vacioTodo)}</p>
 </div>
 ${navDemo('usuario', -1)}`),
   );
 }
 
+const CONSTRUCTORES: [keyof typeof T, () => PantallaDemo][] = [
+  ['u-inicio', inicio],
+  ['u-urgencia', urgencia],
+  ['u-opciones', opciones],
+  ['u-programar', programar],
+  ['u-describir', describir],
+  ['u-buscando', buscando],
+  ['u-presupuestos', presupuestos],
+  ['u-perfil', perfil],
+  ['u-confirmar', confirmar],
+  ['u-seguimiento', seguimiento],
+  ['u-chat', chatEspecialista],
+  ['u-terminado', terminado],
+  ['u-resena', resena],
+  ['u-handia', handia],
+  ['u-turnos', turnos],
+  ['u-turno-detalle', turnoDetalle],
+  ['u-cambiar', cambiar],
+  ['u-cancelar', cancelar],
+  ['u-mensajes', mensajes],
+  ['u-cuenta', cuenta],
+  ['u-datos', datos],
+  ['u-pagos', pagos],
+  ['u-ayuda', ayuda],
+  ['u-ayuda-detalle', ayudaDetalle],
+  ['u-soporte', soporte],
+  ['u-notificaciones', notificaciones],
+];
+
 export function demoUsuario(): DemoRol {
-  return {
-    inicio: 'u-inicio',
-    pantallas: [
-      inicio(),
-      urgencia(),
-      opciones(),
-      programar(),
-      describir(),
-      buscando(),
-      presupuestos(),
-      perfil(),
-      confirmar(),
-      seguimiento(),
-      chatEspecialista(),
-      terminado(),
-      resena(),
-      handia(),
-      turnos(),
-      turnoDetalle(),
-      cambiar(),
-      cancelar(),
-      mensajes(),
-      cuenta(),
-      datos(),
-      pagos(),
-      ayuda(),
-      ayudaDetalle(),
-      soporte(),
-      notificaciones(),
-    ],
-    recorrido: d.recorrido,
-  };
+  const pantallas = CONSTRUCTORES.map(([id, construir]) => {
+    // Cada pantalla se arma con los valores de su contexto (pedido, turno o HandIA).
+    V = VALORES[contextoDe(id)];
+    const p = construir();
+    if (p.id !== id) throw new Error(`Demo usuario: la pantalla "${p.id}" está anotada como "${id}"`);
+    return p;
+  });
+  V = VALORES.pedido;
+  return { inicio: 'u-inicio', pantallas, recorrido: d.recorrido };
 }

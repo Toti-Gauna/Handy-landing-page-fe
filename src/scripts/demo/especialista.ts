@@ -1,17 +1,17 @@
 // Demo · comportamiento del lado del especialista: el interruptor "Disponible" y el pedido que entra,
-// el precio que elegís (fluye al aviso, al trabajo, al fin y a la caja), el cliente que te elige,
+// el precio que elegís (fluye al aviso, al trabajo, al fin y a los cobros), el cliente que te elige,
 // el chat con respuestas rápidas, el cronómetro y los repuestos, la agenda, el cambio de fecha,
 // los avisos y la cuenta. Todos los textos salen de src/content/demo-especialista.json.
 
 import '../../styles/demo-especialista.css';
 import d from '../../content/demo-especialista.json';
 import { registrarRol, type Motor } from './motor';
-import { TARIFAS, completar, formatoPesos, netoEspecialista, retencionEspecialista } from './util';
+import { TARIFAS, completar, formatoPesos, netoEspecialista, pesosJuntos, retencionEspecialista } from './util';
 
 type IdChat = keyof typeof d.chats;
+type Origen = 'inicio' | 'programado';
 
 interface Borrador {
-  origen: 'inicio' | 'programado';
   base: number;
   precio: number;
   franja: number;
@@ -22,21 +22,30 @@ interface Cambio {
   dia: number;
   franja: number;
   motivo: number | null;
+  mensaje: boolean;
   enviado: boolean;
 }
 
 interface Estado {
   disponible?: boolean;
   pedido?: 'nada' | 'visible';
+  /** Rechazaste el pedido de urgencia: no vuelve a entrar solo (sí si apagás y prendés "Disponible"). */
   rechazado?: boolean;
+  /** Ya mandaste presupuesto por el pedido de urgencia: no vuelve a entrar solo al volver al inicio. */
+  atendido?: boolean;
   token?: number;
+  toast?: number;
   precio?: number;
   franja?: number;
-  borrador?: Borrador;
+  borradores?: Partial<Record<Origen, Borrador>>;
   elegido?: boolean;
+  /** Estado del trabajo de hoy. Sin estado (recién empezado o salto del panel) no hay cobro de hoy. */
+  trabajo?: 'enviado' | 'terminado' | 'cancelado';
   inicioTrabajo?: number;
   extras?: number[];
   chat?: IdChat;
+  chatDesdeTurno?: boolean;
+  borradorChat?: Partial<Record<IdChat, number>>;
   usadas?: Partial<Record<IdChat, number[]>>;
   leidos?: IdChat[];
   turno?: number;
@@ -54,8 +63,8 @@ const SUGERIDO = TARIFAS.ejemplo.presupuesto;
 const VARS = { tarifaEspecialista: `${TARIFAS.normal.especialista}%` };
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const pesos = formatoPesos;
-/** Monto que no se corta entre "$" y el número (dentro de oraciones). */
-const pesosJuntos = (n: number) => formatoPesos(n).replace(/ /g, '\u00a0');
+/** Lo que te queda: el presupuesto menos la tarifa de Handy, más los repuestos enteros. */
+const netoConRepuestos = (presupuesto: number, repuestos: number) => netoEspecialista(presupuesto) + repuestos;
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 
@@ -88,6 +97,8 @@ const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fechaCorta = (dia: number) => `${dos(dia)}/${dos(C.mesNumero)}`;
 const fechaLarga = (dia: number) => `${fechaCorta(dia)}/${C.anio}`;
 const esDomingo = (dia: number) => fecha(dia).getDay() === 0;
+/** Id de la pantalla (u hoja) que contiene a un elemento. */
+const pantallaDe = (el: Element) => el.closest<HTMLElement>('[data-pantalla]');
 
 /** Día hábil (lunes a sábado) siguiente o anterior a `dia`, dentro del mes y después de hoy. */
 function moverDia(dia: number, paso: 1 | -1): number {
@@ -107,14 +118,25 @@ function fila(izq: string, der: string, clase = ''): HTMLParagraphElement {
   return p;
 }
 
-/** Igual que el desglose del build: presupuesto (+ repuestos) − tarifa = recibís / a tu cuenta. */
+/** Igual que el desglose del build: presupuesto − tarifa (+ repuestos, enteros) = recibís / a tu cuenta. */
 function desglose(cont: HTMLElement, presupuesto: number, extras: number, ultimo: string) {
-  const total = presupuesto + extras;
-  const filas = [fila(C.presupuesto, pesos(presupuesto))];
+  const filas = [
+    fila(C.presupuesto, pesos(presupuesto)),
+    fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(presupuesto))}`, 'de-fila--resta'),
+  ];
   if (extras) filas.push(fila(C.repuestos, `+ ${pesos(extras)}`));
-  filas.push(fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(total))}`, 'de-fila--resta'));
-  filas.push(fila(ultimo, pesos(netoEspecialista(total)), 'de-fila--total'));
+  filas.push(fila(ultimo, pesos(netoConRepuestos(presupuesto, extras)), 'de-fila--total'));
   cont.replaceChildren(...filas);
+}
+
+/** Abre o cierra el desglose de una tarjeta con "Ver más información". */
+function abrirTarjeta(tarjeta: HTMLElement, abrir: boolean) {
+  const detalle = $(tarjeta, '[data-de-mov-desglose]');
+  const btn = $(tarjeta, '[data-accion="verMas"]');
+  if (!detalle || !btn) return;
+  detalle.hidden = !abrir;
+  btn.setAttribute('aria-expanded', String(abrir));
+  poner(btn, '[data-de-ver-mas-texto]', abrir ? C.verMenos : C.verMas);
 }
 
 // ── El trabajo de hoy (lo que eligió el especialista) ─────────────────────
@@ -122,16 +144,52 @@ function desglose(cont: HTMLElement, presupuesto: number, extras: number, ultimo
 const precioHoy = (m: Motor) => est(m).precio ?? SUGERIDO;
 const franjaHoy = (m: Motor) => d.precio.franjas[est(m).franja ?? 0] ?? d.precio.franjas[0];
 const extrasHoy = (m: Motor) => (est(m).extras ?? []).reduce((s, i) => s + (d.trabajo.extras[i]?.monto ?? 0), 0);
-const totalHoy = (m: Motor) => precioHoy(m) + extrasHoy(m);
+const netoHoy = (m: Motor) => netoConRepuestos(precioHoy(m), extrasHoy(m));
+const terminado = (m: Motor) => est(m).trabajo === 'terminado';
 
 function nuevoTrabajo(e: Estado) {
   e.elegido = false;
   e.inicioTrabajo = undefined;
   e.extras = [];
   e.pedido = 'nada';
+  // El chat con el cliente de hoy arranca de cero.
+  if (e.usadas) delete e.usadas.perla;
+  if (e.borradorChat) delete e.borradorChat.perla;
+}
+
+/** Mandaste presupuesto por el pedido de urgencia (con el sugerido o con tu precio). */
+function enviarPresupuesto(m: Motor, precio: number, franja: number) {
+  const e = est(m);
+  e.precio = precio;
+  e.franja = franja;
+  e.atendido = true;
+  e.trabajo = 'enviado';
+  nuevoTrabajo(e);
+  if (e.borradores) e.borradores.inicio = undefined;
+  pintarDependientes(m);
+}
+
+/** Si estás en camino, en el chat o trabajando, el cliente ya te eligió (también al saltar a ese paso). */
+function yaElegido(m: Motor) {
+  const e = est(m);
+  e.elegido = true;
+  e.atendido = true;
+  if (e.trabajo !== 'terminado') e.trabajo = 'enviado';
 }
 
 // ── Inicio: disponible → buscando → pedido ───────────────────────────────
+
+/** La pastilla "Disponible" es la misma en todas las pantallas del mapa: refleja el estado real. */
+function pintarDisponible(m: Motor) {
+  const on = !!est(m).disponible;
+  $$(document, '.demo-pantalla[data-rol="especialista"] [data-accion="disponible"]').forEach((sw) => {
+    sw.setAttribute('aria-checked', String(on));
+    sw.classList.toggle('de-disponible--apagado', !on);
+    poner(sw, '[data-de-disp-texto]', on ? C.disponible : C.noDisponible);
+  });
+  // En el inicio, apagado, es lo próximo para tocar.
+  $(m.pantalla('e-inicio'), '[data-accion="disponible"]')?.toggleAttribute('data-guia', !on);
+}
 
 function pintarInicio(m: Motor, nuevo = false) {
   const el = m.pantalla('e-inicio');
@@ -140,13 +198,7 @@ function pintarInicio(m: Motor, nuevo = false) {
   const on = !!e.disponible;
   const conPedido = on && e.pedido === 'visible';
 
-  const sw = $(el, '[data-accion="disponible"]');
-  if (sw) {
-    sw.setAttribute('aria-checked', String(on));
-    sw.classList.toggle('de-disponible--apagado', !on);
-    sw.toggleAttribute('data-guia', !on);
-    poner(sw, '[data-de-disp-texto]', on ? C.disponible : C.noDisponible);
-  }
+  pintarDisponible(m);
   const mapa = $(el, '[data-de-mapa]');
   mapa?.classList.toggle('de-mapa--apagado', !on);
   mapa?.classList.toggle('de-mapa--buscando', on && !conPedido);
@@ -161,8 +213,9 @@ function pintarInicio(m: Motor, nuevo = false) {
   }
   const tarjeta = $(el, '[data-de-pedido]');
   if (tarjeta) tarjeta.hidden = !conPedido;
+  // El aviso amarillo solo se ve cuando entra un pedido nuevo (y se va solo).
   const toast = $(el, '[data-de-toast]');
-  if (toast && !conPedido) toast.hidden = true;
+  if (toast && (!conPedido || !nuevo)) toast.hidden = true;
 
   if (nuevo && conPedido) {
     animar(m, tarjeta, [{ transform: 'translateY(115%)' }, { transform: 'none' }], 520);
@@ -172,9 +225,12 @@ function pintarInicio(m: Motor, nuevo = false) {
       { transform: 'none', opacity: 1 },
     ], 560);
     if (toast) {
+      const n = (e.toast = (e.toast ?? 0) + 1);
       toast.hidden = false;
       aparecer(m, toast);
-      m.timeout(() => (toast.hidden = true), 2800);
+      m.timeout(() => {
+        if (est(m).toast === n) toast.hidden = true;
+      }, 2800);
     }
   }
 }
@@ -193,23 +249,29 @@ function programarPedido(m: Motor) {
   }, 1800);
 }
 
-// ── Hoja de precio ────────────────────────────────────────────────────────
+/** Al volver al inicio: el pedido entra solo si no lo atendiste ni lo rechazaste. */
+const esperaPedido = (e: Estado) => !!e.disponible && e.pedido !== 'visible' && !e.atendido && !e.rechazado;
 
-const origenPrecio = (m: Motor): Borrador['origen'] => (m.pantalla('e-pedido-programado').hidden ? 'inicio' : 'programado');
+// ── Hojas de precio (pedido de urgencia y pedido programado) ─────────────
 
-function borrador(m: Motor): Borrador {
+const hojaPrecio = (o: Origen) => (o === 'programado' ? 'e-precio-programado' : 'e-precio');
+const origenDe = (el: Element): Origen => (pantallaDe(el)?.dataset.pantalla === 'e-precio-programado' ? 'programado' : 'inicio');
+
+/** Lo que vas armando en la hoja. Se descarta al mandar el presupuesto. */
+function borrador(m: Motor, o: Origen): Borrador {
   const e = est(m);
-  const origen = origenPrecio(m);
-  if (!e.borrador || e.borrador.origen !== origen) {
-    const base = origen === 'inicio' ? SUGERIDO : d.programado.sugerido;
-    e.borrador = { origen, base, precio: base, franja: origen === 'inicio' ? (e.franja ?? 0) : 0 };
+  const bs = (e.borradores ??= {});
+  let b = bs[o];
+  if (!b) {
+    const base = o === 'inicio' ? SUGERIDO : d.programado.sugerido;
+    b = bs[o] = { base, precio: base, franja: 0 };
   }
-  return e.borrador;
+  return b;
 }
 
-function pintarPrecio(m: Motor) {
-  const el = m.pantalla('e-precio');
-  const b = borrador(m);
+function pintarPrecio(m: Motor, o: Origen) {
+  const el = m.pantalla(hojaPrecio(o));
+  const b = borrador(m, o);
   poner(el, '[data-de-sugerido]', pesos(b.base));
   poner(el, '[data-de-precio]', pesos(b.precio));
   poner(el, '[data-de-recibis]', pesos(netoEspecialista(b.precio)));
@@ -225,16 +287,15 @@ function pintarPrecio(m: Motor) {
     // La guía propone subir el precio mientras sigas con el sugerido.
     btn.toggleAttribute('data-guia', i === 0 && b.precio === b.base);
   });
-  const franjas = $(el, '[data-de-franjas]');
-  if (franjas) franjas.hidden = b.origen !== 'inicio';
   $$(el, '[data-accion="franja"]').forEach((btn) => marcar(btn, Number(btn.dataset.valor) === b.franja));
 }
 
-function cambiarPrecio(m: Motor, precio: number) {
-  const b = borrador(m);
+function cambiarPrecio(m: Motor, o: Origen, precio: number) {
+  const b = borrador(m, o);
   b.precio = Math.max(d.precio.minimo, Math.round(precio));
-  pintarPrecio(m);
-  latido(m, $(m.pantalla('e-precio'), '[data-de-recibis]'));
+  pintarPrecio(m, o);
+  latido(m, $(m.pantalla(hojaPrecio(o)), '[data-de-recibis]'));
+  m.anunciar(completar(d.precio.anuncio, { precio: pesos(b.precio), recibis: pesos(netoEspecialista(b.precio)) }));
 }
 
 // ── Presupuesto enviado → elegido ─────────────────────────────────────────
@@ -271,9 +332,11 @@ function elegir(m: Motor) {
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────
+// Dos pantallas con el mismo chat: "e-chat" (la del recorrido, siempre con el cliente de hoy)
+// y "e-conversacion" (desde Mensajes, el trabajo o un turno).
 
-const chatActual = (m: Motor): IdChat => est(m).chat ?? 'perla';
 const usadasDe = (m: Motor, id: IdChat) => est(m).usadas?.[id] ?? [];
+const chatDe = (pantalla: HTMLElement): IdChat => ($(pantalla, '[data-de-chat]')?.dataset.deChat as IdChat) ?? 'perla';
 
 function burbuja(texto: string, propia: boolean): HTMLDivElement {
   const b = document.createElement('div');
@@ -296,52 +359,116 @@ function marcarLeido(m: Motor, id: IdChat) {
   e.leidos = [...new Set([...(e.leidos ?? []), id])];
 }
 
-function pintarChat(m: Motor) {
-  const el = m.pantalla('e-chat');
-  const id = chatActual(m);
-  const ch = d.chats[id];
-  const caja = $(el, '[data-de-chat]');
-  if (!caja) return;
-  caja.dataset.deChat = id;
-  poner(el, '[data-de-chat-nombre]', ch.nombre);
-  poner(el, '[data-de-chat-sub]', ch.sub);
+/** Ya llegaste al domicilio del cliente de hoy (o el trabajo terminó o se canceló). */
+function yaLlegaste(m: Motor) {
+  const e = est(m);
+  return !!e.inicioTrabajo || e.trabajo === 'terminado' || e.trabajo === 'cancelado';
+}
 
+/** Respuestas rápidas que tienen sentido ahora (las de "voy para allá" no, si ya llegaste). */
+function libresDe(m: Motor, id: IdChat): number[] {
   const usadas = usadasDe(m, id);
-  const mensajes = $(el, '[data-de-mensajes]');
-  const plantilla = $<HTMLTemplateElement>(el, `template[data-de-plantilla="${id}"]`);
-  if (mensajes && plantilla) {
-    mensajes.replaceChildren(plantilla.content.cloneNode(true));
-    usadas.forEach((i) => mensajes.append(burbuja(ch.rapidas[i].texto, true), burbuja(ch.rapidas[i].respuesta, false)));
-  }
+  const llego = id === 'perla' && yaLlegaste(m);
+  return d.chats[id].rapidas
+    .map((r, i) => ({ r, i }))
+    .filter(({ r, i }) => !usadas.includes(i) && !(llego && 'antesDeLlegar' in r && r.antesDeLlegar))
+    .map(({ i }) => i);
+}
+
+/** Todo lo que se toca en el chat (sin volver a dibujar los mensajes). */
+function pintarControlesChat(m: Motor, el: HTMLElement, id: IdChat) {
+  const e = est(m);
+  const ch = d.chats[id];
+  const usadas = usadasDe(m, id);
+  const libres = libresDe(m, id);
 
   const rapidas = $(el, '[data-de-rapidas]');
   if (rapidas) {
-    const libres = ch.rapidas.map((r, i) => ({ r, i })).filter(({ i }) => !usadas.includes(i));
     rapidas.replaceChildren(
-      ...libres.map(({ r, i }, n) => {
+      ...libres.map((i, n) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'app-accion de-rapida';
         b.dataset.accion = 'rapida';
         b.dataset.valor = String(i);
         if (n === 0 && usadas.length === 0) b.setAttribute('data-guia', '');
-        b.textContent = r.chip;
+        b.textContent = ch.rapidas[i].chip;
         return b;
       }),
     );
     rapidas.hidden = libres.length === 0;
   }
 
+  // "Llegué al domicilio": solo con el cliente de hoy y antes de llegar.
   const llegue = $(el, '[data-de-llegue]');
   if (llegue) {
-    llegue.hidden = id !== 'perla';
-    llegue.toggleAttribute('data-guia', id === 'perla' && usadas.length > 0);
+    const ver = id === 'perla' && !yaLlegaste(m);
+    llegue.hidden = !ver;
+    llegue.toggleAttribute('data-guia', ver && usadas.length > 0);
   }
+  // "Ver el turno": no si ya venís del turno (evita el ida y vuelta).
   const verTurno = $(el, '[data-de-ver-turno]');
   if (verTurno) {
-    verTurno.hidden = id === 'perla';
+    verTurno.hidden = id === 'perla' || !!e.chatDesdeTurno;
     verTurno.dataset.valor = String(Math.max(0, ch.turno));
   }
+
+  // Campo y botón de enviar: escriben y mandan la próxima respuesta rápida.
+  const borr = e.borradorChat?.[id];
+  const escrito = borr !== undefined && libres.includes(borr) ? ch.rapidas[borr].texto : '';
+  const campo = $<HTMLButtonElement>(el, '[data-de-campo-chat]');
+  if (campo) {
+    poner(campo, '[data-de-campo-texto]', escrito || d.chat.input);
+    campo.classList.toggle('de-input__campo--lleno', !!escrito);
+    campo.disabled = libres.length === 0;
+  }
+  const enviar = $<HTMLButtonElement>(el, '[data-de-enviar]');
+  if (enviar) enviar.disabled = libres.length === 0;
+}
+
+function pintarChat(m: Motor, el: HTMLElement, id: IdChat) {
+  const ch = d.chats[id];
+  const caja = $(el, '[data-de-chat]');
+  if (!caja) return;
+  caja.dataset.deChat = id;
+  poner(el, '[data-de-chat-nombre]', ch.nombre);
+  poner(el, '[data-de-chat-sub]', ch.sub);
+  const mensajes = $(el, '[data-de-mensajes]');
+  const plantilla = $<HTMLTemplateElement>(el, `template[data-de-plantilla="${id}"]`);
+  if (mensajes && plantilla) {
+    mensajes.replaceChildren(plantilla.content.cloneNode(true));
+    usadasDe(m, id).forEach((i) => mensajes.append(burbuja(ch.rapidas[i].texto, true), burbuja(ch.rapidas[i].respuesta, false)));
+  }
+  pintarControlesChat(m, el, id);
+}
+
+/** Mandás una respuesta rápida: aparece tu mensaje, el cliente escribe y contesta. */
+function responder(m: Motor, el: HTMLElement, id: IdChat, i: number) {
+  const e = est(m);
+  const r = d.chats[id].rapidas[i];
+  if (!r || usadasDe(m, id).includes(i)) return;
+  e.usadas = { ...e.usadas, [id]: [...usadasDe(m, id), i] };
+  if (e.borradorChat) delete e.borradorChat[id];
+  const mensajes = $(el, '[data-de-mensajes]');
+  const propia = burbuja(r.texto, true);
+  mensajes?.append(propia);
+  aparecer(m, propia);
+  pintarControlesChat(m, el, id);
+  m.timeout(() => {
+    const plantilla = $<HTMLTemplateElement>(el, 'template[data-de-plantilla-escribiendo]');
+    const escribiendo = plantilla?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
+    if (escribiendo) {
+      mensajes?.append(escribiendo);
+      aparecer(m, escribiendo);
+    }
+    m.timeout(() => {
+      const respuesta = burbuja(r.respuesta, false);
+      if (escribiendo) escribiendo.replaceWith(respuesta);
+      else mensajes?.append(respuesta);
+      aparecer(m, respuesta);
+      m.anunciar(completar(d.chat.anuncio, { texto: r.respuesta }));
+    }, 900);
+  }, 450);
 }
 
 // ── Trabajo en curso ──────────────────────────────────────────────────────
@@ -375,8 +502,11 @@ function pintarTrabajo(m: Motor) {
   const costo = $(el, '[data-de-costo]');
   const plantilla = $<HTMLTemplateElement>(el, 'template[data-de-plantilla-quitar]');
   if (!costo) return;
-  const total = totalHoy(m);
-  const filas: HTMLElement[] = [fila(C.presupuesto, pesos(precioHoy(m)))];
+  const precio = precioHoy(m);
+  const filas: HTMLElement[] = [
+    fila(C.presupuesto, pesos(precio)),
+    fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(precio))}`, 'de-fila--resta'),
+  ];
   extras.forEach((i) => {
     const x = t.extras[i];
     const p = fila(x.nombre, `+ ${pesos(x.monto)}`, 'de-fila--extra');
@@ -388,26 +518,42 @@ function pintarTrabajo(m: Motor) {
     }
     filas.push(p);
   });
-  filas.push(fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(total))}`, 'de-fila--resta'));
-  filas.push(fila(C.recibis, pesos(netoEspecialista(total)), 'de-fila--total'));
+  filas.push(fila(C.recibis, pesos(netoHoy(m)), 'de-fila--total'));
   costo.replaceChildren(...filas);
 }
 
-// ── Fin y caja ────────────────────────────────────────────────────────────
+// ── Fin y cobros ──────────────────────────────────────────────────────────
 
 function pintarFin(m: Motor) {
   const el = m.pantalla('e-fin');
-  poner(el, '[data-de-ganaste]', pesos(netoEspecialista(totalHoy(m))));
+  poner(el, '[data-de-ganaste]', pesos(netoHoy(m)));
   const costo = $(el, '[data-de-costo]');
   if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
 }
 
 function pintarCaja(m: Motor) {
-  const hoy = $(m.pantalla('e-caja'), '[data-de-mov-hoy]');
-  if (!hoy) return;
-  poner(hoy, '[data-de-mov-neto]', `+ ${pesos(netoEspecialista(totalHoy(m)))}`);
-  const costo = $(hoy, '[data-de-mov-desglose]');
-  if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
+  const el = m.pantalla('e-caja');
+  const hoy = $(el, '[data-de-mov-hoy]');
+  if (hoy) {
+    // El cobro de hoy aparece cuando terminaste el trabajo (no antes, ni si lo cancelaste).
+    hoy.hidden = !terminado(m);
+    poner(hoy, '[data-de-mov-neto]', `+ ${pesos(netoHoy(m))}`);
+    const costo = $(hoy, '[data-de-mov-desglose]');
+    if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
+  }
+  // Siempre hay un movimiento abierto, así se ve el desglose: el de hoy o, si no hay, el más reciente.
+  const auto = $$(el, '[data-de-auto-abierto]');
+  if (hoy && !hoy.hidden) {
+    auto.forEach((t) => {
+      abrirTarjeta(t, false);
+      t.removeAttribute('data-de-auto-abierto');
+    });
+  }
+  const visibles = $$(el, '.de-movimiento').filter((t) => !t.hidden);
+  if (visibles.length && !visibles.some((t) => $(t, '[data-de-mov-desglose]')?.hidden === false)) {
+    abrirTarjeta(visibles[0], true);
+    if (visibles[0] !== hoy) visibles[0].setAttribute('data-de-auto-abierto', '');
+  }
 }
 
 /**
@@ -421,21 +567,36 @@ function pintarDependientes(m: Motor) {
   pintarCrono(m);
   pintarFin(m);
   pintarCaja(m);
-  poner(m.pantalla('e-notificaciones'), '[data-de-neto]', pesos(netoEspecialista(totalHoy(m))));
+  poner(m.pantalla('e-notificaciones'), '[data-de-neto]', pesos(netoHoy(m)));
 }
 
 // ── Agenda, detalle y cambio de fecha ────────────────────────────────────
 
 const turnoActual = (m: Motor) => Math.min(Math.max(est(m).turno ?? 0, 0), d.turnos.items.length - 1);
 const cancelado = (m: Motor, i: number) => (est(m).cancelados ?? []).includes(i);
+const primerLibre = (m: Motor) => d.turnos.items.findIndex((_, i) => !cancelado(m, i));
 
 function pintarTurnos(m: Motor) {
-  $$(m.pantalla('e-turnos'), '[data-de-turno]').forEach((card) => {
+  const el = m.pantalla('e-turnos');
+  const libre = primerLibre(m);
+  $$(el, '[data-de-turno]').forEach((card) => {
     const i = Number(card.dataset.deTurno);
     const no = cancelado(m, i);
     card.classList.toggle('de-tarjeta--cancelada', no);
     const tag = $(card, '[data-de-cancelado]');
     if (tag) tag.hidden = !no;
+    const programado = $(card, '[data-de-programado-tag]');
+    if (programado) programado.hidden = no;
+    // La guía va al primer turno que sigue en pie.
+    $(card, '.app-tarjeta__franja')?.toggleAttribute('data-guia', i === libre);
+  });
+  // En el calendario, el día de un turno cancelado deja de estar marcado.
+  d.turnos.items.forEach((t, i) => {
+    const dia = $(el, `.app-dia[data-dia="${t.dia}"]`);
+    if (!dia) return;
+    const no = cancelado(m, i);
+    dia.classList.toggle('app-dia--azul', !no);
+    dia.classList.toggle('de-dia--cancelado', no);
   });
 }
 
@@ -452,9 +613,13 @@ function pintarDetalle(m: Motor) {
   poner(el, '[data-de-d="barrio"]', t.barrio);
   poner(el, '[data-de-d="pedido"]', t.pedido);
   $$(el, '[data-de-icono]').forEach((s) => (s.hidden = s.dataset.deIcono !== t.icono));
-  const costo = $(el, '[data-de-d="costo"]');
-  if (costo) desglose(costo, t.presupuesto, 0, C.recibis);
   const no = cancelado(m, i);
+  const costo = $(el, '[data-de-d="costo"]');
+  if (costo) {
+    desglose(costo, t.presupuesto, 0, C.recibis);
+    costo.classList.toggle('de-costo--cancelado', no);
+  }
+  $(el, '.de-pie')?.classList.toggle('de-pie--cancelado', no);
   const estado = $(el, '[data-de-d="estado"]');
   if (estado) {
     estado.textContent = no ? x.cancelado : x.pendiente;
@@ -475,6 +640,7 @@ function cambio(m: Motor): Cambio {
       dia: moverDia(t.dia, 1),
       franja: Math.max(0, d.cambio.franjas.indexOf(t.franja)),
       motivo: null,
+      mensaje: false,
       enviado: false,
     };
   }
@@ -529,14 +695,24 @@ function pintarCambio(m: Motor) {
     b.classList.toggle('de-motivo--activo', activo);
     b.toggleAttribute('data-guia', i === 0 && c.motivo === null);
   });
+  // El mensaje para el cliente: la app te sugiere uno según el motivo.
+  const mensaje = $(el, '[data-accion="mensajeCambio"]');
+  if (mensaje) {
+    const texto = c.mensaje ? (x.mensajes[c.motivo ?? x.mensajes.length - 1] ?? x.mensajes[x.mensajes.length - 1]) : x.mensaje;
+    poner(mensaje, '[data-de-mensaje-texto]', texto);
+    mensaje.classList.toggle('de-campo--lleno', c.mensaje);
+  }
   const proponer = $<HTMLButtonElement>(el, '[data-accion="proponerFecha"]');
   if (proponer) {
     proponer.disabled = c.enviado;
     proponer.toggleAttribute('data-guia', !c.enviado);
     proponer.textContent = c.enviado ? x.enviadoBoton : x.proponer;
   }
+  // Con la propuesta enviada, la confirmación ocupa el lugar del resumen.
   const ok = $(el, '[data-de-cambio-ok]');
   if (ok) ok.hidden = !c.enviado;
+  const resumen = $(el, '[data-de-cambio-resumen]');
+  if (resumen) resumen.hidden = c.enviado;
   // Con la propuesta enviada, el recorrido sigue por tus avisos (la campana).
   $(el, '.app-cabecera [data-ir="e-notificaciones"]')?.toggleAttribute('data-guia', c.enviado);
 }
@@ -545,8 +721,11 @@ function pintarCambio(m: Motor) {
 
 function pintarAvisos(m: Motor) {
   const el = m.pantalla('e-notificaciones');
-  poner(el, '[data-de-neto]', pesos(netoEspecialista(totalHoy(m))));
-  const hay = $$(el, '.de-notif').length > 0;
+  poner(el, '[data-de-neto]', pesos(netoHoy(m)));
+  // El aviso de cobro de hoy, solo con el trabajo terminado.
+  const cobro = $(el, '[data-de-cobro-hoy]');
+  if (cobro) cobro.hidden = !terminado(m);
+  const hay = $$(el, '.de-notif').some((n) => !n.hidden);
   const nadaMas = $(el, '[data-de-nada-mas]');
   if (nadaMas) nadaMas.hidden = !hay;
   const vacio = $(el, '[data-de-vacio]');
@@ -598,6 +777,11 @@ function pintarRubros(m: Motor) {
   });
 }
 
+/** El chat con el cliente de hoy aparece cuando te eligió. */
+function pintarFilasChat(m: Motor, el: HTMLElement) {
+  $$(el, '[data-de-chat-fila="perla"]').forEach((f) => (f.hidden = !est(m).elegido));
+}
+
 function pintarMensajes(m: Motor) {
   const el = m.pantalla('e-mensajes');
   const leidos = est(m).leidos ?? [];
@@ -606,6 +790,7 @@ function pintarMensajes(m: Motor) {
     const badge = $(el, `[data-de-badge="${id}"]`);
     if (badge) badge.hidden = leidos.includes(id);
   });
+  pintarFilasChat(m, el);
 }
 
 // ── Registro ──────────────────────────────────────────────────────────────
@@ -614,16 +799,21 @@ let originales: Map<string, string> | null = null;
 
 registrarRol('especialista', {
   acciones: {
-    // Inicio
-    disponible(_el, m) {
+    // Inicio (y la misma pastilla en las otras pantallas del mapa)
+    disponible(el, m) {
       const e = est(m);
+      const enInicio = pantallaDe(el)?.dataset.pantalla === 'e-inicio';
       e.disponible = !e.disponible;
-      e.pedido = 'nada';
-      e.rechazado = false;
       e.token = (e.token ?? 0) + 1;
+      if (!e.disponible) e.pedido = 'nada';
+      if (enInicio) {
+        // Prenderlo en el inicio es una búsqueda nueva.
+        e.rechazado = false;
+        if (e.disponible) e.atendido = false;
+      }
       pintarInicio(m);
       m.anunciar(e.disponible ? d.inicio.anuncioBuscando : d.inicio.anuncioApagado);
-      if (e.disponible) programarPedido(m);
+      if (enInicio && e.disponible) programarPedido(m);
     },
     rechazar(_el, m) {
       const e = est(m);
@@ -631,45 +821,43 @@ registrarRol('especialista', {
       e.rechazado = true;
       pintarInicio(m);
       m.anunciar(d.inicio.rechazadoTexto);
-      programarPedido(m);
     },
     aceptarSugerido(_el, m) {
-      const e = est(m);
-      e.precio = SUGERIDO;
-      e.franja = 0;
-      nuevoTrabajo(e);
-      pintarDependientes(m);
+      enviarPresupuesto(m, SUGERIDO, 0);
     },
 
     // Precio
-    precioSugerido(_el, m) {
-      cambiarPrecio(m, borrador(m).base);
+    precioSugerido(el, m) {
+      const o = origenDe(el);
+      cambiarPrecio(m, o, borrador(m, o).base);
     },
     precioSumar(el, m) {
-      cambiarPrecio(m, borrador(m).base + Number(el.dataset.valor));
+      const o = origenDe(el);
+      cambiarPrecio(m, o, borrador(m, o).base + Number(el.dataset.valor));
     },
     precioPaso(el, m) {
-      cambiarPrecio(m, borrador(m).precio + Number(el.dataset.valor));
+      const o = origenDe(el);
+      cambiarPrecio(m, o, borrador(m, o).precio + Number(el.dataset.valor));
     },
     franja(el, m) {
-      borrador(m).franja = Number(el.dataset.valor);
-      pintarPrecio(m);
+      const o = origenDe(el);
+      borrador(m, o).franja = Number(el.dataset.valor);
+      pintarPrecio(m, o);
     },
-    ponerPrecio(_el, m) {
+    ponerPrecio(el, m) {
       const e = est(m);
-      const b = borrador(m);
-      if (b.origen === 'programado') {
+      const o = origenDe(el);
+      const b = borrador(m, o);
+      if (o === 'programado') {
         e.precioProgramado = b.precio;
         e.programado = 'enviado';
+        if (e.borradores) e.borradores.programado = undefined;
         m.volver();
         pintarProgramado(m, true);
         m.anunciar(`${d.programado.enviadoTitulo} ${completar(d.programado.enviadoTexto, { monto: pesos(b.precio) })}`);
         return;
       }
-      e.precio = b.precio;
-      e.franja = b.franja;
-      nuevoTrabajo(e);
-      pintarDependientes(m);
+      enviarPresupuesto(m, b.precio, b.franja);
       m.ir('e-aceptado');
     },
 
@@ -683,45 +871,38 @@ registrarRol('especialista', {
     abrirChat(el, m) {
       const id = (el.dataset.valor ?? 'perla') as IdChat;
       if (!(id in d.chats)) return;
-      est(m).chat = id;
+      const e = est(m);
+      e.chat = id;
+      e.chatDesdeTurno = pantallaDe(el)?.dataset.pantalla === 'e-turno-detalle';
       marcarLeido(m, id);
-      pintarChat(m);
+      // Se pinta antes de entrar, así la pantalla llega lista mientras se desliza.
+      pintarChat(m, m.pantalla(el.dataset.ir ?? 'e-conversacion'), id);
     },
     rapida(el, m) {
+      const pantalla = pantallaDe(el);
+      if (pantalla) responder(m, pantalla, chatDe(pantalla), Number(el.dataset.valor));
+    },
+    escribirChat(el, m) {
+      const pantalla = pantallaDe(el);
+      if (!pantalla) return;
+      const id = chatDe(pantalla);
+      const libres = libresDe(m, id);
+      if (!libres.length) return;
       const e = est(m);
-      const id = chatActual(m);
-      const i = Number(el.dataset.valor);
-      const r = d.chats[id].rapidas[i];
-      if (!r || usadasDe(m, id).includes(i)) return;
-      e.usadas = { ...e.usadas, [id]: [...usadasDe(m, id), i] };
-      const pantalla = m.pantalla('e-chat');
-      const mensajes = $(pantalla, '[data-de-mensajes]');
-      const propia = burbuja(r.texto, true);
-      mensajes?.append(propia);
-      aparecer(m, propia);
-      el.remove();
-      const rapidas = $(pantalla, '[data-de-rapidas]');
-      if (rapidas) {
-        $$(rapidas, '[data-guia]').forEach((b) => b.removeAttribute('data-guia'));
-        rapidas.hidden = rapidas.children.length === 0;
-      }
-      if (id === 'perla') $(pantalla, '[data-de-llegue]')?.setAttribute('data-guia', '');
-      // El cliente escribe y responde.
-      m.timeout(() => {
-        const plantilla = $<HTMLTemplateElement>(pantalla, 'template[data-de-plantilla-escribiendo]');
-        const escribiendo = plantilla?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
-        if (escribiendo) {
-          mensajes?.append(escribiendo);
-          aparecer(m, escribiendo);
-        }
-        m.timeout(() => {
-          const respuesta = burbuja(r.respuesta, false);
-          if (escribiendo) escribiendo.replaceWith(respuesta);
-          else mensajes?.append(respuesta);
-          aparecer(m, respuesta);
-          m.anunciar(completar(d.chat.anuncio, { texto: r.respuesta }));
-        }, 900);
-      }, 450);
+      const actual = e.borradorChat?.[id];
+      // Cada toque escribe la próxima respuesta sugerida.
+      const sig = actual !== undefined && libres.includes(actual) ? libres[(libres.indexOf(actual) + 1) % libres.length] : libres[0];
+      e.borradorChat = { ...e.borradorChat, [id]: sig };
+      pintarControlesChat(m, pantalla, id);
+    },
+    enviarChat(el, m) {
+      const pantalla = pantallaDe(el);
+      if (!pantalla) return;
+      const id = chatDe(pantalla);
+      const libres = libresDe(m, id);
+      const borr = est(m).borradorChat?.[id];
+      const i = borr !== undefined && libres.includes(borr) ? borr : libres[0];
+      if (i !== undefined) responder(m, pantalla, id, i);
     },
 
     // Trabajo
@@ -735,17 +916,20 @@ registrarRol('especialista', {
       const el = m.pantalla('e-trabajo');
       aparecer(m, $$(el, '.de-fila--extra').pop());
       latido(m, $(el, '.de-fila--total strong'));
-      m.anunciar(completar(d.trabajo.anuncioExtra, { nombre: d.trabajo.extras[siguiente].nombre, monto: pesos(netoEspecialista(totalHoy(m))) }));
+      m.anunciar(completar(d.trabajo.anuncioExtra, { nombre: d.trabajo.extras[siguiente].nombre, monto: pesos(netoHoy(m)) }));
     },
     quitarExtra(el, m) {
       const e = est(m);
       const i = Number(el.dataset.valor);
       e.extras = (e.extras ?? []).filter((x) => x !== i);
       pintarDependientes(m);
+      const x = d.trabajo.extras[i];
+      if (x) m.anunciar(completar(d.trabajo.anuncioQuitar, { nombre: x.nombre, monto: pesos(netoHoy(m)) }));
     },
     confirmarCancelar(_el, m) {
       const e = est(m);
       if (!m.pantalla('e-trabajo').hidden) {
+        e.trabajo = 'cancelado';
         nuevoTrabajo(e);
         m.raiz('e-inicio');
         pintarDependientes(m);
@@ -761,14 +945,20 @@ registrarRol('especialista', {
 
     // Agenda y fecha
     verTurno(el, m) {
-      est(m).turno = Number(el.dataset.valor) || 0;
+      const i = Number(el.dataset.valor) || 0;
+      est(m).turno = i;
       pintarDetalle(m);
-      pintarCambio(m);
+      if (!cancelado(m, i)) pintarCambio(m);
     },
     motivo(el, m) {
       const c = cambio(m);
       c.motivo = Number(el.dataset.valor);
       c.enviado = false;
+      pintarCambio(m);
+    },
+    mensajeCambio(_el, m) {
+      const c = cambio(m);
+      c.mensaje = true;
       pintarCambio(m);
     },
     diaPaso(el, m) {
@@ -872,15 +1062,11 @@ registrarRol('especialista', {
       m.raiz('e-inicio');
     },
 
-    // Caja y ayuda
+    // Cobros y ayuda
     verMas(el) {
       const tarjeta = el.closest<HTMLElement>('.app-tarjeta');
       const detalle = tarjeta && $(tarjeta, '[data-de-mov-desglose]');
-      if (!detalle) return;
-      const abrir = detalle.hidden;
-      detalle.hidden = !abrir;
-      el.setAttribute('aria-expanded', String(abrir));
-      el.textContent = abrir ? C.verMenos : C.verMas;
+      if (tarjeta && detalle) abrirTarjeta(tarjeta, detalle.hidden !== false);
     },
     pregunta(el) {
       const respuesta = el.nextElementSibling as HTMLElement | null;
@@ -894,39 +1080,59 @@ registrarRol('especialista', {
   entrar: {
     'e-inicio'(_el, m) {
       pintarInicio(m);
-      const e = est(m);
-      if (e.disponible && e.pedido !== 'visible') programarPedido(m);
+      if (esperaPedido(est(m))) programarPedido(m);
     },
     'e-precio'(_el, m) {
       const e = est(m);
       // Si se llega directo a esta hoja, el pedido tiene que estar a la vista debajo.
-      if (origenPrecio(m) === 'inicio' && !(e.disponible && e.pedido === 'visible')) {
+      if (!(e.disponible && e.pedido === 'visible')) {
         e.disponible = true;
         e.pedido = 'visible';
         e.token = (e.token ?? 0) + 1;
         pintarInicio(m);
       }
-      pintarPrecio(m);
+      pintarPrecio(m, 'inicio');
+    },
+    'e-precio-programado'(_el, m) {
+      pintarPrecio(m, 'programado');
     },
     'e-aceptado'(_el, m) {
+      const e = est(m);
+      // Mandaste un presupuesto: estabas disponible (también si se salta directo a este paso).
+      if (e.disponible === undefined) e.disponible = true;
+      e.atendido = true;
+      if (!e.trabajo || e.trabajo === 'cancelado') e.trabajo = 'enviado';
+      pintarDisponible(m);
       pintarAceptado(m);
-      if (!est(m).elegido) m.timeout(() => elegir(m), 2600);
+      if (!e.elegido) m.timeout(() => elegir(m), 2600);
     },
     'e-en-camino'(el, m) {
+      yaElegido(m);
       poner(el, '[data-de-franja]', franjaHoy(m).texto);
     },
-    'e-chat'(_el, m) {
-      marcarLeido(m, chatActual(m));
-      pintarChat(m);
+    'e-chat'(el, m) {
+      yaElegido(m);
+      est(m).chatDesdeTurno = false;
+      marcarLeido(m, 'perla');
+      pintarChat(m, el, 'perla');
+    },
+    'e-conversacion'(el, m) {
+      const id = est(m).chat ?? 'perla';
+      marcarLeido(m, id);
+      pintarChat(m, el, id);
     },
     'e-trabajo'(_el, m) {
       const e = est(m);
+      yaElegido(m);
       if (!e.inicioTrabajo) e.inicioTrabajo = Date.now();
       pintarTrabajo(m);
       pintarCrono(m);
       m.intervalo(() => pintarCrono(m), 1000);
     },
     'e-fin'(el, m) {
+      const e = est(m);
+      yaElegido(m);
+      e.trabajo = 'terminado';
       pintarFin(m);
       const gota = $(el, '[data-de-gota]');
       if (m.reducido || !gota || typeof gota.animate !== 'function') return;
@@ -950,12 +1156,17 @@ registrarRol('especialista', {
       pintarDetalle(m);
     },
     'e-cambiar-fecha'(_el, m) {
+      // Un turno cancelado no se reprograma: se usa el primero que sigue en pie.
+      const e = est(m);
+      const libre = primerLibre(m);
+      if (cancelado(m, turnoActual(m)) && libre >= 0) e.turno = libre;
       pintarCambio(m);
     },
     'e-notificaciones'(_el, m) {
       pintarAvisos(m);
     },
     'e-pedido-programado'(_el, m) {
+      pintarDisponible(m);
       pintarProgramado(m);
     },
     'e-cuenta'(_el, m) {
@@ -969,6 +1180,9 @@ registrarRol('especialista', {
     },
     'e-mensajes'(_el, m) {
       pintarMensajes(m);
+    },
+    'e-contactos'(el, m) {
+      pintarFilasChat(m, el);
     },
   },
 

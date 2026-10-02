@@ -26,6 +26,14 @@
   },
   "ayuda": "Tocá los botones del celular para navegar. Con el teclado: ← y → recorren los pasos.",
   "fin": "Fin del recorrido. Podés seguir tocando la app o cambiar de lado.",
+  "finAviso": {
+    "titulo": "Fin del recorrido",
+    "texto": "Podés seguir tocando la app, volver a empezar o ver el otro lado.",
+    "otro": {
+      "usuario": "Ver el lado del usuario",
+      "especialista": "Ver el lado del especialista"
+    }
+  },
   "aviso": "Demo ilustrativa: los datos, nombres y precios son de ejemplo.",
   "sinJs": "La demo necesita JavaScript para funcionar.",
   "ui": {

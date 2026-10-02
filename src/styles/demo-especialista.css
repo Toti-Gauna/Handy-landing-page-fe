@@ -63,6 +63,12 @@
   position: absolute;
 }
 
+/* La guía sigue la forma redondeada de la app también en la barra inferior y en las filas de la cuenta. */
+.demo-pantalla[data-rol='especialista'] .app-nav__item.demo-guia,
+.demo-pantalla[data-rol='especialista'] .de-fila-cuenta.demo-guia {
+  border-radius: 0.8em;
+}
+
 /* Guía dentro de piezas que recortan su contenido (franjas de tarjetas, avisos): late hacia adentro. */
 .demo-pantalla[data-rol='especialista'] .app-tarjeta__franja.demo-guia,
 .demo-pantalla[data-rol='especialista'] .de-notif__cuerpo.demo-guia {
@@ -268,6 +274,10 @@
 
 .de-costo .de-fila--total strong {
   color: #9ff0c0;
+}
+
+.de-fila--extra {
+  align-items: center;
 }
 
 .de-fila--extra span {
@@ -673,7 +683,7 @@ button.de-disponible {
 }
 
 .de-cliente__texto small {
-  font-size: 0.64em;
+  font-size: 0.72em;
   opacity: 0.85;
 }
 
@@ -698,7 +708,7 @@ button.de-disponible {
   border-radius: 1em;
   background: #d0d0d0;
   color: #555;
-  font-size: 0.64em;
+  font-size: 0.72em;
   font-weight: 800;
 }
 
@@ -720,6 +730,34 @@ button.de-disponible {
 
 .de-escribiendo .de-puntos {
   color: #fff;
+}
+
+/* Campo y botón de enviar (escriben y mandan la próxima respuesta rápida) */
+.demo-pantalla[data-rol='especialista'] .de-input__campo {
+  min-width: 0;
+  text-align: left;
+  color: #9a9a9a;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.1em #111;
+  border-radius: 2em;
+}
+
+.de-input__campo span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-pantalla[data-rol='especialista'] .de-input__campo--lleno {
+  color: #111;
+}
+
+.demo-pantalla[data-rol='especialista'] .de-input__enviar {
+  background: #fff;
+  box-shadow: inset 0 0 0 0.12em #111;
+  border-radius: 50%;
+  color: #e11d8f;
 }
 
 /* ── Trabajo en curso ─────────────────────────────────────────────────── */
@@ -791,7 +829,7 @@ button.de-disponible {
 }
 
 .de-tipo small {
-  font-size: 0.66em;
+  font-size: 0.72em;
   font-weight: 700;
   opacity: 0.85;
 }
@@ -816,7 +854,7 @@ button.de-disponible {
 }
 
 .de-fecha small {
-  font-size: 0.6em;
+  font-size: 0.72em;
   font-weight: 700;
   opacity: 0.92;
 }
@@ -882,7 +920,7 @@ button.de-disponible {
 }
 
 .de-pedido-mini small {
-  font-size: 0.66em;
+  font-size: 0.72em;
   font-weight: 800;
   color: #666;
 }
@@ -923,6 +961,8 @@ button.de-disponible {
   padding-bottom: 0.4em;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(#000 80%, transparent);
+  mask-image: linear-gradient(#000 80%, transparent);
 }
 
 .de-lista > * {
@@ -969,6 +1009,27 @@ button.de-disponible {
 .de-estado-turno--cancelado {
   background: #fde3e1;
   color: var(--color-error);
+}
+
+.de-costo--cancelado {
+  opacity: 0.55;
+}
+
+.de-costo--cancelado strong {
+  text-decoration: line-through;
+}
+
+.de-pie--cancelado {
+  margin-top: 0.4em;
+}
+
+/* Día de un turno cancelado en el calendario */
+.de-dia--cancelado {
+  text-decoration: line-through;
+}
+
+.de-dia--cancelado .icono {
+  visibility: hidden;
 }
 
 .de-acciones {
@@ -1049,7 +1110,7 @@ button.de-disponible {
 
 .de-motivo--activo {
   background: var(--color-azul-personajes) !important;
-  box-shadow: inset 0 0 0 0.2em var(--color-amarillo);
+  box-shadow: inset 0 0 0 0.16em #fff;
 }
 
 .de-semana {
@@ -1074,7 +1135,7 @@ button.de-disponible {
 }
 
 .de-semana__dia small {
-  font-size: 0.6em;
+  font-size: 0.7em;
   font-weight: 800;
   opacity: 0.6;
 }
@@ -1096,7 +1157,7 @@ button.de-disponible {
 .de-semana__dia--nueva {
   background: #3d85e6 !important;
   color: #fff;
-  box-shadow: inset 0 0 0 0.18em var(--color-amarillo);
+  box-shadow: inset 0 0 0 0.16em #fff;
 }
 
 .demo-pantalla[data-rol='especialista'] .de-semana__dia:disabled {
@@ -1104,12 +1165,20 @@ button.de-disponible {
 }
 
 .de-campo--mensaje {
+  width: 100%;
   min-height: 3em;
   padding: 0.6em 0.85em;
-  border: 0.12em solid #d6d6d6;
+  border: 0.12em solid #d6d6d6 !important;
   border-radius: 0.85em;
-  color: #9a9a9a;
+  background: #fff !important;
+  color: #9a9a9a !important;
   font-weight: 600;
+  text-align: left !important;
+  line-height: 1.3;
+}
+
+.de-campo--mensaje.de-campo--lleno {
+  color: #111 !important;
 }
 
 .de-campo--mensaje .icono {
@@ -1314,6 +1383,20 @@ button.de-disponible {
   stroke-width: 3;
 }
 
+.de-notif--urgencia {
+  background: #f0f03c;
+  color: #111;
+}
+
+.de-notif--urgencia .de-notif__icono {
+  color: #c08a00;
+}
+
+.de-notif--urgencia .de-notif__x {
+  background: #d6c600 !important;
+  color: #111;
+}
+
 .de-vacio {
   margin-top: 0.3em;
   padding-top: 0.9em;
@@ -1447,11 +1530,11 @@ button.de-disponible {
   bottom: 0.1em;
   display: grid;
   place-items: center;
-  width: 1.8em;
-  height: 1.8em;
+  width: 1.6em;
+  height: 1.6em;
   border-radius: 50%;
-  background: #d9d9d9;
-  color: #111;
+  background: #e6e9ef;
+  color: #7a8396;
 }
 
 .de-perfil__camara .icono {
@@ -1691,6 +1774,17 @@ button.de-disponible {
   color: #111;
 }
 
+.de-chips--precio {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.de-chips--precio .app-chip {
+  padding-inline: 0.5em;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .de-campo-precio {
   display: flex;
   align-items: center;
@@ -1721,7 +1815,7 @@ button.de-disponible {
 }
 
 .de-recibis small {
-  font-size: 0.8em;
+  font-size: 0.88em;
   font-weight: 600;
   color: #777;
 }
@@ -1803,7 +1897,7 @@ button.de-disponible {
   padding: 0.75em 0.3em !important;
   border-radius: 1.1em !important;
   background: #fff !important;
-  font-size: 0.62em !important;
+  font-size: 0.7em !important;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;

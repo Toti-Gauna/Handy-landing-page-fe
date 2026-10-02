@@ -35,7 +35,11 @@ export interface PantallaDemo {
 export interface PasoRecorrido {
   /** Id de la pantalla que muestra este paso. */
   pantalla: string;
-  /** Si la pantalla es una hoja: sobre qué pantalla se abre cuando se salta directo a este paso. */
+  /**
+   * Pantalla sobre la que se abre este paso cuando se salta directo a él (queda debajo en la pila, encima
+   * del inicio): para una hoja, la pantalla de fondo; para una pantalla, la del paso anterior, así
+   * "Volver" y la flecha llevan ahí.
+   */
   base?: string;
   titulo: string;
   /** Qué contar en la presentación: una o dos oraciones. */

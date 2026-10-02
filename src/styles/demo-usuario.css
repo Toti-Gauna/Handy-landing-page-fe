@@ -31,6 +31,57 @@
   margin-top: auto;
 }
 
+/* Guía (lo próximo para tocar): el amarillo de marca con un aro más oscuro, para que se vea también sobre blanco. */
+.demo-pantalla[data-rol='usuario'] .demo-guia {
+  animation-name: du-guia;
+}
+
+@keyframes du-guia {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(245 245 154 / 0.95),
+      0 0 0 0.18em #e2d84a;
+  }
+  70% {
+    box-shadow:
+      0 0 0 0.9em rgb(245 245 154 / 0),
+      0 0 0 0.18em #e2d84a;
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(245 245 154 / 0),
+      0 0 0 0.18em #e2d84a;
+  }
+}
+
+/* Dentro de tarjetas y de la rueda el aro de afuera queda recortado (overflow): va por dentro. */
+.demo-pantalla[data-rol='usuario'] .app-tarjeta .demo-guia,
+.demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+  z-index: 1;
+  animation-name: du-guia-adentro;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+  border-radius: 0.6em;
+}
+
+@keyframes du-guia-adentro {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0.2em #e2d84a;
+    background-color: rgb(245 245 154 / 0.55);
+  }
+  50% {
+    box-shadow: inset 0 0 0 0.38em #e2d84a;
+    background-color: rgb(245 245 154 / 0.85);
+  }
+}
+
+/* Y la tarjeta entera se marca con el aro de afuera (la lista deja lugar para que no se recorte). */
+.demo-pantalla[data-rol='usuario'] .app-tarjeta:has(.demo-guia) {
+  box-shadow: 0 0 0 0.18em #e2d84a;
+}
+
 .du-ico {
   display: inline-grid;
   place-items: center;
@@ -164,6 +215,8 @@
   display: flex;
   align-items: center;
   gap: 0.6em;
+  width: 100%;
+  text-align: left;
   padding: 0.6em 0.8em;
   border-radius: 1em;
   background: #dcdcdc;
@@ -280,6 +333,9 @@
 .du-scroll {
   flex: 1 1 auto;
   min-height: 0;
+  /* Un poco de aire para que el aro de la guía alrededor de una tarjeta no se recorte. */
+  margin: -0.25em;
+  padding: 0.25em;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -371,7 +427,7 @@
   z-index: 8;
   left: 1em;
   right: 1em;
-  bottom: 6.4em;
+  top: 9.6em;
   padding: 0.75em 1em;
   border-radius: 1em;
   background: var(--color-tinta);
@@ -388,6 +444,14 @@
     opacity: 0;
     transform: translateY(0.6em) scale(0.96);
   }
+}
+
+/* En las hojas, el aviso va abajo de todo. */
+.demo-hoja .du-toast {
+  position: sticky;
+  top: auto;
+  bottom: 0.6em;
+  margin-top: 0.6em;
 }
 
 /* ── Inicio ───────────────────────────────────────────────────────────── */
@@ -416,7 +480,7 @@
   height: 2.7em;
   overflow: hidden;
   border-radius: 0.8em;
-  background: var(--color-amarillo);
+  background: var(--color-azul-personajes);
   flex: none;
 }
 
@@ -616,14 +680,53 @@
   flex: none;
 }
 
-.du-foto .app-foto {
-  width: 135%;
-  max-width: none;
-  border-radius: 0;
+/* "Foto" del problema: ilustración con el ícono del rubro elegido. */
+.du-ilus {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(#c9d2de 0 24%, #dce3ec 24%);
+  color: #7d8a9c;
 }
 
-.du-foto--2 .app-foto {
-  transform: scaleX(-1);
+.du-ilus::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 12%;
+  height: 8%;
+  border-radius: 50%;
+  background: rgb(125 138 156 / 0.25);
+}
+
+.du-ilus__icono {
+  display: grid;
+  place-items: center;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-ilus__icono .icono {
+  width: 2.5em;
+  height: 2.5em;
+  stroke-width: 1.6;
+}
+
+.du-foto--2 .du-ilus__icono {
+  transform: rotate(-14deg) scale(1.2);
+}
+
+.du-ilus--chat {
+  width: 9em;
+  height: 6.6em;
+  border-radius: 0.7em;
+}
+
+.demo-pantalla[data-rol='usuario'] .du-ilus--chat .du-ilus__icono .icono {
+  width: 3.4em;
+  height: 3.4em;
 }
 
 .du-foto:not(.du-foto--agregar) {
@@ -1044,8 +1147,25 @@
 
 [data-du-seg='2'] .du-pin-esp,
 [data-du-seg='3'] .du-pin-esp {
-  left: 52%;
-  top: 80%;
+  left: 46%;
+  top: 84%;
+  opacity: 0;
+  transition:
+    left 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+    top 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease 1.2s;
+}
+
+.du-seg-mapa .app-mapa > path:last-of-type {
+  transition: opacity 0.4s ease;
+}
+
+:is([data-du-seg='2'], [data-du-seg='3']) .du-seg-mapa .app-mapa > path:last-of-type {
+  opacity: 0;
+}
+
+.du-seg-avanzar:disabled {
+  cursor: default;
 }
 
 .du-llegada {
@@ -1067,8 +1187,8 @@
   gap: 0.5em;
 }
 
-.du-chat .app-burbuja--foto .app-foto {
-  width: 8em;
+.du-chat .app-burbuja--foto {
+  align-items: center;
 }
 
 .du-rapidas {
@@ -1202,6 +1322,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.15em;
+  min-width: 0;
   text-align: right;
 }
 
@@ -1209,7 +1330,14 @@
   display: flex;
   align-items: center;
   gap: 0.25em;
+  max-width: 100%;
   font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.du-esp-fila__der strong > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .du-esp-fila__der small {
@@ -1331,6 +1459,14 @@
   width: 100%;
 }
 
+.du-cal-sel {
+  display: flex;
+}
+
+.app-tarjeta__monto.du-a-pagar {
+  color: #444;
+}
+
 .du-calendario .app-dia:disabled {
   opacity: 1;
 }
@@ -1367,6 +1503,7 @@
 
 .du-esp-fila__datos strong {
   font-size: 0.86em;
+  white-space: nowrap;
 }
 
 .du-esp-fila__datos small {
@@ -1932,6 +2069,22 @@
 /* ── Sin movimiento ───────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
+  .demo-pantalla[data-rol='usuario'] .demo-guia {
+    animation: none;
+    box-shadow: 0 0 0 0.2em #e2d84a;
+  }
+
+  .demo-pantalla[data-rol='usuario'] .app-tarjeta .demo-guia,
+  .demo-pantalla[data-rol='usuario'] .du-rueda__op.demo-guia {
+    box-shadow: inset 0 0 0 0.26em #e2d84a;
+    background-color: rgb(245 245 154 / 0.7);
+  }
+
+  .du-seg-mapa .app-mapa > path:last-of-type,
+  [data-du-seg] .du-pin-esp {
+    transition: none;
+  }
+
   .du-rueda__lista,
   .du-pin-esp,
   .du-tramo,

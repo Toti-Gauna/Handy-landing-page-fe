@@ -12,6 +12,9 @@ const pesos = new Intl.NumberFormat('es-AR', {
 /** "$ 45.000" (igual que en el build). */
 export const formatoPesos = (n: number) => pesos.format(Math.round(n)).replace(/ /g, ' ');
 
+/** "$ 45.000" sin corte entre "$" y el número (para montos dentro de oraciones). */
+export const pesosJuntos = (n: number) => formatoPesos(n).replace(/ /g, '\u00a0');
+
 export const TARIFAS = tarifas;
 
 /** Lo que paga el cliente: presupuesto + tarifa de servicio. */

@@ -312,6 +312,75 @@
   color: var(--color-texto-suave);
 }
 
+/* Fin del recorrido: "Siguiente" ya no tiene a dónde ir y "Volver a empezar" llama la atención. */
+.demo--fin .demo-control--siguiente {
+  opacity: 0.45;
+}
+
+.demo--fin [data-demo-control='reiniciar'] {
+  animation: demo-control-pulso 1.6s ease-out infinite;
+}
+
+@keyframes demo-control-pulso {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--color-azul),
+      0 4px 0 var(--color-azul),
+      0 0 0 0 rgb(31 87 168 / 0.45);
+  }
+  70% {
+    box-shadow:
+      0 0 0 2px var(--color-azul),
+      0 4px 0 var(--color-azul),
+      0 0 0 14px rgb(31 87 168 / 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--color-azul),
+      0 4px 0 var(--color-azul),
+      0 0 0 0 rgb(31 87 168 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo--fin [data-demo-control='reiniciar'] {
+    animation: none;
+    outline: 3px solid var(--color-azul-personajes);
+    outline-offset: 3px;
+  }
+}
+
+/* En el celular (QR): título y lados arriba, después el teléfono con los controles y el recorrido abajo. */
+@media (max-width: 899px) {
+  .demo__grilla {
+    gap: 16px;
+    justify-items: start;
+  }
+
+  .demo__panel {
+    display: contents;
+  }
+
+  .demo__escenario {
+    order: 1;
+    justify-self: stretch;
+    margin-block: 8px 12px;
+  }
+
+  .demo__recorrido {
+    order: 2;
+  }
+
+  .demo__cta {
+    order: 3;
+    margin-top: 0;
+  }
+
+  .demo__aviso {
+    order: 4;
+  }
+}
+
 @media (min-width: 900px) {
   .demo {
     padding-block: 32px 80px;
@@ -335,6 +404,27 @@
   .demo__pasos {
     max-height: calc(100vh - 520px);
     min-height: 220px;
+  }
+}
+
+/* iPad horizontal y pantallas bajas: el celular lo más grande que entra, con los controles al costado. */
+@media (min-width: 900px) and (max-height: 900px) {
+  .demo__fijo {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .demo__controles {
+    flex-direction: column;
+  }
+
+  .demo__ayuda {
+    display: none;
+  }
+
+  .telefono--demo {
+    --ancho: min(380px, calc((100vh - 120px) / 2.17));
   }
 }
 
@@ -362,10 +452,20 @@
   cursor: pointer;
 }
 
+/* Las hojas (.app-sheet) no están dentro de .app: les damos la misma base que a las pantallas. */
 .demo-hoja {
   outline: none;
   max-height: 88%;
   overflow: auto;
+  color: #111;
+  font-family: var(--fuente);
+  line-height: 1.2;
+  text-align: left;
+}
+
+.demo-hoja .icono {
+  width: 1.3em;
+  height: 1.3em;
 }
 
 /* Los botones de la app se ven como el diseño: sin estilos del navegador (especificidad 0). */
@@ -400,9 +500,13 @@
   flex: 1;
 }
 
-/* Lo próximo para tocar en el recorrido: late suave en amarillo. */
-.demo-guia {
+/* Lo próximo para tocar en el recorrido: late suave en amarillo.
+   La posición va con especificidad 0: no pisa a lo que ya flota (absolute) sobre un mapa. */
+:where(.demo-guia) {
   position: relative;
+}
+
+.demo-guia {
   animation: demo-pulso 1.6s ease-out infinite;
 }
 
@@ -446,6 +550,128 @@
 
 .demo-dedo--visible {
   opacity: 1;
+}
+
+/* Aviso de fin del recorrido, dentro del celular (encima de la barra inferior). */
+.demo-fin {
+  position: absolute;
+  z-index: 25;
+  inset: auto 0.8em 5.4em;
+  display: none;
+  pointer-events: none;
+}
+
+.demo--fin .demo-fin {
+  display: block;
+}
+
+.demo-fin__caja {
+  padding: 1em 1.05em 1.05em;
+  border-radius: 1.4em;
+  background: var(--color-azul);
+  color: #fff;
+  font-family: var(--fuente);
+  line-height: 1.25;
+  text-align: left;
+  box-shadow: 0 0.9em 2em -0.6em rgb(14 29 54 / 0.65);
+  pointer-events: auto;
+  animation: demo-fin-entra 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.demo-fin__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.15em;
+}
+
+.demo-fin__titulo .icono {
+  flex: none;
+  width: 1.45em;
+  height: 1.45em;
+  padding: 0.22em;
+  border-radius: 0.45em;
+  background: var(--color-amarillo);
+  color: var(--color-azul);
+  stroke-width: 3;
+}
+
+.demo-fin__texto {
+  margin-top: 0.45em;
+  font-size: 0.86em;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.demo-fin__acciones {
+  display: grid;
+  gap: 0.5em;
+  margin-top: 0.85em;
+}
+
+.demo-fin__cta,
+.demo-fin__otro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 2.8em;
+  padding: 0.45em 0.9em;
+  border-radius: 0.8em;
+  font: inherit;
+  font-size: 0.92em;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.demo-fin__cta {
+  border: 0;
+  background: var(--color-amarillo);
+  color: var(--color-azul);
+  box-shadow: 0 0.22em 0 #c4c45e;
+}
+
+.demo-fin__otro {
+  border: 0.12em solid rgb(255 255 255 / 0.75);
+  background: transparent;
+  color: #fff;
+}
+
+.demo-fin__otro .icono {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.demo-fin__cta:active,
+.demo-fin__otro:active {
+  transform: translateY(0.12em);
+}
+
+.demo-fin__cta:focus-visible,
+.demo-fin__otro:focus-visible {
+  outline: 0.2em solid var(--color-amarillo);
+  outline-offset: 0.12em;
+}
+
+@keyframes demo-fin-entra {
+  from {
+    opacity: 0;
+    transform: translateY(1.5em) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-fin__caja {
+    animation: none;
+  }
 }
 
 /* ── Modo presentación ────────────────────────────────────────────────── */
@@ -497,6 +723,92 @@
 @media (min-width: 900px) {
   .demo-presentando .demo-paso__texto small {
     font-size: 1rem;
+  }
+}
+
+/* Horizontal (iPad, proyector): el celular ocupa todo el alto, con los controles al costado. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .demo-presentando .demo__fijo {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .demo-presentando .demo__controles {
+    flex-direction: column;
+  }
+
+  .demo-presentando .telefono--demo {
+    --ancho: min(420px, calc((100vh - 56px) / 2.17));
+  }
+}
+
+/* Vertical (iPad parado) o angosto: arriba los lados y solo el paso actual con su texto; abajo el celular. */
+@media (max-width: 899px), (orientation: portrait) {
+  .demo-presentando .demo__grilla {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    height: auto;
+    min-height: 100%;
+    padding: 16px;
+  }
+
+  .demo-presentando .demo__panel {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .demo-presentando .demo__titulo {
+    display: none;
+  }
+
+  .demo-presentando .demo__roles,
+  .demo-presentando .demo__recorrido {
+    max-width: none;
+  }
+
+  .demo-presentando .demo-rol {
+    padding: 8px 14px;
+  }
+
+  .demo-presentando .demo__recorrido-titulo {
+    margin-bottom: 6px;
+  }
+
+  .demo-presentando .demo__pasos {
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .demo-presentando .demo__pasos li:not(:has(> [aria-current])) {
+    display: none;
+  }
+
+  .demo-presentando .demo__escenario {
+    width: 100%;
+    margin: 0;
+  }
+
+  .demo-presentando .telefono--demo {
+    --ancho: min(88vw, calc((100vh - 340px) / 2.17));
+  }
+}
+
+/* En un teléfono no entra el panel: solo el celular y los controles. */
+@media (max-width: 599px) {
+  .demo-presentando .demo__panel {
+    display: none;
+  }
+
+  .demo-presentando .telefono--demo {
+    --ancho: min(92vw, calc((100vh - 120px) / 2.17));
   }
 }
 
