@@ -36,6 +36,14 @@
     "presupuesto": 0,
     "pago": 0
   },
+  "formatos": {
+    "cuando": "{diaCorto} · {franja}",
+    "rubroTipo": "{rubro} · {tipo}",
+    "pedido": "{rubro} · {tipo} · {diaCorto}",
+    "fechaEstado": "{fecha} · {estado}",
+    "fechaFranja": "{fecha} · {franja}",
+    "menos": "− {monto}"
+  },
   "comun": {
     "verificado": "Verificado",
     "verMas": "Ver más información",
@@ -130,7 +138,6 @@
     ],
     "pedido": "Tu pedido",
     "nota": "Cada especialista verificado revisa tu pedido y te manda su precio.",
-    "esperando": "Esperando presupuestos…",
     "ver": "Ver presupuestos"
   },
   "presupuestos": {
@@ -214,8 +221,11 @@
   },
   "chat": {
     "subtitulo": "{rubro} · verificado",
+    "bienvenida": "Chat del turno. Tu número no se comparte: hablan por acá.",
     "inicial": [
-      { "de": "otro", "texto": "¡Hola! Ya estoy en tu casa, arranco con el arreglo." },
+      { "de": "otro", "texto": "¡Hola! Soy {esp}. Tengo tu turno: {cuando}." },
+      { "de": "vos", "texto": "¡Buenísimo! Te espero." },
+      { "de": "otro", "texto": "Ya estoy en tu casa, arranco con el arreglo." },
       { "de": "vos", "foto": true, "texto": "Así estaba esta mañana" },
       { "de": "otro", "texto": "Gracias por la foto. Ya vi qué es y tengo lo que hace falta." }
     ],
@@ -234,6 +244,7 @@
   },
   "terminado": {
     "titulo": "¡Listo, quedó arreglado!",
+    "trabajo": "Tu trabajo",
     "pagaste": "Pagaste",
     "aPagar": "Total a pagar",
     "alEspecialista": "A la cuenta de {esp}",
@@ -261,6 +272,7 @@
   "handia": {
     "nombre": "HandIA",
     "subtitulo": "Asistente de Handy",
+    "bienvenida": "Te ayudo a armar el pedido: contame qué pasó y te digo de qué rubro es.",
     "inicial": [
       { "de": "otro", "texto": "¡Hola! Soy HandIA. Contame qué pasó en tu casa, como te salga." }
     ],
@@ -344,6 +356,7 @@
   },
   "turnoDetalle": {
     "titulo": "Tu turno",
+    "direccion": "Dirección",
     "rubro": "Rubro",
     "fecha": "Fecha",
     "especialista": "Especialista",
@@ -389,7 +402,8 @@
     "configuracion": "Configuración",
     "filasCuenta": [
       { "texto": "Datos personales", "icono": "usuario", "ir": "u-datos" },
-      { "texto": "Tarjetas y pagos", "icono": "billetera", "ir": "u-pagos" }
+      { "texto": "Tarjetas y pagos", "icono": "billetera", "ir": "u-pagos" },
+      { "texto": "Mis turnos", "icono": "calendario", "raiz": "u-turnos" }
     ],
     "filasConfiguracion": [
       { "texto": "Notificaciones", "icono": "campana", "ir": "u-notificaciones" },
@@ -457,11 +471,13 @@
     "sirvio": "¿Te sirvió la respuesta?",
     "no": "No",
     "si": "Sí",
-    "gracias": "¡Gracias por contarnos!"
+    "gracias": "¡Gracias por contarnos!",
+    "otras": "Otras preguntas"
   },
   "soporte": {
     "nombre": "Soporte de Handy",
     "subtitulo": "Chat de ayuda",
+    "bienvenida": "Contanos qué pasó y lo resolvemos por acá, con vos y con el especialista.",
     "inicial": [
       { "de": "otro", "texto": "¡Hola! Soy del equipo de soporte de Handy. ¿En qué te ayudo?" }
     ],
