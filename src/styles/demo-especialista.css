@@ -1621,6 +1621,73 @@ button.de-disponible {
   padding-inline: 1.4em;
 }
 
+/* ── Cupones: tarjeta-cupón de la camada fundadora (talón azul, corte punteado y muescas) ── */
+
+.de-cupon {
+  --muesca: 0.55em;
+  --talon: 4.4em;
+  display: grid;
+  grid-template-columns: var(--talon) minmax(0, 1fr);
+  border-radius: 1.1em;
+  background: #fff;
+  -webkit-mask:
+    radial-gradient(circle var(--muesca) at var(--talon) 0, transparent 98%, #000) 0 0 / 100% 51% no-repeat,
+    radial-gradient(circle var(--muesca) at var(--talon) 100%, transparent 98%, #000) 0 100% / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--muesca) at var(--talon) 0, transparent 98%, #000) 0 0 / 100% 51% no-repeat,
+    radial-gradient(circle var(--muesca) at var(--talon) 100%, transparent 98%, #000) 0 100% / 100% 51% no-repeat;
+}
+
+.de-cupon__talon {
+  display: grid;
+  place-items: center;
+  border-right: 2px dashed rgb(245 245 154 / 0.6);
+  background: var(--color-azul);
+  color: var(--color-amarillo);
+}
+
+.de-cupon__talon .icono {
+  width: 2em !important;
+  height: 2em !important;
+}
+
+.de-cupon__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  padding: 0.8em 0.9em 0.85em 1em;
+  text-align: left;
+}
+
+.de-cupon__cuerpo strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.15em;
+  line-height: 1.1;
+  color: var(--color-azul);
+}
+
+.de-cupon__cuerpo span {
+  font-size: 0.78em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.de-cupon__cuerpo small {
+  font-size: 0.7em;
+  color: #555;
+}
+
+.de-cupon__cuerpo .de-cupon__etiqueta {
+  align-self: flex-start;
+  padding: 0.15em 0.6em;
+  border-radius: 0.6em;
+  background: var(--color-amarillo);
+  color: var(--color-azul);
+  font-weight: 800;
+}
+
 /* ── Caja ─────────────────────────────────────────────────────────────── */
 
 .de-caja {

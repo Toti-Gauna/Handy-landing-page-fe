@@ -28,7 +28,7 @@
   "fin": "Fin del recorrido. Podés seguir tocando la app o cambiar de lado.",
   "finAviso": {
     "titulo": "Fin del recorrido",
-    "texto": "Podés seguir tocando la app, volver a empezar o ver el otro lado.",
+    "texto": "Podés seguir tocando la app, volver a empezar o ver este mismo pedido del otro lado.",
     "otro": {
       "usuario": "Ver el lado del usuario",
       "especialista": "Ver el lado del especialista"

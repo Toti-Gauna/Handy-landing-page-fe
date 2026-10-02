@@ -622,6 +622,12 @@ function entrarBuscando(_p: HTMLElement, m: Motor) {
 
 function entrarSeguimiento(_p: HTMLElement, m: Motor) {
   const e = S(m);
+  // Saltando a este paso desde el recorrido, el seguimiento se cuenta desde el principio
+  // (aunque el turno se haya cancelado, terminado o el especialista ya haya llegado).
+  if (m.saltando && (e.tc.cancelado || e.tc.terminado || e.tc.seg > 0)) {
+    empezarTurno(e, { ...e.tc, seg: 0, terminado: false, cancelado: false, cambio: false });
+    pintar(m);
+  }
   // Un turno cancelado ya no se sigue: a Turnos (pasa si se vuelve acá después de cancelarlo).
   if (e.tc.cancelado) {
     m.timeout(() => m.raiz('u-turnos'), 0);

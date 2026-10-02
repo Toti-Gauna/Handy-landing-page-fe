@@ -350,10 +350,15 @@
   }
 }
 
-/* En el celular (QR): título y lados arriba, después el teléfono con los controles y el recorrido abajo. */
+/* En el celular (QR) y el iPad vertical: título y lados arriba, enseguida el teléfono entero (achicado para
+   que entre en la pantalla al cargar), y la bajada, el recorrido y el botón para sumarse abajo. */
 @media (max-width: 899px) {
+  .demo {
+    padding-top: 16px;
+  }
+
   .demo__grilla {
-    gap: 16px;
+    gap: 10px;
     justify-items: start;
   }
 
@@ -361,23 +366,40 @@
     display: contents;
   }
 
+  .demo-rol {
+    padding-block: 9px;
+  }
+
+  .demo-rol small {
+    display: none;
+  }
+
   .demo__escenario {
     order: 1;
     justify-self: stretch;
-    margin-block: 8px 12px;
+    margin-block: 4px 12px;
   }
 
-  .demo__recorrido {
+  .telefono--demo {
+    --ancho: clamp(250px, calc((100vh - 250px) / 2.17), min(84vw, 340px));
+    --ancho: clamp(250px, calc((100svh - 250px) / 2.17), min(84vw, 340px));
+  }
+
+  .demo__bajada {
     order: 2;
   }
 
-  .demo__cta {
+  .demo__recorrido {
     order: 3;
+  }
+
+  .demo__cta {
+    order: 4;
     margin-top: 0;
   }
 
   .demo__aviso {
-    order: 4;
+    order: 5;
   }
 }
 

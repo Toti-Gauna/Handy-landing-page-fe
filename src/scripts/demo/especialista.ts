@@ -59,7 +59,10 @@ interface Estado {
 
 const est = (m: Motor) => m.estado as Estado;
 const C = d.comun;
-const SUGERIDO = TARIFAS.ejemplo.presupuesto;
+/** Precio que sugiere Handy para el pedido principal. */
+const SUGERIDO = d.inicio.pedido.sugerido;
+/** Presupuesto del recorrido (el sugerido más lo que suma la guía, igual que en el build): el de ejemplo de tarifas.json. */
+const PRECIO = TARIFAS.ejemplo.presupuesto;
 const VARS = { tarifaEspecialista: `${TARIFAS.normal.especialista}%` };
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const pesos = formatoPesos;
@@ -141,7 +144,7 @@ function abrirTarjeta(tarjeta: HTMLElement, abrir: boolean) {
 
 // ── El trabajo de hoy (lo que eligió el especialista) ─────────────────────
 
-const precioHoy = (m: Motor) => est(m).precio ?? SUGERIDO;
+const precioHoy = (m: Motor) => est(m).precio ?? PRECIO;
 const franjaHoy = (m: Motor) => d.precio.franjas[est(m).franja ?? 0] ?? d.precio.franjas[0];
 const extrasHoy = (m: Motor) => (est(m).extras ?? []).reduce((s, i) => s + (d.trabajo.extras[i]?.monto ?? 0), 0);
 const netoHoy = (m: Motor) => netoConRepuestos(precioHoy(m), extrasHoy(m));

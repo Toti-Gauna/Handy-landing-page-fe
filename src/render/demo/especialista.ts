@@ -16,7 +16,17 @@ import type { DemoRol, PantallaDemo } from './tipos.ts';
 
 const ROL = 'especialista' as const;
 const C = d.comun;
-const SUGERIDO = tarifas.ejemplo.presupuesto;
+/** Precio que sugiere Handy para el pedido principal. */
+const SUGERIDO = d.inicio.pedido.sugerido;
+/**
+ * Presupuesto que manda el especialista en el recorrido (el sugerido más lo que suma la guía): es el de ejemplo
+ * de tarifas.json, el mismo que ve el usuario del otro lado. También es el precio de las pantallas que se abren
+ * saltando directo a un paso.
+ */
+const PRECIO = tarifas.ejemplo.presupuesto;
+if (SUGERIDO + d.precio.sumas[0] !== PRECIO) {
+  throw new Error(`Demo especialista: el sugerido (${SUGERIDO}) más la primera suma (${d.precio.sumas[0]}) tiene que dar el presupuesto de ejemplo de tarifas.json (${PRECIO})`);
+}
 
 // ── Cuentas (las mismas que hace el navegador con src/scripts/demo/util.ts) ──
 
@@ -256,9 +266,9 @@ ${cabecera('azul')}
   <div class="app-pedido de-enviado">
     <p class="app-pedido__titulo">${icono('checkCirculo', 'icono de-ok')}<span data-de-enviado-titulo>${esc(a.titulo)}</span></p>
     <div class="de-filas">
-      ${fila(esc(a.tuPrecio), `<span data-de-precio>${pesos(SUGERIDO)}</span>`)}
+      ${fila(esc(a.tuPrecio), `<span data-de-precio>${pesos(PRECIO)}</span>`)}
       ${fila(esc(a.horario), `<span data-de-franja>${esc(d.precio.franjas[0].texto)}</span>`)}
-      ${fila(esc(C.recibis), `<span data-de-recibis>${pesos(neto(SUGERIDO))}</span>`, 'de-fila--total')}
+      ${fila(esc(C.recibis), `<span data-de-recibis>${pesos(neto(PRECIO))}</span>`, 'de-fila--total')}
     </div>
     <p class="de-esperando" data-de-esperando>${puntos}<span>${esc(a.esperando)}</span></p>
     ${btn({ ir: 'e-en-camino', guia: true, extra: 'data-de-ir-alla hidden' }, `${esc(a.irAlla)} ${icono('flecha')}`, 'de-boton-icono')}
@@ -273,7 +283,7 @@ ${navDemo(ROL, 0)}
 
 function enCamino(): PantallaDemo {
   const c = d.camino;
-  // El cliente está en la esquina de Catamarca y Av. Libertad (como dice el destino).
+  // El cliente está sobre Catamarca, cerca de Av. Libertad (como dice el destino).
   const ruta: [number, number][] = [
     [84, 252],
     [84, 210],
@@ -379,7 +389,7 @@ function trabajo(): PantallaDemo {
   </div>
   ${btn({ accion: 'agregarExtra', guia: true }, esc(t.agregar), 'de-boton--claro de-boton--chico')}
   <p class="de-label">${esc(t.costoLabel)} ${icono('info')}</p>
-  <div class="de-costo" data-de-costo>${desglose(SUGERIDO, 0, C.recibis)}</div>
+  <div class="de-costo" data-de-costo>${desglose(PRECIO, 0, C.recibis)}</div>
   <template data-de-plantilla-quitar>${boton({ accion: 'quitarExtra', valor: '0' }, icono('cerrar'), 'de-quitar')}</template>
   <div class="de-pie">
     ${btn({ accion: 'abrirChat', valor: 'perla', ir: 'e-conversacion' }, esc(t.chatear), 'app-boton--contorno')}
@@ -409,8 +419,8 @@ ${cabecera('blanca')}
     <img class="handy handy--cano" src="/src/img/handy-cano.webp" alt="" width="354" height="405" loading="lazy" decoding="async" />
     <img class="handy cano-gota__gota" src="/src/img/handy-gota.webp" alt="" width="93" height="125" loading="lazy" decoding="async" data-de-gota />
   </div>
-  <p class="app-ganaste">${esc(f.ganaste)} <strong data-de-ganaste>${pesos(neto(SUGERIDO))}</strong></p>
-  <div class="de-costo de-costo--fin" data-de-costo>${desglose(SUGERIDO)}</div>
+  <p class="app-ganaste">${esc(f.ganaste)} <strong data-de-ganaste>${pesos(neto(PRECIO))}</strong></p>
+  <div class="de-costo de-costo--fin" data-de-costo>${desglose(PRECIO)}</div>
   <p class="app-nota-fin">${esc(f.texto)}</p>
   ${btn({ raiz: 'e-inicio' }, esc(f.inicio), 'app-boton--contorno')}
   ${btn({ raiz: 'e-turnos', guia: true }, esc(f.agenda))}
@@ -589,7 +599,7 @@ function notificaciones(): PantallaDemo {
     .map((it) => {
       const t: Toque = it.raiz ? { raiz: it.raiz } : { ir: it.destino, guia: !!it.guia };
       if (it.turno !== undefined) Object.assign(t, { accion: 'verTurno', valor: String(it.turno) });
-      const texto = it.neto ? esc(it.texto).replace('{neto}', `<strong data-de-neto>${pesos(neto(SUGERIDO))}</strong>`) : esc(it.texto);
+      const texto = it.neto ? esc(it.texto).replace('{neto}', `<strong data-de-neto>${pesos(neto(PRECIO))}</strong>`) : esc(it.texto);
       const clase = `de-notif${it.urgencia ? ' de-notif--urgencia' : ''}`;
       return `<div class="${clase}"${it.neto ? ' data-de-cobro-hoy' : ''}>
   ${boton(t, `<span class="de-notif__icono">${icono(it.icono)}</span><span>${texto}</span>`, 'de-notif__cuerpo')}
@@ -707,7 +717,8 @@ ${cabecera('blanca')}
   <div class="de-filas-cuenta">
     ${filaCuenta({ ir: 'e-datos' }, 'usuario', c.datos)}
     ${filaCuenta({ ir: 'e-rubros' }, 'maletin', c.rubros)}
-    ${filaCuenta({ ir: 'e-caja', guia: true }, 'billetera', c.cobro)}
+    ${filaCuenta({ ir: 'e-caja' }, 'billetera', c.cobro)}
+    ${filaCuenta({ ir: 'e-cupones', guia: true }, 'etiqueta', c.cupones)}
   </div>
   <p class="de-seccion">${esc(c.seccionConfig)}</p>
   <div class="de-filas-cuenta">${filaCuenta({ ir: 'e-config-notificaciones' }, 'campana', c.notificaciones)}</div>
@@ -737,7 +748,7 @@ function movimiento(titulo: string, nombreIcono: string, fecha: string, presupue
 function caja(): PantallaDemo {
   const c = d.caja;
   const lista = [
-    movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, SUGERIDO, true, true),
+    movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, PRECIO, true, true),
     ...c.movimientos.map((m) => movimiento(m.rubro, m.icono, m.fecha, m.presupuesto, false)),
   ].join('');
   return {
@@ -869,6 +880,23 @@ function datos(): PantallaDemo {
   };
 }
 
+/** Hoja de cupones: la tarjeta-cupón de la camada fundadora (números de tarifas.json). */
+function cupones(): PantallaDemo {
+  const x = d.cupones;
+  return {
+    id: 'e-cupones',
+    titulo: d.pantallas.cupones,
+    tipo: 'hoja',
+    html: `${tituloHoja(x.titulo)}
+<div class="de-cupon">
+  <span class="de-cupon__talon">${icono('etiqueta')}</span>
+  <span class="de-cupon__cuerpo"><small class="de-cupon__etiqueta">${esc(x.etiqueta)}</small><strong>${plano(x.destacado)}</strong><span>${plano(x.texto)}</span><small>${plano(x.condicion)}</small></span>
+</div>
+<p class="app-sheet__nota">${plano(x.nota)}</p>
+${btn({ volver: true }, esc(x.listo))}`,
+  };
+}
+
 function cobro(): PantallaDemo {
   const x = d.cobro;
   return {
@@ -924,6 +952,7 @@ export function demoEspecialista(): DemoRol {
       rubrosHoja(),
       datos(),
       cobro(),
+      cupones(),
       confirmar('e-cancelar', d.pantallas.cancelar, d.cancelar, 'confirmarCancelar'),
       confirmar('e-salir', d.pantallas.salir, d.salir, 'salir'),
     ],

@@ -44,6 +44,11 @@ export interface PasoRecorrido {
   titulo: string;
   /** Qué contar en la presentación: una o dos oraciones. */
   texto: string;
+  /**
+   * Modo automático: cuántos milisegundos se queda en este paso antes de cada toque (por defecto, 2400).
+   * Más largo en las pantallas clave, para que el presentador pueda hablar sobre ellas.
+   */
+  pausa?: number;
 }
 
 export interface DemoRol {

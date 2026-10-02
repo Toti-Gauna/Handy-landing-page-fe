@@ -35,6 +35,9 @@ function validar(rol: RolDemo, d: DemoRol) {
     enRecorrido.add(paso.pantalla);
     if (!ids.has(paso.pantalla)) throw new Error(`Demo ${rol}: el recorrido usa "${paso.pantalla}", que no existe`);
     if (paso.base && !ids.has(paso.base)) throw new Error(`Demo ${rol}: el recorrido usa la base "${paso.base}", que no existe`);
+    if (paso.pausa !== undefined && !(Number.isInteger(paso.pausa) && paso.pausa >= 1000 && paso.pausa <= 15000)) {
+      throw new Error(`Demo ${rol}: la pausa del paso "${paso.pantalla}" tiene que ser un número entero de 1000 a 15000 (ms)`);
+    }
   }
 }
 
@@ -52,7 +55,7 @@ function pantalla(rol: RolDemo, p: PantallaDemo, visible: boolean): string {
 function recorrido(rol: RolDemo, d: DemoRol, visible: boolean): string {
   const pasos = d.recorrido
     .map(
-      (paso, i) => `<li><button type="button" class="demo-paso" data-demo-paso="${i}" data-pantalla="${esc(paso.pantalla)}"${paso.base ? ` data-base="${esc(paso.base)}"` : ''}>
+      (paso, i) => `<li><button type="button" class="demo-paso" data-demo-paso="${i}" data-pantalla="${esc(paso.pantalla)}"${paso.base ? ` data-base="${esc(paso.base)}"` : ''}${paso.pausa ? ` data-pausa="${paso.pausa}"` : ''}>
   <span class="demo-paso__numero">${i + 1}</span>
   <span class="demo-paso__texto"><strong>${plano(paso.titulo)}</strong><small>${plano(paso.texto)}</small></span>
 </button></li>`,

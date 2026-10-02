@@ -1,8 +1,16 @@
 // Motor de la demo interactiva. Vuelve navegables las pantallas que se arman en build
 // (ver el contrato en src/render/demo/tipos.ts) y maneja el recorrido, el modo automático
 // y el modo presentación. Los comportamientos propios de cada rol viven en usuario.ts / especialista.ts.
+//
+// Parámetros de la URL (para presentar desde un iPad):
+//   ?rol=especialista   arranca del lado del especialista.
+//   ?ritmo=lento        el modo automático se queda más tiempo en cada pantalla (para narrar en vivo).
+//   ?stand=1            modo stand: arranca en presentación y reproduciendo; al terminar el recorrido pasa
+//                       al otro lado y sigue, y si nadie la toca por un minuto vuelve a empezar sola.
+//                       Mientras dura, pide que la pantalla no se apague (Wake Lock, si el navegador lo tiene).
 
 import demo from '../../content/demo.json';
+import { despuesDeIntro } from '../intro';
 
 export type Rol = 'usuario' | 'especialista';
 
@@ -32,6 +40,8 @@ export interface Motor {
   anunciar(texto: string): void;
   /** true si el usuario pidió reducir el movimiento: no animar. */
   readonly reducido: boolean;
+  /** true mientras entrar() corre porque se saltó a un paso desde el recorrido (o se volvió a empezar). */
+  readonly saltando: boolean;
   /** Estado compartido del rol (se vacía con "Volver a empezar" y al cambiar de rol). */
   estado: Record<string, unknown>;
 }
@@ -55,9 +65,15 @@ const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').mat
 const esperar = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 const DURACION = 380;
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
-/** Pausa del modo automático entre un toque y el siguiente (y antes del primero). */
+/** Pausa del modo automático entre un toque y el siguiente (cada paso puede pedir otra con data-pausa). */
 const PAUSA = 2400;
 const PAUSA_INICIAL = 900;
+/** Multiplicador de las pausas con ?ritmo=lento. */
+const LENTO = 1.6;
+/** Modo stand: cuánto queda a la vista el aviso de fin antes de pasar al otro lado. */
+const FIN_STAND = 7000;
+/** Modo stand: sin toques durante este tiempo (y sin reproducir), vuelve a empezar solo. */
+const INACTIVO_STAND = 60000;
 /** Cuánto espera "Siguiente" (como mucho) a que aparezca lo próximo para tocar, si la pantalla está esperando algo. */
 const ESPERA_GUIA = 3500;
 
@@ -65,6 +81,9 @@ const ESPERA_GUIA = 3500;
 type Avance = 'sigue' | 'fin' | 'nada';
 
 export function iniciarDemo() {
+  const parametros = new URLSearchParams(location.search);
+  const stand = parametros.get('stand') === '1';
+  const ritmo = parametros.get('ritmo') === 'lento' ? LENTO : 1;
   const raizDemo = document.querySelector<HTMLElement>('[data-demo]');
   const contenedor = document.querySelector<HTMLElement>('[data-demo-pantallas]');
   if (!raizDemo || !contenedor) return;
@@ -100,8 +119,14 @@ export function iniciarDemo() {
   let sesion = 0;
   /** Hay un "Siguiente" en curso (dos seguidos no tocan dos veces). */
   let avanzando = false;
+  /** Modo stand: está mostrando el aviso de fin antes de pasar al otro lado. */
+  let esperandoStand = false;
   /** Pantalla dueña de los temporizadores que se programan ahora (ver Motor.timeout). */
   let duenio: string | null = null;
+  /** Navegación pedida por una pantalla (m.ir, m.raiz, m.volver) durante una transición: se hace al terminar. */
+  let navDiferida: (() => void) | null = null;
+  /** colocar() está corriendo los entrar() (ver Motor.saltando). */
+  let saltando = false;
   const limpiezas = new Map<string, (() => void)[]>();
   /** Temporizadores (timeout) pendientes por pantalla: si hay, "Siguiente" espera a la guía. */
   const pendientes = new Map<string, number>();
@@ -122,6 +147,30 @@ export function iniciarDemo() {
     }
   }
 
+  /**
+   * Las pantallas pueden pedir navegar desde entrar() o un temporizador mientras otra transición está en curso:
+   * en vez de perderse, se hace apenas termina (si quien la pidió sigue en la pila).
+   */
+  function pedirNavegacion(fn: () => void) {
+    if (!ocupado) {
+      fn();
+      return;
+    }
+    const quien = duenioActual();
+    const gen = generacion;
+    navDiferida = () => {
+      if (gen === generacion && pila.includes(quien)) fn();
+    };
+  }
+
+  /** Termina una transición y hace la navegación que quedó pedida mientras tanto. */
+  function liberar() {
+    ocupado = false;
+    const fn = navDiferida;
+    navDiferida = null;
+    fn?.();
+  }
+
   function sumarPendiente(id: string, n: number) {
     const v = (pendientes.get(id) ?? 0) + n;
     if (v > 0) pendientes.set(id, v);
@@ -135,9 +184,12 @@ export function iniciarDemo() {
     get actual() {
       return top();
     },
-    ir: (id) => void navegar(id, 'ir'),
-    volver: () => void volver(),
-    raiz: (id) => void navegar(id, 'raiz'),
+    get saltando() {
+      return saltando;
+    },
+    ir: (id) => pedirNavegacion(() => void navegar(id, 'ir')),
+    volver: () => pedirNavegacion(() => void volver()),
+    raiz: (id) => pedirNavegacion(() => void navegar(id, 'raiz')),
     pantalla: (id) => pantallas.get(id ?? top())!,
     timeout(fn, ms) {
       const id = duenioActual();
@@ -215,13 +267,15 @@ export function iniciarDemo() {
     );
   }
 
-  async function mostrarPantalla(nueva: string, anterior: string | undefined, modo: 'adelante' | 'atras' | 'fundido') {
+  /** `antes` corre con la pantalla nueva ya visible y antes de que entre (así entra pintada con sus datos). */
+  async function mostrarPantalla(nueva: string, anterior: string | undefined, modo: 'adelante' | 'atras' | 'fundido', antes?: () => void) {
     const gen = generacion;
     const elNueva = pantallas.get(nueva)!;
     const elVieja = anterior ? pantallas.get(anterior) : undefined;
     elNueva.hidden = false;
     elNueva.style.zIndex = '2';
     if (elVieja && elVieja !== elNueva) elVieja.style.zIndex = '1';
+    antes?.();
     const anims: Promise<void>[] = [];
     if (modo === 'adelante') {
       anims.push(animar(elNueva, [{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }]));
@@ -242,9 +296,10 @@ export function iniciarDemo() {
     if (elVieja) elVieja.style.zIndex = '';
   }
 
-  async function abrirHoja(id: string) {
+  async function abrirHoja(id: string, antes?: () => void) {
     const el = pantallas.get(id)!;
     el.hidden = false;
+    antes?.();
     const hoja = el.querySelector<HTMLElement>('.demo-hoja');
     const velo = el.querySelector<HTMLElement>('.demo-velo');
     await Promise.all([
@@ -282,7 +337,7 @@ export function iniciarDemo() {
       guiaManual = null;
       if (esHoja(id)) {
         pila.push(id);
-        await abrirHoja(id);
+        await abrirHoja(id, () => entrar(id));
         if (gen !== generacion) return;
       } else {
         const fondoAnterior = fondo();
@@ -293,20 +348,25 @@ export function iniciarDemo() {
           await cerrarHoja(h);
           if (gen !== generacion) return;
         }
+        // La hoja llevaba a la pantalla que tenía debajo: alcanza con cerrarla.
+        if (top() === id && tipo === 'ir') {
+          despuesDeNavegar(tipo);
+          return;
+        }
+        // Sale la de antes y entra la nueva (antes de la transición, así se ve con sus datos mientras entra).
         if (tipo === 'raiz') {
           pila.forEach(salir);
           pila = [id];
         } else {
+          salir(fondoAnterior);
           pila.push(id);
         }
-        if (tipo === 'raiz') salir(fondoAnterior);
-        await mostrarPantalla(id, fondoAnterior, tipo === 'raiz' ? 'fundido' : 'adelante');
+        await mostrarPantalla(id, fondoAnterior, tipo === 'raiz' ? 'fundido' : 'adelante', () => entrar(id));
         if (gen !== generacion) return;
-        if (tipo === 'ir') salir(fondoAnterior);
       }
-      despuesDeNavegar();
+      despuesDeNavegar(tipo);
     } finally {
-      if (gen === generacion) ocupado = false;
+      if (gen === generacion) liberar();
     }
   }
 
@@ -324,28 +384,34 @@ export function iniciarDemo() {
       } else {
         // Si debajo hay una hoja, se muestra su fondo y la hoja vuelve a abrirse.
         const nuevoFondo = fondo();
-        await mostrarPantalla(nuevoFondo, sale, 'atras');
+        await mostrarPantalla(nuevoFondo, sale, 'atras', () => entrar(nuevoFondo));
         if (gen !== generacion) return;
         if (esHoja(top())) await abrirHoja(top());
         if (gen !== generacion) return;
-        entrar(nuevoFondo);
       }
-      despuesDeNavegar(false);
+      despuesDeNavegar('volver');
     } finally {
-      if (gen === generacion) ocupado = false;
+      if (gen === generacion) liberar();
     }
   }
 
-  function despuesDeNavegar(conEntrada = true) {
+  /** Después de la transición (entrar() ya corrió antes). */
+  function despuesDeNavegar(tipo: 'ir' | 'raiz' | 'volver') {
     const id = top();
-    if (conEntrada) entrar(id);
     const el = pantallas.get(id)!;
     pintarInert();
     motor.anunciar(el.dataset.titulo ?? '');
-    const foco = esHoja(id) ? el.querySelector<HTMLElement>('.demo-hoja') : el;
-    foco?.focus({ preventScroll: true });
-    sincronizarRecorrido();
+    enfocarPantalla();
+    // Ir hacia adelante no hace retroceder el recorrido (p. ej., abrir un turno desde Cobros).
+    sincronizarRecorrido(tipo === 'ir');
     pintarGuia();
+  }
+
+  function enfocarPantalla() {
+    const id = top();
+    const el = pantallas.get(id);
+    const foco = el && esHoja(id) ? el.querySelector<HTMLElement>('.demo-hoja') : el;
+    foco?.focus({ preventScroll: true });
   }
 
   /** Muestra una pantalla sin animación, con una pila nueva (al cambiar de rol o saltar a un paso). */
@@ -353,6 +419,7 @@ export function iniciarDemo() {
     // Lo que estaba en curso (una transición, un toque automático) no sigue.
     generacion++;
     ocupado = false;
+    navDiferida = null;
     cancelarToque();
     pila.forEach(salir);
     pantallas.forEach((el) => {
@@ -363,12 +430,17 @@ export function iniciarDemo() {
     pila = nuevaPila;
     guiaManual = null;
     const base = fondo();
-    pantallas.get(base)!.hidden = false;
-    entrar(base);
     const t = top();
-    if (t !== base) {
-      pantallas.get(t)!.hidden = false;
-      entrar(t);
+    saltando = true;
+    try {
+      pantallas.get(base)!.hidden = false;
+      entrar(base);
+      if (t !== base) {
+        pantallas.get(t)!.hidden = false;
+        entrar(t);
+      }
+    } finally {
+      saltando = false;
     }
     pintarInert();
     sincronizarRecorrido();
@@ -380,12 +452,13 @@ export function iniciarDemo() {
   const pasos = () => [...raizEl.querySelectorAll<HTMLButtonElement>(`[data-demo-recorrido="${rol}"] [data-demo-paso]`)];
   const indiceDe = (lista: HTMLElement[], id: string | undefined) => lista.findIndex((b) => b.dataset.pantalla === id);
 
-  function sincronizarRecorrido() {
+  /** Marca el paso de la pantalla de arriba. Con `adelante`, no vuelve a un paso anterior al activo. */
+  function sincronizarRecorrido(adelante = false) {
     const lista = pasos();
     // La pantalla de arriba; si no es un paso (un detalle, una conversación), el último paso de la pila.
     let i = indiceDe(lista, top());
     if (i < 0) i = [...pila].reverse().map((id) => indiceDe(lista, id)).find((x) => x >= 0) ?? -1;
-    if (i >= 0) pasoActivo = i;
+    if (i >= 0 && !(adelante && i < pasoActivo)) pasoActivo = i;
     // El aviso de fin se va apenas se sale del último paso.
     if (lista[lista.length - 1]?.dataset.pantalla !== top()) raizEl.classList.remove('demo--fin');
     lista.forEach((b, j) => {
@@ -408,14 +481,22 @@ export function iniciarDemo() {
   }
 
   function saltarAPaso(i: number) {
-    const b = pasos()[i];
+    const lista = pasos();
+    const b = lista[i];
     if (!b) return;
     const destino = b.dataset.pantalla!;
-    const inicio = inicioDe(rol);
-    // Debajo queda el inicio y, si el paso la tiene, su base (así "Volver" y la flecha llevan ahí).
-    const nuevaPila = [inicio];
-    if (b.dataset.base && b.dataset.base !== inicio) nuevaPila.push(b.dataset.base);
-    if (destino !== nuevaPila[nuevaPila.length - 1]) nuevaPila.push(destino);
+    // Debajo quedan el inicio, la pantalla del paso anterior (si era una hoja, su fondo) y la base del paso:
+    // así "Volver", la flecha y "Anterior" encadenado llevan al paso previo.
+    const nuevaPila = [inicioDe(rol)];
+    const apilar = (id: string | undefined) => {
+      if (id && pantallas.has(id) && !nuevaPila.includes(id)) nuevaPila.push(id);
+    };
+    const prev = lista[i - 1];
+    if (prev) apilar(esHoja(prev.dataset.pantalla!) ? prev.dataset.base : prev.dataset.pantalla);
+    apilar(b.dataset.base);
+    const ya = nuevaPila.indexOf(destino);
+    if (ya >= 0) nuevaPila.length = ya + 1;
+    else nuevaPila.push(destino);
     pasoActivo = i;
     colocar(nuevaPila);
     motor.anunciar(pantallas.get(destino)?.dataset.titulo ?? '');
@@ -580,6 +661,12 @@ export function iniciarDemo() {
     raizEl.classList.toggle('demo--reproduciendo', reproduciendo);
   }
 
+  /** Cuánto se queda el modo automático en el paso activo antes del próximo toque. */
+  function pausaDelPaso() {
+    const propia = Number(pasos()[pasoActivo]?.dataset.pausa);
+    return (propia > 0 ? propia : PAUSA) * ritmo;
+  }
+
   async function reproducir() {
     if (reproduciendo) return;
     // Con el recorrido terminado, arranca de nuevo desde el paso 1.
@@ -588,18 +675,41 @@ export function iniciarDemo() {
     const mia = ++sesion;
     const sigue = () => reproduciendo && mia === sesion;
     pintarPlay();
-    let pausa = PAUSA_INICIAL;
+    let terminado = false;
+    let pausa = PAUSA_INICIAL * ritmo;
     while (sigue()) {
       await esperar(pausa);
-      pausa = PAUSA;
       while (sigue() && ocupado) await esperar(100);
       if (!sigue()) break;
-      if ((await siguiente()) === 'fin') break;
+      if ((await siguiente()) === 'fin') {
+        terminado = true;
+        break;
+      }
+      // La pausa es la del paso al que llevó el toque: se mide cuando termina su transición.
+      const desde = performance.now();
+      while (sigue() && ocupado) await esperar(100);
+      pausa = Math.max(0, pausaDelPaso() - (performance.now() - desde));
     }
     if (mia === sesion) {
       reproduciendo = false;
       pintarPlay();
+      if (terminado && stand) void pasarAlOtroLado(mia);
     }
+  }
+
+  /** Modo stand: con el recorrido terminado y sin que nadie toque, pasa al otro lado y lo reproduce. */
+  async function pasarAlOtroLado(mia: number) {
+    esperandoStand = true;
+    try {
+      await esperar(FIN_STAND);
+    } finally {
+      esperandoStand = false;
+    }
+    // Si alguien tocó algo mientras tanto (pausar() cambia la sesión), se queda donde está.
+    if (mia !== sesion || reproduciendo) return;
+    cambiarRol(rol === 'usuario' ? 'especialista' : 'usuario');
+    mostrarTelefono();
+    void reproducir();
   }
 
   /** Frena el modo automático (un toque que ya está en vuelo termina). */
@@ -748,6 +858,71 @@ export function iniciarDemo() {
     }
   });
 
+  // ── Pantalla completa y pantalla encendida ──────────────────────────────
+  // Safari del iPad (hasta iPadOS 16.4) solo tiene la versión con prefijo webkit de la pantalla completa.
+
+  type ElementoWebkit = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void };
+  type DocumentoWebkit = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> | void };
+  const docW = document as DocumentoWebkit;
+  const enPantallaCompleta = () => document.fullscreenElement ?? docW.webkitFullscreenElement ?? null;
+
+  /** Puede fallar (sin gesto del usuario, en un iPhone, en un navegador que no la tiene): la presentación sigue igual. */
+  function pedirPantallaCompleta() {
+    const el = raizEl as ElementoWebkit;
+    try {
+      if (el.requestFullscreen) void el.requestFullscreen().catch(() => {});
+      else void Promise.resolve(el.webkitRequestFullscreen?.()).catch(() => {});
+    } catch {
+      /* sin pantalla completa */
+    }
+  }
+
+  function salirDePantallaCompleta() {
+    if (!enPantallaCompleta()) return;
+    try {
+      if (document.exitFullscreen) void document.exitFullscreen().catch(() => {});
+      else void Promise.resolve(docW.webkitExitFullscreen?.()).catch(() => {});
+    } catch {
+      /* nada */
+    }
+  }
+
+  // Que el iPad no apague la pantalla mientras se presenta (o en el stand).
+  type Bloqueo = { released: boolean; release(): Promise<void>; addEventListener(t: 'release', fn: () => void): void };
+  const wakeLock = (navigator as Navigator & { wakeLock?: { request(t: 'screen'): Promise<Bloqueo> } }).wakeLock;
+  let bloqueo: Bloqueo | null = null;
+  let pidiendoBloqueo = false;
+  const quiereBloqueo = () => stand || document.documentElement.classList.contains('demo-presentando');
+
+  async function mantenerPantallaEncendida() {
+    if (!wakeLock || bloqueo || pidiendoBloqueo || document.visibilityState !== 'visible' || !quiereBloqueo()) return;
+    pidiendoBloqueo = true;
+    try {
+      const b = await wakeLock.request('screen');
+      b.addEventListener('release', () => {
+        if (bloqueo === b) bloqueo = null;
+      });
+      // Si mientras tanto se salió de la presentación, no hace falta.
+      if (quiereBloqueo()) bloqueo = b;
+      else void b.release().catch(() => {});
+    } catch {
+      /* el navegador no lo permite ahora (p. ej., sin un toque antes): se vuelve a pedir con el próximo toque */
+    } finally {
+      pidiendoBloqueo = false;
+    }
+  }
+
+  function soltarPantalla() {
+    const b = bloqueo;
+    bloqueo = null;
+    if (b && !b.released) void b.release().catch(() => {});
+  }
+
+  // El navegador suelta el bloqueo al esconder la página: se vuelve a pedir al volver.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void mantenerPantallaEncendida();
+  });
+
   // Modo presentación: pantalla completa con el celular grande (para mostrar en un evento).
   const botonPresentacion = raizEl.querySelector<HTMLButtonElement>('[data-demo-control="presentacion"]');
   function pintarPresentacion(activo: boolean) {
@@ -758,45 +933,84 @@ export function iniciarDemo() {
       botonPresentacion.title = t;
       botonPresentacion.classList.toggle('demo-control--activo', activo);
     }
+    if (activo) void mantenerPantallaEncendida();
+    else if (!stand) soltarPantalla();
   }
   function presentacion() {
     const activo = document.documentElement.classList.contains('demo-presentando');
     if (activo) {
-      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+      salirDePantallaCompleta();
       pintarPresentacion(false);
     } else {
       pintarPresentacion(true);
-      raizEl.requestFullscreen?.().catch(() => {});
+      pedirPantallaCompleta();
+      // El foco pasa al celular: así la barra espaciadora reproduce en vez de volver a tocar este botón.
+      enfocarPantalla();
     }
   }
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) pintarPresentacion(false);
-  });
+  const alCambiarPantallaCompleta = () => {
+    // En el stand, salir de la pantalla completa (un gesto del iPad) no saca del modo presentación.
+    if (!enPantallaCompleta() && !stand) pintarPresentacion(false);
+  };
+  document.addEventListener('fullscreenchange', alCambiarPantallaCompleta);
+  document.addEventListener('webkitfullscreenchange', alCambiarPantallaCompleta);
 
   document.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     const t = e.target as HTMLElement;
     if (t.closest?.('input, textarea, select, [contenteditable], [data-demo-rol]')) return;
     const presentando = document.documentElement.classList.contains('demo-presentando');
-    if (e.key === 'ArrowRight') {
+    // En presentación también responden Av Pág / Re Pág (los punteros de presentación mandan esas teclas).
+    if (e.key === 'ArrowRight' || (presentando && e.key === 'PageDown')) {
       e.preventDefault();
       avanzarAMano();
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowLeft' || (presentando && e.key === 'PageUp')) {
       e.preventDefault();
       retrocederAMano();
     } else if (presentando && (e.key === ' ' || e.key === 'Enter') && !t.closest?.('button, a')) {
       e.preventDefault();
       alternarReproduccion();
-    } else if (presentando && e.key === 'Escape' && !document.fullscreenElement) {
+    } else if (presentando && e.key === 'Escape' && !enPantallaCompleta()) {
       pintarPresentacion(false);
     }
   });
 
+  // ── Modo stand ──────────────────────────────────────────────────────────
+
+  let ultimaActividad = Date.now();
+  function iniciarStand() {
+    const actividad = (e: Event) => {
+      if (!e.isTrusted) return;
+      ultimaActividad = Date.now();
+      // Algunos navegadores solo dan el bloqueo de pantalla después de un toque.
+      void mantenerPantallaEncendida();
+    };
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((t) => document.addEventListener(t, actividad, { passive: true, capture: true }));
+    window.setInterval(() => {
+      // Mientras reproduce (o espera para pasar al otro lado) no cuenta como inactivo.
+      if (reproduciendo || esperandoStand || document.visibilityState !== 'visible') {
+        ultimaActividad = Date.now();
+        return;
+      }
+      if (Date.now() - ultimaActividad < INACTIVO_STAND) return;
+      ultimaActividad = Date.now();
+      // Nadie la toca: vuelve a empezar desde el lado del usuario.
+      if (rol !== 'usuario') cambiarRol('usuario');
+      else reiniciar();
+      window.scrollTo({ top: 0 });
+      void reproducir();
+    }, 1000);
+    pintarPresentacion(true);
+    // El recorrido arranca cuando se fue la pantalla de carga (si la hay).
+    despuesDeIntro(() => void reproducir());
+  }
+
   // ── Arranque ────────────────────────────────────────────────────────────
 
-  const pedido = new URLSearchParams(location.search).get('rol');
+  const pedido = parametros.get('rol');
   const inicial: Rol = pedido === 'especialista' ? 'especialista' : 'usuario';
   if (inicial !== 'usuario') cambiarRol(inicial);
   else reiniciar();
   pintarPlay();
+  if (stand) iniciarStand();
 }

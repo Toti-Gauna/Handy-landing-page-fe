@@ -1,5 +1,5 @@
 {
-  "_nota": "Demo · lado del usuario: textos de las pantallas y del recorrido. Las variables entre llaves las completa la demo según lo que se va eligiendo. En las pantallas del pedido ({rubro}, {tipo}, {dia}, {diaCorto}, {fecha}, {franja}, {problema}, y del presupuesto elegido {esp}, {precio}, {tarifa}, {total}, {horarioEsp}, {propDia}, {propFecha}, {propFranja}) salen del pedido en curso; en las del turno ({esp}, {rubro}, {rubroCorto}, {tipo}, {dia}, {diaCorto}, {fecha}, {franja}, {cuando}, {precio}, {tarifa}, {total}, {estado}) salen del turno confirmado (al principio, el de ejemplo armado con 'inicial'); en HandIA, de lo que se le contó. 'contextos' dice qué pantallas son del pedido o de HandIA (las demás son del turno). {tarifaCliente} sale de tarifas.json. Cada presupuesto propone su horario en 'propone': dia = cuántos días después del elegido, franja = índice en programar.franjas (null = la que pidió el usuario), urgencia = franja que propone para hoy si es una urgencia. Personas, direcciones y precios son de ejemplo.",
+  "_nota": "Demo · lado del usuario: textos de las pantallas y del recorrido. Las variables entre llaves las completa la demo según lo que se va eligiendo. En las pantallas del pedido ({rubro}, {tipo}, {dia}, {diaCorto}, {fecha}, {franja}, {problema}, y del presupuesto elegido {esp}, {precio}, {tarifa}, {total}, {horarioEsp}, {propDia}, {propFecha}, {propFranja}) salen del pedido en curso; en las del turno ({esp}, {rubro}, {rubroCorto}, {tipo}, {dia}, {diaCorto}, {fecha}, {franja}, {cuando}, {precio}, {tarifa}, {total}, {estado}) salen del turno confirmado (al principio, el de ejemplo armado con 'inicial'); en HandIA, de lo que se le contó. 'contextos' dice qué pantallas son del pedido o de HandIA (las demás son del turno). {tarifaCliente} sale de tarifas.json. Cada presupuesto propone su horario en 'propone': dia = cuántos días después del elegido, franja = índice en programar.franjas (null = la que pidió el usuario), urgencia = franja que propone para hoy si es una urgencia. Personas, direcciones y precios son de ejemplo. El pedido del recorrido (urgencia de plomería en La Perla, hoy martes 17/11, Especialista 1 de 16 a 18 h con el presupuesto de ejemplo de tarifas.json) es el mismo que le llega al especialista en demo-especialista.json: si cambiás uno, cambiá el otro.",
   "titulos": {
     "u-inicio": "Inicio",
     "u-urgencia": "Urgencia",
@@ -30,7 +30,7 @@
   },
   "inicial": {
     "rubro": "plomeria",
-    "tipo": 1,
+    "tipo": 0,
     "dia": 2,
     "franja": 4,
     "presupuesto": 0,
@@ -66,7 +66,7 @@
     "enviarDemo": "En la demo se escribe con las respuestas rápidas.",
     "ubicacionAria": "Tu dirección",
     "avisos": {
-      "ubicacion": "Tus pedidos van a Casa: 25 de Mayo 3250, Mar del Plata."
+      "ubicacion": "Tus pedidos van a Casa: Catamarca 1650, Mar del Plata."
     }
   },
   "inicio": {
@@ -88,7 +88,7 @@
   },
   "problemas": {
     "electricidad": "Saltó la térmica y no vuelve: no hay luz en la cocina.",
-    "plomeria": "Pierde agua la canilla de la cocina, gotea todo el tiempo.",
+    "plomeria": "Se rompió el caño de abajo de la pileta de la cocina y pierde agua.",
     "gas": "El calefón no prende el piloto.",
     "cerrajeria": "Se trabó la cerradura de la puerta de entrada.",
     "albanileria": "Hay humedad en la pared del dormitorio y se descascara.",
@@ -114,13 +114,13 @@
     "ruedaAria": "Elegí el día",
     "franjasAria": "Elegí la franja horaria",
     "dias": [
-      { "rueda": "Hoy", "largo": "Hoy, sábado 14", "corto": "Hoy", "fecha": "14/11/2026", "num": 14 },
-      { "rueda": "Dom 15", "largo": "Domingo 15", "corto": "Dom 15", "fecha": "15/11/2026", "num": 15 },
-      { "rueda": "Lun 16", "largo": "Lunes 16", "corto": "Lun 16", "fecha": "16/11/2026", "num": 16 },
-      { "rueda": "Mar 17", "largo": "Martes 17", "corto": "Mar 17", "fecha": "17/11/2026", "num": 17 },
+      { "rueda": "Hoy", "largo": "Hoy, martes 17", "corto": "Hoy", "fecha": "17/11/2026", "num": 17 },
       { "rueda": "Mié 18", "largo": "Miércoles 18", "corto": "Mié 18", "fecha": "18/11/2026", "num": 18 },
       { "rueda": "Jue 19", "largo": "Jueves 19", "corto": "Jue 19", "fecha": "19/11/2026", "num": 19 },
-      { "rueda": "Vie 20", "largo": "Viernes 20", "corto": "Vie 20", "fecha": "20/11/2026", "num": 20 }
+      { "rueda": "Vie 20", "largo": "Viernes 20", "corto": "Vie 20", "fecha": "20/11/2026", "num": 20 },
+      { "rueda": "Sáb 21", "largo": "Sábado 21", "corto": "Sáb 21", "fecha": "21/11/2026", "num": 21 },
+      { "rueda": "Dom 22", "largo": "Domingo 22", "corto": "Dom 22", "fecha": "22/11/2026", "num": 22 },
+      { "rueda": "Lun 23", "largo": "Lunes 23", "corto": "Lun 23", "fecha": "23/11/2026", "num": 23 }
     ],
     "franjas": ["8 a 10 h", "10 a 12 h", "12 a 14 h", "14 a 16 h", "16 a 18 h", "18 a 20 h"],
     "info": "Elegí el día y la franja que te quedan cómodos. Cada especialista te dice en qué horario puede ir.",
@@ -142,7 +142,7 @@
     "agregarFoto": "Agregar foto",
     "direccion": "Dirección",
     "casa": "Casa",
-    "calle": "25 de Mayo 3250, Mar del Plata",
+    "calle": "Catamarca 1650, Mar del Plata",
     "pedir": "Pedir presupuestos",
     "nota": "Ves cada precio antes de confirmar."
   },
@@ -168,8 +168,8 @@
       {
         "nombre": "Especialista 1",
         "ejemplo": true,
-        "propone": { "dia": 0, "franja": null, "urgencia": 1 },
-        "zona": "Villa Primera, La Perla y Centro",
+        "propone": { "dia": 0, "franja": null, "urgencia": 4 },
+        "zona": "La Perla, Centro y Güemes",
         "declaro": "Todos los días, de 8 a 20 h",
         "otros": ["Gas"]
       },
@@ -242,11 +242,10 @@
     "subtitulo": "{rubro} · verificado",
     "bienvenida": "Chat del turno. Tu número no se comparte: hablan por acá.",
     "inicial": [
-      { "de": "otro", "texto": "¡Hola! Soy {esp}. Tengo tu turno: {cuando}." },
-      { "de": "vos", "texto": "¡Buenísimo! Te espero." },
-      { "de": "otro", "texto": "¿Me mandás una foto de lo que pasó? Así llevo lo que haga falta." },
-      { "de": "vos", "foto": true, "texto": "Así está" },
-      { "de": "otro", "texto": "Gracias por la foto. Ya vi qué es: llevo lo que hace falta." }
+      { "de": "vos", "texto": "¡Hola! Te elegí para arreglar la pérdida de la cocina." },
+      { "de": "vos", "foto": true, "texto": "Así está el caño de abajo de la pileta" },
+      { "de": "vos", "texto": "¿Venís hoy? Te espero." },
+      { "de": "otro", "texto": "¡Hola! Ya salí para allá. Llego en la franja que te marqué." }
     ],
     "etapas": [
       {
@@ -342,7 +341,7 @@
     "mes": "Noviembre",
     "anio": "2026",
     "dias": 30,
-    "hoy": 14,
+    "hoy": 17,
     "estados": {
       "confirmado": "Confirmado",
       "terminado": "Terminado",
@@ -418,7 +417,7 @@
   },
   "cuenta": {
     "nombre": "Tu nombre",
-    "zona": "Villa Primera, Mar del Plata",
+    "zona": "La Perla, Mar del Plata",
     "fotoAria": "Cambiar la foto",
     "cuenta": "Cuenta",
     "configuracion": "Configuración",
@@ -438,7 +437,7 @@
       { "label": "Nombre", "valor": "Tu nombre" },
       { "label": "Email", "valor": "tunombre@correo.com" },
       { "label": "Teléfono", "valor": "223 ••• ••••" },
-      { "label": "Dirección", "valor": "25 de Mayo 3250, Mar del Plata" }
+      { "label": "Dirección", "valor": "Catamarca 1650, Mar del Plata" }
     ],
     "nota": "Tu teléfono no se comparte con los especialistas.",
     "editar": "Editar mis datos"
@@ -535,12 +534,7 @@
       "pantalla": "u-opciones",
       "base": "u-inicio",
       "titulo": "Elegís el tipo de pedido",
-      "texto": "Urgencia, programado u obra: el pedido les llega a los especialistas que trabajan de eso."
-    },
-    {
-      "pantalla": "u-programar",
-      "titulo": "Programás el día",
-      "texto": "Elegís el día y la franja que te quedan cómodos. Cada especialista después te dice en qué horario puede ir."
+      "texto": "Urgencia para hoy, programado para el día y la franja que te quedan cómodos, u obra para trabajos grandes. En la demo: una urgencia de plomería."
     },
     {
       "pantalla": "u-describir",
@@ -550,22 +544,26 @@
     {
       "pantalla": "u-presupuestos",
       "titulo": "Comparás presupuestos",
-      "texto": "Cada especialista pone su precio y su horario. Los comparás antes de decidir."
+      "texto": "Cada especialista pone su precio y su horario. Los comparás antes de decidir.",
+      "pausa": 4200
     },
     {
       "pantalla": "u-perfil",
       "titulo": "Ves quién va a tu casa",
-      "texto": "Perfil verificado por Handy, con sus rubros, la zona donde trabaja y el horario que declaró."
+      "texto": "Perfil verificado por Handy, con sus rubros, la zona donde trabaja y el horario que declaró.",
+      "pausa": 3800
     },
     {
       "pantalla": "u-confirmar",
       "titulo": "Confirmás con el precio a la vista",
-      "texto": "El presupuesto del especialista más la tarifa de servicio de Handy del {tarifaCliente}, desglosado antes de confirmar."
+      "texto": "El presupuesto del especialista más la tarifa de servicio de Handy del {tarifaCliente}, desglosado antes de confirmar.",
+      "pausa": 4200
     },
     {
       "pantalla": "u-seguimiento",
       "titulo": "Seguís el turno",
-      "texto": "Confirmado, en camino y en tu casa. Cuando llega, confirmás la llegada desde la app."
+      "texto": "Confirmado, en camino y en tu casa. Cuando llega, confirmás la llegada desde la app.",
+      "pausa": 3200
     },
     {
       "pantalla": "u-chat",
@@ -575,7 +573,8 @@
     {
       "pantalla": "u-terminado",
       "titulo": "Trabajo terminado",
-      "texto": "La plata del trabajo va directo a la cuenta del especialista. Handy solo cobra su tarifa."
+      "texto": "La plata del trabajo va directo a la cuenta del especialista. Handy solo cobra su tarifa.",
+      "pausa": 3800
     },
     {
       "pantalla": "u-resena",
