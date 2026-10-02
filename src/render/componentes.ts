@@ -199,6 +199,17 @@ export function preguntas(ctx: Ctx, d: { id: string; titulo: string; bajada?: st
 </section>`;
 }
 
+/** Banda que invita a probar la demo interactiva (inicio y especialistas). */
+export function bandaDemo(ctx: Ctx, b: { texto: string; link: string; href: string }): string {
+  return `<aside class="contenedor banda-especialista banda-demo" aria-label="${plano(b.link)}">
+  <a class="banda-especialista__link" href="${esc(url(ctx, b.href))}" data-revelar>
+    <span class="banda-demo__play" aria-hidden="true">${icono('play')}</span>
+    <span class="banda-especialista__texto"><small>${plano(b.texto)}</small><strong>${plano(b.link)}</strong></span>
+    <span class="banda-especialista__boton" aria-hidden="true">${icono('flecha')}</span>
+  </a>
+</aside>`;
+}
+
 export function bandaFinal(ctx: Ctx, b: { titulo: string; texto: string; cta: Enlace }): string {
   return `<section class="banda-final" aria-labelledby="banda-final-titulo">
   <div class="contenedor">

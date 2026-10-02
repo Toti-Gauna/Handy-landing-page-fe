@@ -41,6 +41,8 @@ const trazos: Record<string, string> = {
   maletin: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
   camara: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  expandir: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  pausa: '<path d="M8 5v14M16 5v14"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
   flecha: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   atras: '<path d="M19 12H5M11 6l-6 6 6 6"/>',

@@ -1,0 +1,46 @@
+{
+  "_nota": "Textos de la página /demo/. Los textos de cada pantalla y del recorrido están en demo-usuario.json y demo-especialista.json.",
+  "meta": {
+    "titulo": "Demo · Probá la app de Handy",
+    "descripcion": "Recorré la app de Handy pantalla por pantalla: cómo pedís un arreglo como usuario y cómo recibís trabajos y cobrás como especialista."
+  },
+  "etiqueta": "Demo interactiva",
+  "titulo": "Probá ==Handy.==",
+  "bajada": "Así va a funcionar la app. Elegí un lado, tocá la pantalla o seguí el recorrido paso a paso.",
+  "rolesAria": "Qué lado de la app querés ver",
+  "roles": {
+    "usuario": { "texto": "Usuario", "detalle": "Pedís un arreglo" },
+    "especialista": { "texto": "Especialista", "detalle": "Recibís trabajos y cobrás" }
+  },
+  "recorridoTitulo": "Recorrido",
+  "pasoDe": "Paso {n} de {total}",
+  "controles": {
+    "anterior": "Anterior",
+    "siguiente": "Siguiente",
+    "reproducir": "Reproducir",
+    "pausar": "Pausar",
+    "reiniciar": "Volver a empezar",
+    "presentacion": "Modo presentación",
+    "salirPresentacion": "Salir del modo presentación",
+    "guia": "Mostrar dónde tocar"
+  },
+  "ayuda": "Tocá los botones del celular para navegar. Con el teclado: ← y → recorren los pasos.",
+  "fin": "Fin del recorrido. Podés seguir tocando la app o cambiar de lado.",
+  "aviso": "Demo ilustrativa: los datos, nombres y precios son de ejemplo.",
+  "sinJs": "La demo necesita JavaScript para funcionar.",
+  "ui": {
+    "volver": "Volver",
+    "cerrar": "Cerrar",
+    "notificaciones": "Notificaciones",
+    "navegacion": "Secciones de la app",
+    "pantalla": "Pantalla de la app"
+  },
+  "cta": {
+    "usuario": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" },
+    "especialista": { "texto": "Quiero sumarme", "href": "/registro/?tipo=especialista" }
+  },
+  "banda": {
+    "usuario": { "texto": "¿Querés verla andando?", "link": "Probá la demo de la app", "href": "/demo/?rol=usuario" },
+    "especialista": { "texto": "¿Querés ver cómo te llegan los pedidos?", "link": "Probá la demo para especialistas", "href": "/demo/?rol=especialista" }
+  }
+}

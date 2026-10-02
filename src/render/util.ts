@@ -3,7 +3,7 @@
 import sitio from '../content/sitio.json' with { type: 'json' };
 import tarifas from '../content/tarifas.json' with { type: 'json' };
 
-export type Pagina = 'inicio' | 'especialistas' | 'registro' | 'privacidad' | '404';
+export type Pagina = 'inicio' | 'especialistas' | 'registro' | 'privacidad' | 'demo' | '404';
 
 export interface Ctx {
   base: string;

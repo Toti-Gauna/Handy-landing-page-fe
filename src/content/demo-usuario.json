@@ -1,0 +1,14 @@
+{
+  "_nota": "Demo · lado del usuario: textos de las pantallas y del recorrido (base mínima).",
+  "recorrido": [
+    { "pantalla": "u-inicio", "titulo": "Inicio", "texto": "Elegís el rubro de lo que se rompió." },
+    { "pantalla": "u-turnos", "titulo": "Turnos", "texto": "Tus turnos en un calendario." }
+  ],
+  "pantallas": {
+    "inicio": "Inicio",
+    "turnos": "Turnos",
+    "mensajes": "Mensajes",
+    "cuenta": "Cuenta",
+    "notificaciones": "Notificaciones"
+  }
+}

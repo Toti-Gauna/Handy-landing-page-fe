@@ -17,14 +17,14 @@ const recibis = ejemplo.presupuesto - retencion;
 
 // ── Piezas comunes ────────────────────────────────────────────────────────
 
-const estado = (claro = false) => `<div class="app-estado${claro ? ' app-estado--claro' : ''}">
+export const estado = (claro = false) => `<div class="app-estado${claro ? ' app-estado--claro' : ''}">
   <span>${esc(p.estado.hora)}</span>
   <span class="app-estado__iconos"><i class="app-senal"></i><i class="app-wifi"></i><i class="app-bateria"></i></span>
 </div>`;
 
-const logo = `<span class="app-logo"><img src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" /><small>${esc(sitio.bajada)}</small></span>`;
+export const logo = `<span class="app-logo"><img src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" /><small>${esc(sitio.bajada)}</small></span>`;
 
-function cabecera(variante: 'blanca' | 'azul', botones: string[] = ['campana', 'pin']): string {
+export function cabecera(variante: 'blanca' | 'azul', botones: string[] = ['campana', 'pin']): string {
   const bs = botones.map((b) => `<span class="app-cuadrado">${icono(b)}</span>`).join('');
   return `<div class="app-cabecera app-cabecera--${variante}">
   ${estado(variante === 'azul')}
@@ -32,7 +32,7 @@ function cabecera(variante: 'blanca' | 'azul', botones: string[] = ['campana', '
 </div>`;
 }
 
-function nav(activo: number): string {
+export function nav(activo: number): string {
   return `<div class="app-nav">${p.nav
     .map(
       (n, i) =>
@@ -41,21 +41,21 @@ function nav(activo: number): string {
     .join('')}</div>`;
 }
 
-const volver = (titulo: string) => `<p class="app-volver"><span class="app-volver__flecha">${icono('atras')}</span>${esc(titulo)}</p>`;
+export const volver = (titulo: string) => `<p class="app-volver"><span class="app-volver__flecha">${icono('atras')}</span>${esc(titulo)}</p>`;
 
-const hoja = (titulo: string, contenido: string, clase = '') =>
+export const hoja = (titulo: string, contenido: string, clase = '') =>
   `<div class="app-hoja ${clase}"><span class="app-hoja__manija"></span><p class="app-hoja__titulo">${esc(titulo)}</p>${contenido}</div>`;
 
 /** Tarjeta blanca con franja gris abajo, como "Last Meetups" en la app. */
-const tarjeta = (cuerpo: string, franja: string) =>
+export const tarjeta = (cuerpo: string, franja: string) =>
   `<div class="app-tarjeta"><div class="app-tarjeta__cuerpo">${cuerpo}</div><div class="app-tarjeta__franja">${esc(franja)}</div></div>`;
 
-const fila = (izq: string, der: string, claseDer = '') =>
+export const fila = (izq: string, der: string, claseDer = '') =>
   `<div class="app-fila"><span>${izq}</span><span class="${claseDer}">${der}</span></div>`;
 
-const mosaico = (texto: string, ic: string) => `<span class="app-mosaico">${icono(ic)}<span>${esc(texto)}</span></span>`;
+export const mosaico = (texto: string, ic: string) => `<span class="app-mosaico">${icono(ic)}<span>${esc(texto)}</span></span>`;
 
-function mapa(ruta = true): string {
+export function mapa(ruta = true): string {
   const c = p.seguimiento.calles;
   return `<svg class="app-mapa" viewBox="0 0 240 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
   <rect width="240" height="300" fill="#EDEFF2"/>
@@ -79,22 +79,22 @@ function mapa(ruta = true): string {
 </svg>`;
 }
 
-const pin = (clase: string) => `<span class="app-pin ${clase}"><svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31s10-11.6 10-19A10 10 0 0 0 2 12c0 7.4 10 19 10 19Z"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg></span>`;
+export const pin = (clase: string) => `<span class="app-pin ${clase}"><svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31s10-11.6 10-19A10 10 0 0 0 2 12c0 7.4 10 19 10 19Z"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg></span>`;
 
 /** Foto ilustrada de un caño debajo de la pileta (en lugar de una foto real). */
-const fotoCano = `<svg class="app-foto" viewBox="0 0 120 90" aria-hidden="true">
+export const fotoCano = `<svg class="app-foto" viewBox="0 0 120 90" aria-hidden="true">
   <rect width="120" height="90" rx="8" fill="#DCE3EC"/><rect x="0" y="0" width="120" height="22" fill="#C9D2DE"/>
   <path d="M60 22v20a10 10 0 0 0 10 10h14v18" fill="none" stroke="#F4F6F9" stroke-width="11" stroke-linecap="round"/>
   <path d="M60 22v20a10 10 0 0 0 10 10h14v18" fill="none" stroke="#9AA6B6" stroke-width="2" stroke-linecap="round" stroke-dasharray="0 0"/>
   <circle cx="84" cy="78" r="3" fill="#6FB5FF"/><circle cx="78" cy="84" r="2" fill="#6FB5FF"/>
 </svg>`;
 
-function burbuja(m: { de: string; texto: string; foto?: boolean }, propias: string[]): string {
+export function burbuja(m: { de: string; texto: string; foto?: boolean }, propias: string[]): string {
   const propia = propias.includes(m.de);
   return `<div class="app-burbuja ${propia ? 'app-burbuja--propia' : 'app-burbuja--otra'}${m.foto ? ' app-burbuja--foto' : ''}">${m.foto ? fotoCano : ''}<span>${esc(m.texto)}</span></div>`;
 }
 
-function inputChat(texto: string): string {
+export function inputChat(texto: string): string {
   return `<div class="app-input"><span class="app-input__campo">${esc(texto)}${icono('imagen')}</span><span class="app-input__enviar">${icono('enviar')}</span></div>`;
 }
 
@@ -173,7 +173,15 @@ export function handia(): string {
 </div></div>`;
 }
 
-function calendario(t: typeof p.turnos): string {
+export interface DatosCalendario {
+  mes: string;
+  anio: string;
+  dias: number;
+  hoy: number;
+  marcados: { dia: number; icono: string; estilo: string }[];
+}
+
+export function calendario(t: DatosCalendario): string {
   const marcados = new Map(t.marcados.map((m) => [m.dia, m]));
   let dias = '';
   for (let d = 1; d <= t.dias; d++) {

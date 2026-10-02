@@ -24,6 +24,11 @@
         "pagina": "especialistas"
       },
       {
+        "texto": "Demo",
+        "href": "/demo/",
+        "pagina": "demo"
+      },
+      {
         "texto": "Preguntas",
         "href": "/#preguntas"
       }

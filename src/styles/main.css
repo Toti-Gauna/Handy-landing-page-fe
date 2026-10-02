@@ -2984,6 +2984,40 @@ main {
   }
 }
 
+/* Banda "Probá la demo": misma forma, en amarillo */
+
+.banda-demo .banda-especialista__link {
+  background: var(--color-amarillo);
+  color: var(--color-tinta);
+}
+
+.banda-demo .banda-especialista__texto strong {
+  color: var(--color-azul);
+}
+
+.banda-demo .banda-especialista__boton {
+  background: var(--color-azul);
+  color: #fff;
+  box-shadow: 0 5px 0 #133c76;
+}
+
+.banda-demo__play {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: #fff;
+  color: var(--color-azul);
+  flex: none;
+}
+
+.banda-demo__play .icono {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
 /* ── Preguntas (Centro de ayuda de la app) ────────────────────────────── */
 
 .ayuda {
