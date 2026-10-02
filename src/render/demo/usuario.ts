@@ -461,7 +461,7 @@ function seguimiento(): PantallaDemo {
 <div class="app-panel du-panel">
   <span class="app-hoja__manija du-manija"></span>
   ${boton(
-    { accion: 'seg-avanzar', etiqueta: s.avanzar },
+    { accion: 'seg-avanzar', etiqueta: s.avanzar, guia: true, extra: 'data-du-guia="segAntes"' },
     `<span class="app-panel__titulo du-seg-titulo" aria-live="polite">${s.estados.map((e, i) => tpl(e, 'span', '').replace('<span', `<span ${ver(`seg${i}`, i === 0)}`)).join('')}</span>
     <span class="app-progreso du-progreso"><span class="du-tramo du-tramo--1">${icono('check')}</span><span class="du-tramo du-tramo--2">${icono('caminar')}</span><span class="du-tramo du-tramo--3">${icono('casa')}</span></span>`,
     'du-seg-avanzar',
@@ -479,7 +479,7 @@ function seguimiento(): PantallaDemo {
     <small>${esc(s.llegadaNota)}</small>
   </div>
   <div class="app-panel__pie"><span class="app-avatar app-avatar--chico">${icono('usuario')}</span><span><small>${esc(s.especialistaLabel)}</small>${tpl(s.especialista, 'strong')}</span>${boton(
-    { ir: 'u-chat', etiqueta: s.chatAria, extra: 'data-du-chat-boton' },
+    { ir: 'u-chat', etiqueta: s.chatAria, extra: 'data-du-guia="segTrabajando"' },
     icono('chat'),
     'app-cuadrado app-cuadrado--claro',
   )}</div>
@@ -523,6 +523,7 @@ function terminado(): PantallaDemo {
   </div>
   <p class="app-nota-fin">${esc(t.nota)}</p>
   <div class="du-botones">
+    ${boton({ accion: 'pagar', extra: ver('pagoDespues', ini.pago === 1) }, tpl(t.pagar), 'app-boton du-boton-verde')}
     ${boton({ ir: 'u-resena', guia: true }, tpl(t.calificar), 'app-boton')}
     ${boton({ raiz: 'u-inicio' }, esc(t.inicio), 'app-boton app-boton--contorno')}
   </div>
@@ -671,7 +672,7 @@ function turnoDetalle(): PantallaDemo {
     <div>${label(x.fecha)}${ficha('clara', tpl('{tDia}', 'strong'), tpl('{tFecha}'), tpl('{tFranja}'))}</div>
   </div>
   ${label(x.especialista)}
-  <div class="du-esp-fila"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{tEsp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span>${tpl('{tEstado}', 'span', 'du-estado')}</div>
+  <div class="du-esp-fila"><span class="app-avatar">${icono('usuario')}</span><span class="du-esp-fila__datos">${tpl('{tEsp}', 'strong')}<small class="app-verificado">${icono('verificado')}${esc(d.comun.verificado)}</small></span>${tpl('{tEstado}', 'span', 'du-estado').replace('<span', '<span data-du-clase="tTerminado:du-estado--verde tCancelado:du-estado--rojo"')}</div>
   ${label(x.direccion)}
   ${direccion()}
   ${label(x.costo)}

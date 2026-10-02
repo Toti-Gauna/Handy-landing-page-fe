@@ -9,7 +9,7 @@ import rubros from '../../content/rubros.json' with { type: 'json' };
 import tarifas from '../../content/tarifas.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
 import { esc, formatoPesos, plano } from '../util.ts';
-import { burbuja, calendario, estado, hoja, logo } from '../pantallas.ts';
+import { burbuja, calendario, estado, fotoCano, hoja, logo } from '../pantallas.ts';
 import { boton, cabeceraDemo, navDemo, tituloHoja, volverDemo, type Toque } from './piezas.ts';
 import type { DemoRol, PantallaDemo } from './tipos.ts';
 
@@ -22,6 +22,8 @@ const SUGERIDO = tarifas.ejemplo.presupuesto;
 const retencion = (n: number) => Math.round((n * tarifas.normal.especialista) / 100);
 const neto = (n: number) => n - retencion(n);
 const pesos = (n: number) => esc(formatoPesos(n));
+/** Monto que no se corta entre "$" y el número (dentro de oraciones). */
+const pesosJuntos = (n: number) => formatoPesos(n).replace(/ /g, '\u00a0');
 const diaSemana = (dia: number) => C.dias[new Date(Number(C.anio), C.mesNumero - 1, dia).getDay()];
 const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const dosDigitos = (n: number) => String(n).padStart(2, '0');
@@ -68,6 +70,7 @@ interface OpcionesMapa {
   vos: [number, number];
   cliente?: [number, number];
   ruta?: [number, number][];
+  barrio?: string;
 }
 
 function mapa(o: OpcionesMapa): string {
@@ -101,7 +104,7 @@ function mapa(o: OpcionesMapa): string {
       <text x="-30" y="128.3">${esc(m.calles[3])}</text>
       <text x="133.5" y="108" fill="#5E8E5A" font-size="6">${esc(m.plaza)}</text>
     </g>
-    <text x="52" y="102" font-family="DM Sans, sans-serif" font-weight="800" font-size="11" letter-spacing="3" fill="#A7AFBC">${esc(m.barrio)}</text>
+    <text x="52" y="102" font-family="DM Sans, sans-serif" font-weight="800" font-size="11" letter-spacing="3" fill="#A7AFBC">${esc(o.barrio ?? m.barrio)}</text>
     <text transform="translate(262 128) rotate(90)" font-family="DM Sans, sans-serif" font-style="italic" font-weight="700" font-size="8.5" fill="#6E9CC4">${esc(m.mar)}</text>
     ${ruta}
     <g transform="translate(${o.vos[0]} ${o.vos[1]})" class="de-vos"><circle class="de-radar" r="9" fill="none" stroke="#2F6BFF" stroke-width="2"/><circle r="13" fill="#2F6BFF" opacity=".16"/><circle class="de-vos__punto" r="6" fill="#2F6BFF" stroke="#fff" stroke-width="2.5"/></g>
@@ -153,7 +156,7 @@ ${fila(esc(ultimo), pesos(neto(total)), 'de-fila--total')}`;
 
 // ── Inicio: mapa, "Disponible" y el pedido que entra ─────────────────────
 
-const POS_INICIO = { vos: [126, 168] as [number, number], cliente: [210, 126] as [number, number] };
+const POS_INICIO = { vos: [84, 210] as [number, number], cliente: [168, 126] as [number, number] };
 
 function inicio(): PantallaDemo {
   const i = d.inicio;
@@ -230,7 +233,7 @@ function precio(): PantallaDemo {
   </span>
   ${btn({ accion: 'ponerPrecio', guia: true }, esc(p.boton))}
 </div>
-<p class="de-recibis"><span>${esc(p.recibis)} <strong data-de-recibis>${pesos(neto(SUGERIDO))}</strong></span><small data-de-retiene>${plano(p.retiene, { monto: formatoPesos(retencion(SUGERIDO)) })}</small></p>
+<p class="de-recibis"><span>${esc(p.recibis)} <strong data-de-recibis>${pesos(neto(SUGERIDO))}</strong></span><small data-de-retiene>${plano(p.retiene, { monto: pesosJuntos(retencion(SUGERIDO)) })}</small></p>
 <p class="app-sheet__nota">${esc(p.nota)}</p>`,
   };
 }
@@ -308,12 +311,15 @@ const rapidas = (id: IdChat) =>
     .map((r, i) => boton({ accion: 'rapida', valor: String(i), guia: i === 0 }, esc(r.chip), 'app-accion de-rapida'))
     .join('');
 
+const mensajesChat = (id: IdChat) =>
+  `<p class="de-chat-dia">${esc(d.chats[id].dia)}</p>${d.chats[id].mensajes.map((m) => burbuja(m, ['esp'])).join('')}`;
+
 function chat(): PantallaDemo {
   const c = d.chat;
   const inicial: IdChat = 'perla';
   const ch = d.chats[inicial];
   const plantillas = CHATS.map(
-    (id) => `<template data-de-plantilla="${id}">${d.chats[id].mensajes.map((m) => burbuja(m, ['esp'])).join('')}</template>`,
+    (id) => `<template data-de-plantilla="${id}">${mensajesChat(id)}</template>`,
   ).join('');
   return {
     id: 'e-chat',
@@ -322,7 +328,7 @@ function chat(): PantallaDemo {
 ${cabeceraDemo(ROL, 'blanca', false)}
 <div class="app-chat de-chat" data-de-chat="${inicial}">
   <div class="app-chat__cabecera">${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'app-volver__flecha')}<span class="app-chat__nombre"><strong data-de-chat-nombre>${esc(ch.nombre)}</strong><small data-de-chat-sub>${esc(ch.sub)}</small></span><span class="app-chat__avatar app-chat__avatar--icono">${icono('usuario')}</span></div>
-  <div class="app-chat__mensajes" data-de-mensajes aria-live="polite">${ch.mensajes.map((m) => burbuja(m, ['esp'])).join('')}</div>
+  <div class="app-chat__mensajes" data-de-mensajes aria-live="polite">${mensajesChat(inicial)}</div>
   <div class="de-rapidas" data-de-rapidas role="group" aria-label="${esc(c.rapidasLabel)}">${rapidas(inicial)}</div>
   <div class="app-chat__acciones app-chat__acciones--centro">
     ${boton({ ir: 'e-trabajo', extra: 'data-de-llegue' }, `${esc(c.llegue)} ${icono('check')}`, 'app-accion app-accion--principal')}
@@ -350,11 +356,12 @@ function trabajo(): PantallaDemo {
   ${estado()}
   <div class="app-cabecera__fila">${logo}<span class="de-crono" role="timer" aria-label="${esc(t.cronoLabel)}">${icono('reloj')}<span data-de-crono>00:00</span></span></div>
 </div>
-<div class="app-cuerpo de-cuerpo">
+<div class="app-cuerpo de-cuerpo de-cuerpo--holgado">
   <div class="de-dupla de-dupla--tipo">
     <div><p class="de-label">${esc(t.tipoLabel)}</p><p class="de-tipo"><strong>${esc(t.tipo)} ${icono('canilla')}${icono('maletin')}</strong><small>${esc(t.tipoDetalle)}</small></p></div>
     <div><p class="de-label">${esc(t.fechaLabel)}</p><p class="de-fecha"><strong data-de-franja-dia>${esc(f.dia)}</strong><small>${esc(fechaCorta(C.hoy))}</small><small data-de-franja-corta>${esc(f.corto)}</small></p></div>
   </div>
+  <div class="de-pedido-mini">${fotoCano}<p><small>${esc(t.pedidoLabel)}</small><span>${esc(d.inicio.pedido.detalle)}</span></p></div>
   <p class="de-label">${esc(t.agregarLabel)}</p>
   <div class="de-agregar">
     <span class="de-campo" data-de-extra-nombre>${esc(primero.nombre)}</span>
@@ -364,10 +371,13 @@ function trabajo(): PantallaDemo {
   <p class="de-label">${esc(t.costoLabel)} ${icono('info')}</p>
   <div class="de-costo" data-de-costo aria-live="polite">${desglose(SUGERIDO, 0, C.recibis)}</div>
   <template data-de-plantilla-quitar>${boton({ accion: 'quitarExtra', valor: '0' }, icono('cerrar'), 'de-quitar')}</template>
-  ${btn({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat' }, esc(t.chatear), 'app-boton--contorno')}
-  <div class="de-dos">
-    ${btn({ ir: 'e-cancelar' }, esc(t.cancelar), 'de-boton--rojo')}
-    ${btn({ ir: 'e-fin', guia: true }, esc(t.terminar))}
+  <div class="de-pie">
+    ${btn({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat' }, esc(t.chatear), 'app-boton--contorno')}
+    ${btn({ ir: 'e-ayuda' }, `${esc(t.ayuda)} ${ic('pregunta')}`, 'de-boton--claro de-boton-icono')}
+    <div class="de-dos">
+      ${btn({ ir: 'e-cancelar' }, esc(t.cancelar), 'de-boton--rojo')}
+      ${btn({ ir: 'e-fin', guia: true }, esc(t.terminar))}
+    </div>
   </div>
 </div>
 </div>`,
@@ -442,23 +452,26 @@ function detalle(): PantallaDemo {
     titulo: d.pantallas.detalle,
     html: `<div class="app">
 ${cabeceraDemo(ROL, 'blanca', false)}
-<div class="app-cuerpo de-cuerpo">
+<div class="app-cuerpo de-cuerpo de-cuerpo--holgado">
   ${volverDemo(x.titulo)}
   <div class="de-dupla de-dupla--tipo">
     <div><p class="de-label">${esc(x.tipoLabel)}</p><p class="de-tipo"><strong><span data-de-d="rubro">${esc(t.rubro)}</span> ${iconos}${icono('maletin')}</strong><small><span data-de-d="detalle">${esc(t.detalle)}</span></small></p></div>
     <div><p class="de-label">${esc(x.fechaLabel)}</p><p class="de-fecha"><strong data-de-d="dia">${esc(mayuscula(diaSemana(t.dia)))}</strong><small data-de-d="fecha">${esc(fechaLarga(t.dia))}</small><small data-de-d="franja">${esc(t.franja)}</small></p></div>
   </div>
+  <div class="de-pedido-mini de-pedido-mini--texto"><p><small>${esc(x.pedidoLabel)}</small><span data-de-d="pedido">${esc(t.pedido)}</span></p></div>
   <div class="de-dupla">
     <div><p class="de-label">${esc(x.dondeLabel)}</p><p class="de-caja-azul" data-de-d="barrio">${esc(t.barrio)}</p></div>
     <div><p class="de-label">${esc(x.repuestosLabel)}</p><p class="de-caja-azul">${esc(x.ninguno)}</p></div>
   </div>
   <p class="de-label">${esc(x.costoLabel)} ${icono('info')}</p>
   <div class="de-costo" data-de-d="costo">${desglose(t.presupuesto, 0, C.recibis)}</div>
+  <div class="de-pie">
   <p class="de-estado-turno" data-de-d="estado">${esc(x.pendiente)}</p>
   <div class="de-acciones" data-de-d="acciones">
     ${btn({ accion: 'abrirChat', valor: t.chat, ir: 'e-chat', extra: 'data-de-d="chat"' }, esc(x.chatear), 'app-boton--contorno')}
     ${btn({ ir: 'e-cambiar-fecha', guia: true }, esc(x.cambiar), 'de-boton--claro')}
     ${btn({ ir: 'e-cancelar' }, esc(x.cancelar), 'de-boton--rojo')}
+  </div>
   </div>
 </div>
 </div>`,
@@ -466,6 +479,32 @@ ${cabeceraDemo(ROL, 'blanca', false)}
 }
 
 // ── Cambiar la fecha ──────────────────────────────────────────────────────
+
+/** Tira de la semana (lunes a domingo) del día propuesto: el día del turno, el nuevo y los que no se pueden elegir. */
+function semana(nuevo: number, actual: number): string {
+  const lunes = nuevo - ((new Date(Number(C.anio), C.mesNumero - 1, nuevo).getDay() + 6) % 7);
+  let html = '';
+  for (let n = lunes; n < lunes + 7; n++) {
+    if (n < 1 || n > 30) {
+      html += '<span class="de-semana__dia de-semana__dia--vacio" aria-hidden="true"></span>';
+      continue;
+    }
+    const nombre = diaSemana(n);
+    const clases = `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}${n === nuevo ? ' de-semana__dia--nueva' : ''}`;
+    const deshabilitado = n <= C.hoy || nombre === C.dias[0];
+    html += boton(
+      {
+        accion: 'elegirDia',
+        valor: String(n),
+        etiqueta: d.cambio.elegirDia.replace('{dia}', nombre).replace('{fecha}', fechaCorta(n)),
+        extra: `aria-pressed="${n === nuevo}"${deshabilitado ? ' disabled' : ''}`,
+      },
+      `<small>${esc(nombre.charAt(0).toUpperCase())}</small><strong>${n}</strong>`,
+      clases,
+    );
+  }
+  return html;
+}
 
 /** Primer día hábil (lunes a sábado) después de `dia`. */
 function diaSiguiente(dia: number): number {
@@ -497,20 +536,28 @@ function cambiarFecha(): PantallaDemo {
 ${cabeceraDemo(ROL, 'blanca', false)}
 <div class="app-cuerpo de-cuerpo de-cambio">
   ${volverDemo(c.titulo)}
+  <p class="de-actual" data-de-cambio-actual>${icono('calendario')}<span>${esc(
+    c.actual.replace('{dia}', diaSemana(t.dia)).replace('{fecha}', fechaCorta(t.dia)).replace('{franja}', t.franja),
+  )}</span></p>
   <p class="de-subtitulo">${esc(c.motivoTitulo)}</p>
   <div class="de-motivos">${motivos}</div>
   <p class="de-subtitulo de-subtitulo--linea">${esc(c.nuevaTitulo)}</p>
+  <div class="de-semana" data-de-semana role="group" aria-label="${esc(c.semanaLabel)}">${semana(dia, t.dia)}</div>
   <div class="de-campos">
     <div class="de-campo-grupo"><p class="de-label">${esc(c.mesLabel)}</p><span class="de-campo de-campo--select">${esc(C.mesTitulo)} ${icono('abajo')}</span></div>
     <div class="de-campo-grupo"><p class="de-label">${esc(c.franjaLabel)}</p><span class="de-campo"><span data-de-cambio-franja>${esc(c.franjas[franja])}</span>${stepper('franjaPaso', c.franjaSubir, c.franjaBajar)}</span></div>
     <div class="de-campo-grupo"><p class="de-label">${esc(c.diaLabel)}</p><span class="de-campo"><span data-de-cambio-dia>${dia}</span>${stepper('diaPaso', c.diaSubir, c.diaBajar)}</span></div>
     <div class="de-campo-grupo"><p class="de-label">${esc(c.anioLabel)}</p><span class="de-campo de-campo--gris">${esc(C.anio)}</span></div>
   </div>
+  <p class="de-label">${esc(c.mensajeLabel)}</p>
+  <span class="de-campo de-campo--mensaje">${esc(c.mensaje)}${ic('editar')}</span>
+  <div class="de-pie">
   <p class="de-resumen" data-de-cambio-resumen aria-live="polite">${esc(
     c.resumen.replace('{dia}', diaSemana(dia)).replace('{fecha}', fechaCorta(dia)).replace('{franja}', c.franjas[franja]),
   )}</p>
   ${btn({ accion: 'proponerFecha', guia: true }, esc(c.proponer), 'de-boton--claro')}
-  <p class="de-ok" data-de-cambio-ok role="status" hidden>${ic('checkCirculo')}<span>${esc(c.enviado)}</span></p>
+  <p class="de-listo" data-de-cambio-ok role="status" hidden>${ic('checkCirculo')}<span>${esc(c.enviado)}</span></p>
+  </div>
 </div>
 </div>`,
   };
@@ -586,7 +633,7 @@ function pedidoProgramado(): PantallaDemo {
     html: `<div class="app">
 ${cabeceraDemo(ROL, 'azul')}
 <div class="app-mapa-caja de-mapa de-mapa--pedido">
-  ${mapa({ id: 'programado', vos: [126, 168], cliente: [84, 84] })}
+  ${mapa({ id: 'programado', vos: [126, 168], cliente: [84, 84], barrio: d.mapa.barrioProgramado })}
   ${disponible(false)}
   <div class="app-pedido de-pedido de-pedido--programado" data-de-programado>
     <p class="app-pedido__titulo">${esc(p.titulo)} ${icono(p.icono)}${boton({ accion: 'rechazarProgramado', etiqueta: p.rechazar }, icono('cerrar'), 'app-x app-x--gris')}</p>
@@ -602,7 +649,7 @@ ${cabeceraDemo(ROL, 'azul')}
     ${btn({ ir: 'e-precio' }, esc(p.cambiar), 'app-boton--contorno')}
     <p class="de-pedido__pie">${esc(p.pie)} ${icono('calendario')}</p>
   </div>
-  ${aviso(p.enviadoTitulo.replace('{monto}', formatoPesos(p.sugerido)), p.enviadoTexto, 'data-de-programado-aviso')}
+  ${aviso(p.enviadoTitulo, p.enviadoTexto.replace('{monto}', pesosJuntos(p.sugerido)), 'data-de-programado-aviso')}
 </div>
 ${navDemo(ROL, 0)}
 </div>`,
@@ -644,7 +691,7 @@ ${cabeceraDemo(ROL, 'blanca')}
   </div>
   <p class="de-seccion">${esc(c.seccionConfig)}</p>
   <div class="de-filas-cuenta">${filaCuenta({ ir: 'e-config-notificaciones' }, 'campana', c.notificaciones)}</div>
-  <div class="de-dos de-dos--cuenta">
+  <div class="de-pie de-pie--cuenta">
     ${btn({ ir: 'e-salir' }, `${esc(c.salir)} ${ic('salir')}`, 'de-boton--rojo de-boton-icono')}
     ${btn({ ir: 'e-ayuda' }, `${esc(c.ayuda)} ${ic('pregunta')}`, 'de-boton-icono')}
   </div>

@@ -89,7 +89,15 @@
     "mesNumero": 11,
     "anio": "2026",
     "hoy": 17,
-    "dias": ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"],
+    "dias": [
+      "domingo",
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábado"
+    ],
     "cerrar": "Cerrar",
     "volver": "Volver"
   },
@@ -97,8 +105,14 @@
     "barrio": "LA PERLA",
     "mar": "Mar Argentino",
     "costa": "Bv. Marítimo",
-    "calles": ["Av. Libertad", "Av. Independencia", "Catamarca", "Brown"],
-    "plaza": "Plaza"
+    "calles": [
+      "Av. Libertad",
+      "Av. Independencia",
+      "Catamarca",
+      "Brown"
+    ],
+    "plaza": "Plaza",
+    "barrioProgramado": "LOS TRONCOS"
   },
   "inicio": {
     "titulo": "Inicio",
@@ -127,13 +141,28 @@
     "titulo": "Tu precio",
     "cuandoLabel": "¿Cuándo podés ir?",
     "franjas": [
-      { "texto": "Hoy, de 16 a 18 h", "dia": "Hoy", "corto": "16 a 18 h" },
-      { "texto": "Hoy, de 18 a 20 h", "dia": "Hoy", "corto": "18 a 20 h" },
-      { "texto": "Mañana, de 9 a 11 h", "dia": "Mañana", "corto": "9 a 11 h" }
+      {
+        "texto": "Hoy, de 16 a 18 h",
+        "dia": "Hoy",
+        "corto": "16 a 18 h"
+      },
+      {
+        "texto": "Hoy, de 18 a 20 h",
+        "dia": "Hoy",
+        "corto": "18 a 20 h"
+      },
+      {
+        "texto": "Mañana, de 9 a 11 h",
+        "dia": "Mañana",
+        "corto": "9 a 11 h"
+      }
     ],
     "sugeridoLabel": "Precio sugerido por Handy:",
     "dejar": "Dejar el sugerido",
-    "sumas": [1000, 2000],
+    "sumas": [
+      1000,
+      2000
+    ],
     "paso": 500,
     "minimo": 5000,
     "subir": "Subir {monto}",
@@ -178,59 +207,138 @@
     "perla": {
       "nombre": "Cliente · La Perla",
       "sub": "Plomería · hoy",
+      "dia": "Hoy",
       "noLeidos": 1,
       "turno": -1,
       "mensajes": [
-        { "de": "cli", "foto": true, "texto": "Así está el caño de abajo de la pileta" },
-        { "de": "cli", "texto": "¿Venís hoy? Te espero." }
+        {
+          "de": "cli",
+          "texto": "¡Hola! Te elegí para arreglar la pérdida de la cocina."
+        },
+        {
+          "de": "cli",
+          "foto": true,
+          "texto": "Así está el caño de abajo de la pileta"
+        },
+        {
+          "de": "cli",
+          "texto": "¿Venís hoy? Te espero."
+        }
       ],
       "rapidas": [
-        { "chip": "Ya salí", "texto": "¡Hola! Ya salí para allá. Llego en la franja que te marqué.", "respuesta": "¡Genial! Te espero." },
-        { "chip": "Llave de paso", "texto": "¿Tenés la llave de paso a mano?", "respuesta": "Sí, está abajo de la mesada." },
-        { "chip": "¿Me abrís?", "texto": "Llegué, ¿me abrís?", "respuesta": "¡Ya bajo!" }
+        {
+          "chip": "Ya salí",
+          "texto": "¡Hola! Ya salí para allá. Llego en la franja que te marqué.",
+          "respuesta": "¡Genial! Te espero."
+        },
+        {
+          "chip": "Llave de paso",
+          "texto": "¿Tenés la llave de paso a mano?",
+          "respuesta": "Sí, está abajo de la mesada."
+        },
+        {
+          "chip": "¿Me abrís?",
+          "texto": "Llegué, ¿me abrís?",
+          "respuesta": "¡Ya bajo!"
+        }
       ]
     },
     "mogotes": {
       "nombre": "Cliente · Punta Mogotes",
       "sub": "Gas · jueves 19/11",
+      "dia": "Ayer",
       "noLeidos": 2,
       "turno": 0,
       "mensajes": [
-        { "de": "esp", "texto": "¡Hola! Te confirmo el turno del jueves, de 9 a 11 h." },
-        { "de": "cli", "texto": "Perfecto. El calefón está en el lavadero." },
-        { "de": "cli", "texto": "¿Hace falta que compre algo?" }
+        {
+          "de": "cli",
+          "texto": "Hola, el calefón se apaga a cada rato y el agua sale tibia."
+        },
+        {
+          "de": "esp",
+          "texto": "¡Hola! Te confirmo el turno del jueves, de 9 a 11 h. Lo reviso entero."
+        },
+        {
+          "de": "cli",
+          "texto": "Perfecto. El calefón está en el lavadero."
+        },
+        {
+          "de": "cli",
+          "texto": "¿Hace falta que compre algo?"
+        }
       ],
       "rapidas": [
-        { "chip": "Llevo todo", "texto": "No hace falta, llevo todo lo necesario.", "respuesta": "¡Buenísimo, gracias!" },
-        { "chip": "Pedir foto", "texto": "¿Me mandás una foto del calefón?", "respuesta": "Dale, ahora te la mando." }
+        {
+          "chip": "Llevo todo",
+          "texto": "No hace falta, llevo todo lo necesario.",
+          "respuesta": "¡Buenísimo, gracias!"
+        },
+        {
+          "chip": "Pedir foto",
+          "texto": "¿Me mandás una foto del calefón?",
+          "respuesta": "Dale, ahora te la mando."
+        }
       ]
     },
     "chauvin": {
       "nombre": "Cliente · Chauvín",
       "sub": "Plomería · lunes 23/11",
+      "dia": "Ayer",
       "noLeidos": 0,
       "turno": 1,
       "mensajes": [
-        { "de": "cli", "texto": "Hola, la canilla de la cocina gotea todo el día." },
-        { "de": "esp", "texto": "Hola, el lunes de 14 a 16 h la cambiamos. ¿Ya tenés la canilla nueva?" },
-        { "de": "cli", "texto": "Todavía no, ¿la podés llevar vos?" }
+        {
+          "de": "cli",
+          "texto": "Hola, la canilla de la cocina gotea todo el día."
+        },
+        {
+          "de": "esp",
+          "texto": "Hola, el lunes de 14 a 16 h la cambiamos. ¿Ya tenés la canilla nueva?"
+        },
+        {
+          "de": "cli",
+          "texto": "Todavía no, ¿la podés llevar vos?"
+        }
       ],
       "rapidas": [
-        { "chip": "La llevo", "texto": "Sí, la llevo y la sumo como repuesto.", "respuesta": "Dale, perfecto." },
-        { "chip": "Elegila vos", "texto": "Mejor elegila vos, así te gusta cómo queda.", "respuesta": "Ok, la compro esta semana." }
+        {
+          "chip": "La llevo",
+          "texto": "Sí, la llevo y la sumo como repuesto.",
+          "respuesta": "Dale, perfecto."
+        },
+        {
+          "chip": "Elegila vos",
+          "texto": "Mejor elegila vos, así te gusta cómo queda.",
+          "respuesta": "Ok, la compro esta semana."
+        }
       ]
     },
     "centro": {
       "nombre": "Cliente · Centro",
       "sub": "Gas · viernes 27/11",
+      "dia": "Lunes",
       "noLeidos": 0,
       "turno": 2,
       "mensajes": [
-        { "de": "cli", "texto": "Hola, la estufa del living hace olor cuando la prendo." },
-        { "de": "esp", "texto": "Hola, no la uses hasta que la revise. Nos vemos el viernes." }
+        {
+          "de": "cli",
+          "texto": "Hola, la estufa del living hace olor cuando la prendo."
+        },
+        {
+          "de": "esp",
+          "texto": "Hola, no la uses hasta que la revise. Nos vemos el viernes de 16 a 18 h."
+        },
+        {
+          "de": "cli",
+          "texto": "Dale, la dejo apagada. ¡Gracias!"
+        }
       ],
       "rapidas": [
-        { "chip": "Recordatorio", "texto": "Te recuerdo: el viernes de 16 a 18 h paso por la estufa.", "respuesta": "¡Gracias! Te espero." }
+        {
+          "chip": "Recordatorio",
+          "texto": "Te recuerdo: el viernes de 16 a 18 h paso por la estufa.",
+          "respuesta": "¡Gracias! Te espero."
+        }
       ]
     }
   },
@@ -244,8 +352,14 @@
     "agregarLabel": "Agregar repuesto o servicio",
     "agregar": "Agregar",
     "extras": [
-      { "nombre": "Flexible de 40 cm", "monto": 3500 },
-      { "nombre": "Sifón de PVC", "monto": 6000 }
+      {
+        "nombre": "Flexible de 40 cm",
+        "monto": 3500
+      },
+      {
+        "nombre": "Sifón de PVC",
+        "monto": 6000
+      }
     ],
     "sinMas": "Ya sumaste los repuestos de ejemplo",
     "quitar": "Quitar {nombre}",
@@ -253,7 +367,9 @@
     "chatear": "Chatear con el cliente",
     "cancelar": "Cancelar",
     "terminar": "Terminar trabajo",
-    "anuncioExtra": "Sumaste {nombre}. Ahora recibís {monto}."
+    "anuncioExtra": "Sumaste {nombre}. Ahora recibís {monto}.",
+    "pedidoLabel": "Lo que pidió el cliente",
+    "ayuda": "Centro de ayuda"
   },
   "fin": {
     "titulo": "¡Terminaste el trabajo!",
@@ -267,8 +383,14 @@
     "panel": "Próximos trabajos",
     "cancelado": "Cancelado",
     "pasados": [
-      { "dia": 5, "icono": "llama" },
-      { "dia": 12, "icono": "canilla" }
+      {
+        "dia": 5,
+        "icono": "llama"
+      },
+      {
+        "dia": 12,
+        "icono": "canilla"
+      }
     ],
     "items": [
       {
@@ -279,7 +401,8 @@
         "franja": "de 9 a 11 h",
         "barrio": "Punta Mogotes",
         "presupuesto": 38000,
-        "chat": "mogotes"
+        "chat": "mogotes",
+        "pedido": "«El calefón se apaga solo y el agua sale tibia.»"
       },
       {
         "rubro": "Plomería",
@@ -289,7 +412,8 @@
         "franja": "de 14 a 16 h",
         "barrio": "Chauvín",
         "presupuesto": 30000,
-        "chat": "chauvin"
+        "chat": "chauvin",
+        "pedido": "«La canilla de la cocina gotea todo el día.»"
       },
       {
         "rubro": "Gas",
@@ -299,7 +423,8 @@
         "franja": "de 16 a 18 h",
         "barrio": "Centro",
         "presupuesto": 34000,
-        "chat": "centro"
+        "chat": "centro",
+        "pedido": "«La estufa del living hace olor cuando la prendo.»"
       }
     ]
   },
@@ -315,18 +440,30 @@
     "cancelado": "Turno cancelado. Le avisamos al cliente.",
     "chatear": "Chatear con el cliente",
     "cambiar": "Cambiar fecha",
-    "cancelar": "Cancelar turno"
+    "cancelar": "Cancelar turno",
+    "pedidoLabel": "Lo que pidió el cliente"
   },
   "cambio": {
     "titulo": "Cambiar la fecha",
     "motivoTitulo": "¿Por qué la cambiás?",
-    "motivos": ["No llego en ese horario", "El cliente me pidió otro día", "Me surgió otro trabajo", "Otro motivo"],
+    "motivos": [
+      "No llego en ese horario",
+      "El cliente me pidió otro día",
+      "Me surgió otro trabajo",
+      "Otro motivo"
+    ],
     "nuevaTitulo": "Elegí la nueva fecha",
     "mesLabel": "Mes",
     "diaLabel": "Día",
     "anioLabel": "Año",
     "franjaLabel": "Franja",
-    "franjas": ["de 9 a 11 h", "de 11 a 13 h", "de 14 a 16 h", "de 16 a 18 h", "de 18 a 20 h"],
+    "franjas": [
+      "de 9 a 11 h",
+      "de 11 a 13 h",
+      "de 14 a 16 h",
+      "de 16 a 18 h",
+      "de 18 a 20 h"
+    ],
     "diaSubir": "Día siguiente",
     "diaBajar": "Día anterior",
     "franjaSubir": "Franja siguiente",
@@ -334,7 +471,12 @@
     "resumen": "Le vas a proponer el {dia} {fecha}, {franja}.",
     "proponer": "Proponer nueva fecha",
     "enviadoBoton": "Propuesta enviada",
-    "enviado": "Le mandamos la propuesta al cliente. Cuando la confirme, se actualiza tu agenda."
+    "enviado": "Le mandamos la propuesta al cliente. Cuando la confirme, se actualiza tu agenda.",
+    "actual": "Turno actual: {dia} {fecha}, {franja}.",
+    "mensajeLabel": "Mensaje para el cliente (opcional)",
+    "mensaje": "Escribile por qué la cambiás…",
+    "elegirDia": "Proponer el {dia} {fecha}",
+    "semanaLabel": "Días de la semana"
   },
   "avisos": {
     "titulo": "Notificaciones",
@@ -344,10 +486,29 @@
     "nadaMas": "Parece que no hay nada más por acá.",
     "vacio": "No tenés notificaciones.",
     "items": [
-      { "icono": "llama", "texto": "Nuevo pedido programado: gas en Los Troncos para el jueves 26/11.", "destino": "e-pedido-programado", "guia": true },
-      { "icono": "billetera", "texto": "Te acreditamos {neto} del trabajo de plomería en La Perla.", "destino": "e-caja", "neto": true },
-      { "icono": "calendario", "texto": "Recordatorio: el jueves 19/11 tenés gas en Punta Mogotes, de 9 a 11 h.", "destino": "e-turno-detalle", "turno": 0 },
-      { "icono": "verificado", "texto": "Verificamos tu identidad. ¡Ya podés recibir pedidos!", "destino": "e-cuenta" }
+      {
+        "icono": "llama",
+        "texto": "Nuevo pedido programado: gas en Los Troncos para el jueves 26/11.",
+        "destino": "e-pedido-programado",
+        "guia": true
+      },
+      {
+        "icono": "billetera",
+        "texto": "Te acreditamos {neto} del trabajo de plomería en La Perla.",
+        "destino": "e-caja",
+        "neto": true
+      },
+      {
+        "icono": "calendario",
+        "texto": "Recordatorio: el jueves 19/11 tenés gas en Punta Mogotes, de 9 a 11 h.",
+        "destino": "e-turno-detalle",
+        "turno": 0
+      },
+      {
+        "icono": "verificado",
+        "texto": "Verificamos tu identidad. ¡Ya podés recibir pedidos!",
+        "destino": "e-cuenta"
+      }
     ]
   },
   "config": {
@@ -356,12 +517,30 @@
     "desactivar": "Desactivar todas",
     "activar": "Activar todas",
     "items": [
-      { "texto": "Pedidos nuevos de tus rubros", "on": true },
-      { "texto": "Pedidos de urgencia cerca tuyo", "on": true },
-      { "texto": "Cuando un cliente te elige", "on": true },
-      { "texto": "Recordatorios de turnos", "on": true },
-      { "texto": "Cobros acreditados", "on": true },
-      { "texto": "Novedades y promociones de Handy", "on": false }
+      {
+        "texto": "Pedidos nuevos de tus rubros",
+        "on": true
+      },
+      {
+        "texto": "Pedidos de urgencia cerca tuyo",
+        "on": true
+      },
+      {
+        "texto": "Cuando un cliente te elige",
+        "on": true
+      },
+      {
+        "texto": "Recordatorios de turnos",
+        "on": true
+      },
+      {
+        "texto": "Cobros acreditados",
+        "on": true
+      },
+      {
+        "texto": "Novedades y promociones de Handy",
+        "on": false
+      }
     ]
   },
   "programado": {
@@ -381,8 +560,8 @@
     "rechazar": "Rechazar pedido",
     "rechazadoTitulo": "Rechazaste el pedido",
     "rechazadoTexto": "Sin penalización. Te avisamos cuando entre otro.",
-    "enviadoTitulo": "¡Presupuesto enviado! {monto}",
-    "enviadoTexto": "Si el cliente te elige, el turno aparece en tu agenda."
+    "enviadoTitulo": "¡Presupuesto enviado!",
+    "enviadoTexto": "Mandaste {monto}. Si el cliente te elige, el turno aparece en tu agenda."
   },
   "cuenta": {
     "titulo": "Cuenta",
@@ -410,14 +589,29 @@
     "trabajoHoy": "Plomería",
     "iconoHoy": "canilla",
     "movimientos": [
-      { "rubro": "Plomería", "icono": "canilla", "fecha": "12/11/2026", "presupuesto": 40500 },
-      { "rubro": "Gas", "icono": "llama", "fecha": "05/11/2026", "presupuesto": 36000 }
+      {
+        "rubro": "Plomería",
+        "icono": "canilla",
+        "fecha": "12/11/2026",
+        "presupuesto": 40500
+      },
+      {
+        "rubro": "Gas",
+        "icono": "llama",
+        "fecha": "05/11/2026",
+        "presupuesto": 36000
+      }
     ]
   },
   "mensajes": {
     "titulo": "Mensajes",
     "contactos": "Mis contactos",
-    "orden": ["perla", "mogotes", "chauvin", "centro"],
+    "orden": [
+      "perla",
+      "mogotes",
+      "chauvin",
+      "centro"
+    ],
     "ayuda": "Centro de ayuda",
     "ayudaTexto": "¿Tenés dudas? Escribinos.",
     "nota": "Los chats de más de 30 días se borran solos.",
@@ -430,28 +624,73 @@
   "ayuda": {
     "titulo": "Centro de ayuda",
     "preguntas": [
-      { "pregunta": "¿Quién pone el precio?", "respuesta": "Vos. Handy te sugiere un precio de referencia y vos decidís si lo dejás o lo cambiás." },
-      { "pregunta": "¿Cuánto me cobra Handy?", "respuesta": "Retiene solo su tarifa: el {tarifaEspecialista} de cada trabajo hecho." },
-      { "pregunta": "¿Cómo me llega la plata?", "respuesta": "Directo a tu cuenta, por CBU o alias. La plata del trabajo no pasa por Handy." },
-      { "pregunta": "¿Me penalizan si rechazo un pedido?", "respuesta": "No. Aceptás los trabajos que te sirven y rechazás los que no, sin penalización." }
+      {
+        "pregunta": "¿Quién pone el precio?",
+        "respuesta": "Vos. Handy te sugiere un precio de referencia y vos decidís si lo dejás o lo cambiás."
+      },
+      {
+        "pregunta": "¿Cuánto me cobra Handy?",
+        "respuesta": "Retiene solo su tarifa: el {tarifaEspecialista} de cada trabajo hecho."
+      },
+      {
+        "pregunta": "¿Cómo me llega la plata?",
+        "respuesta": "Directo a tu cuenta, por CBU o alias. La plata del trabajo no pasa por Handy."
+      },
+      {
+        "pregunta": "¿Me penalizan si rechazo un pedido?",
+        "respuesta": "No. Aceptás los trabajos que te sirven y rechazás los que no, sin penalización."
+      }
     ]
   },
   "rubrosHoja": {
     "titulo": "Rubros y zonas",
     "rubrosLabel": "Tus rubros",
     "zonasLabel": "Dónde trabajás",
-    "zonas": ["La Perla", "Centro", "Güemes", "Los Troncos", "Punta Mogotes", "Chauvín", "Constitución", "San Carlos"],
-    "zonasActivas": [0, 1, 2, 3, 4, 5],
-    "rubrosActivos": ["plomeria", "gas"],
+    "zonas": [
+      "La Perla",
+      "Centro",
+      "Güemes",
+      "Los Troncos",
+      "Punta Mogotes",
+      "Chauvín",
+      "Constitución",
+      "San Carlos"
+    ],
+    "zonasActivas": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "rubrosActivos": [
+      "plomeria",
+      "gas"
+    ],
     "guardar": "Guardar"
   },
   "datos": {
     "titulo": "Datos personales",
     "filas": [
-      { "label": "Nombre", "valor": "Tu nombre" },
-      { "label": "DNI", "valor": "Verificado", "ok": true },
-      { "label": "CUIT", "valor": "Cargado", "ok": true },
-      { "label": "Correo", "valor": "tucorreo@ejemplo.com" }
+      {
+        "label": "Nombre",
+        "valor": "Tu nombre"
+      },
+      {
+        "label": "DNI",
+        "valor": "Verificado",
+        "ok": true
+      },
+      {
+        "label": "CUIT",
+        "valor": "Cargado",
+        "ok": true
+      },
+      {
+        "label": "Correo",
+        "valor": "tucorreo@ejemplo.com"
+      }
     ],
     "listo": "Listo"
   },

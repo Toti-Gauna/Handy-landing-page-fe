@@ -198,7 +198,10 @@ function condiciones(e: Estado): Record<string, boolean> {
     resEnviada: e.resEnviada,
     tFlujo: flujo,
     tActivo: flujo && !e.terminado && !e.cancelado,
-    tPagado: !flujo || (!e.cancelado && (e.pago === 0 || e.terminado)),
+    tPagado: !flujo || (!e.cancelado && e.pago === 0),
+    tTerminado: !flujo || (e.terminado && !e.cancelado),
+    segAntes: e.seg < 2,
+    segTrabajando: e.seg >= 3,
     tCambio: flujo && e.cambio && !e.cancelado && !e.terminado,
     tCancelado: flujo && e.cancelado,
     sirvio: e.sirvio,
@@ -252,6 +255,13 @@ function pintar(m: Motor) {
     const oculto = !cumple(el.dataset.duVer!);
     if (el.hidden !== oculto) el.hidden = oculto;
   });
+  mias('[data-du-guia]').forEach((el) => el.toggleAttribute('data-guia', cumple(el.dataset.duGuia!)));
+  mias('[data-du-clase]').forEach((el) =>
+    el.dataset.duClase!.split(' ').forEach((par) => {
+      const [cond, clase] = par.split(':');
+      el.classList.toggle(clase, cumple(cond));
+    }),
+  );
   mias('[data-du-habilitar]').forEach((el) => {
     (el as HTMLButtonElement).disabled = !cumple(el.dataset.duHabilitar!);
   });
@@ -407,7 +417,7 @@ function entrarBuscando(_p: HTMLElement, m: Motor) {
   }
   e.llegados = 0;
   pintar(m);
-  const tiempos = m.reducido ? [700, 1300, 1900] : [1300, 2400, 3400];
+  const tiempos = m.reducido ? [700, 1300, 1900] : [1100, 2000, 2800];
   tiempos.forEach((t, i) =>
     m.timeout(() => {
       e.llegados = i + 1;
@@ -422,23 +432,18 @@ function entrarBuscando(_p: HTMLElement, m: Motor) {
   }, tiempos[tiempos.length - 1] + 2800);
 }
 
-function entrarSeguimiento(p: HTMLElement, m: Motor) {
+function entrarSeguimiento(_p: HTMLElement, m: Motor) {
   const e = S(m);
   pintar(m);
-  if (e.seg >= 3) marcarChat(p);
+  // Confirmado → en camino → llegó: avanza solo (o al tocar la barra de estados).
   const avanzar = () => {
     if (e.seg >= 2) return;
     e.seg++;
     pintar(m);
-    if (e.seg === 2) m.guia(p.querySelector('.du-llegada [data-guia]'));
-    else m.timeout(avanzar, 2200);
+    m.guia(null);
+    if (e.seg < 2) m.timeout(avanzar, 2200);
   };
   if (e.seg < 2) m.timeout(avanzar, 2000);
-}
-
-/** Después de confirmar la llegada, lo próximo es el chat. */
-function marcarChat(p: HTMLElement) {
-  p.querySelector('[data-du-chat-boton]')?.setAttribute('data-guia', '');
 }
 
 // ── Acciones ──────────────────────────────────────────────────────────────
@@ -497,11 +502,12 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
   'seg-avanzar'(_el, m) {
     const e = S(m);
     if (e.seg < 2) e.seg++;
-    if (e.seg === 2) m.guia(pantallaDe('u-seguimiento').querySelector('.du-llegada [data-guia]'));
   },
   llegada(_el, m) {
     S(m).seg = 3;
-    marcarChat(pantallaDe('u-seguimiento'));
+  },
+  pagar(_el, m) {
+    S(m).pago = 0;
   },
   chat: tocarRapida,
   terminar(_el, m) {

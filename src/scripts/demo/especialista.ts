@@ -54,6 +54,8 @@ const SUGERIDO = TARIFAS.ejemplo.presupuesto;
 const VARS = { tarifaEspecialista: `${TARIFAS.normal.especialista}%` };
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const pesos = formatoPesos;
+/** Monto que no se corta entre "$" y el número (dentro de oraciones). */
+const pesosJuntos = (n: number) => formatoPesos(n).replace(/ /g, '\u00a0');
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 
@@ -211,7 +213,7 @@ function pintarPrecio(m: Motor) {
   poner(el, '[data-de-sugerido]', pesos(b.base));
   poner(el, '[data-de-precio]', pesos(b.precio));
   poner(el, '[data-de-recibis]', pesos(netoEspecialista(b.precio)));
-  poner(el, '[data-de-retiene]', completar(d.precio.retiene, { ...VARS, monto: pesos(retencionEspecialista(b.precio)) }));
+  poner(el, '[data-de-retiene]', completar(d.precio.retiene, { ...VARS, monto: pesosJuntos(retencionEspecialista(b.precio)) }));
 
   const marcar = (btn: HTMLElement, activo: boolean) => {
     btn.setAttribute('aria-pressed', String(activo));
@@ -408,6 +410,20 @@ function pintarCaja(m: Motor) {
   if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
 }
 
+/**
+ * Lo que depende del trabajo de hoy (precio, franja, repuestos) se pinta apenas cambia,
+ * así las pantallas ya muestran los montos correctos mientras entran deslizándose.
+ */
+function pintarDependientes(m: Motor) {
+  pintarAceptado(m);
+  poner(m.pantalla('e-en-camino'), '[data-de-franja]', franjaHoy(m).texto);
+  pintarTrabajo(m);
+  pintarCrono(m);
+  pintarFin(m);
+  pintarCaja(m);
+  poner(m.pantalla('e-notificaciones'), '[data-de-neto]', pesos(netoEspecialista(totalHoy(m))));
+}
+
 // ── Agenda, detalle y cambio de fecha ────────────────────────────────────
 
 const turnoActual = (m: Motor) => Math.min(Math.max(est(m).turno ?? 0, 0), d.turnos.items.length - 1);
@@ -434,6 +450,7 @@ function pintarDetalle(m: Motor) {
   poner(el, '[data-de-d="fecha"]', fechaLarga(t.dia));
   poner(el, '[data-de-d="franja"]', t.franja);
   poner(el, '[data-de-d="barrio"]', t.barrio);
+  poner(el, '[data-de-d="pedido"]', t.pedido);
   $$(el, '[data-de-icono]').forEach((s) => (s.hidden = s.dataset.deIcono !== t.icono));
   const costo = $(el, '[data-de-d="costo"]');
   if (costo) desglose(costo, t.presupuesto, 0, C.recibis);
@@ -464,11 +481,46 @@ function cambio(m: Motor): Cambio {
   return e.cambio;
 }
 
+/** Tira de la semana del día propuesto (igual que en el build). */
+function pintarSemana(cont: HTMLElement, nuevo: number, actual: number) {
+  const lunes = nuevo - ((fecha(nuevo).getDay() + 6) % 7);
+  const celdas: HTMLElement[] = [];
+  for (let n = lunes; n < lunes + 7; n++) {
+    if (n < 1 || n > 30) {
+      const vacio = document.createElement('span');
+      vacio.className = 'de-semana__dia de-semana__dia--vacio';
+      vacio.setAttribute('aria-hidden', 'true');
+      celdas.push(vacio);
+      continue;
+    }
+    const nombre = diaSemana(n);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}${n === nuevo ? ' de-semana__dia--nueva' : ''}`;
+    b.dataset.accion = 'elegirDia';
+    b.dataset.valor = String(n);
+    b.setAttribute('aria-label', completar(d.cambio.elegirDia, { dia: nombre, fecha: fechaCorta(n) }));
+    b.setAttribute('aria-pressed', String(n === nuevo));
+    b.disabled = n <= C.hoy || esDomingo(n);
+    const inicial = document.createElement('small');
+    inicial.textContent = nombre.charAt(0).toUpperCase();
+    const numero = document.createElement('strong');
+    numero.textContent = String(n);
+    b.append(inicial, numero);
+    celdas.push(b);
+  }
+  cont.replaceChildren(...celdas);
+}
+
 function pintarCambio(m: Motor) {
   const el = m.pantalla('e-cambiar-fecha');
   const c = cambio(m);
   const x = d.cambio;
+  const t = d.turnos.items[c.turno];
+  poner(el, '[data-de-cambio-actual] span', completar(x.actual, { dia: diaSemana(t.dia), fecha: fechaCorta(t.dia), franja: t.franja }));
   poner(el, '[data-de-cambio-dia]', String(c.dia));
+  const tira = $(el, '[data-de-semana]');
+  if (tira) pintarSemana(tira, c.dia, t.dia);
   poner(el, '[data-de-cambio-franja]', x.franjas[c.franja]);
   poner(el, '[data-de-cambio-resumen]', completar(x.resumen, { dia: diaSemana(c.dia), fecha: fechaCorta(c.dia), franja: x.franjas[c.franja] }));
   $$(el, '[data-accion="motivo"]').forEach((b, i) => {
@@ -485,6 +537,8 @@ function pintarCambio(m: Motor) {
   }
   const ok = $(el, '[data-de-cambio-ok]');
   if (ok) ok.hidden = !c.enviado;
+  // Con la propuesta enviada, el recorrido sigue por tus avisos (la campana).
+  $(el, '.app-cabecera [data-ir="e-notificaciones"]')?.toggleAttribute('data-guia', c.enviado);
 }
 
 // ── Avisos, pedido programado, cuenta y mensajes ─────────────────────────
@@ -512,8 +566,8 @@ function pintarProgramado(m: Motor, nuevo = false) {
     aviso.hidden = !e.programado;
     aviso.classList.toggle('de-aviso--rechazo', e.programado === 'rechazado');
     if (e.programado === 'enviado') {
-      poner(aviso, '[data-de-aviso-titulo]', completar(p.enviadoTitulo, { monto: pesos(e.precioProgramado ?? p.sugerido) }));
-      poner(aviso, '[data-de-aviso-texto]', p.enviadoTexto);
+      poner(aviso, '[data-de-aviso-titulo]', p.enviadoTitulo);
+      poner(aviso, '[data-de-aviso-texto]', completar(p.enviadoTexto, { monto: pesosJuntos(e.precioProgramado ?? p.sugerido) }));
     } else if (e.programado === 'rechazado') {
       poner(aviso, '[data-de-aviso-titulo]', p.rechazadoTitulo);
       poner(aviso, '[data-de-aviso-texto]', p.rechazadoTexto);
@@ -584,6 +638,7 @@ registrarRol('especialista', {
       e.precio = SUGERIDO;
       e.franja = 0;
       nuevoTrabajo(e);
+      pintarDependientes(m);
     },
 
     // Precio
@@ -608,12 +663,13 @@ registrarRol('especialista', {
         e.programado = 'enviado';
         m.volver();
         pintarProgramado(m, true);
-        m.anunciar(completar(d.programado.enviadoTitulo, { monto: pesos(b.precio) }));
+        m.anunciar(`${d.programado.enviadoTitulo} ${completar(d.programado.enviadoTexto, { monto: pesos(b.precio) })}`);
         return;
       }
       e.precio = b.precio;
       e.franja = b.franja;
       nuevoTrabajo(e);
+      pintarDependientes(m);
       m.ir('e-aceptado');
     },
 
@@ -675,7 +731,7 @@ registrarRol('especialista', {
       const siguiente = d.trabajo.extras.findIndex((_, i) => !extras.includes(i));
       if (siguiente < 0) return;
       e.extras = [...extras, siguiente];
-      pintarTrabajo(m);
+      pintarDependientes(m);
       const el = m.pantalla('e-trabajo');
       aparecer(m, $$(el, '.de-fila--extra').pop());
       latido(m, $(el, '.de-fila--total strong'));
@@ -685,13 +741,14 @@ registrarRol('especialista', {
       const e = est(m);
       const i = Number(el.dataset.valor);
       e.extras = (e.extras ?? []).filter((x) => x !== i);
-      pintarTrabajo(m);
+      pintarDependientes(m);
     },
     confirmarCancelar(_el, m) {
       const e = est(m);
       if (!m.pantalla('e-trabajo').hidden) {
         nuevoTrabajo(e);
         m.raiz('e-inicio');
+        pintarDependientes(m);
       } else if (!m.pantalla('e-turno-detalle').hidden) {
         e.cancelados = [...new Set([...(e.cancelados ?? []), turnoActual(m)])];
         m.volver();
@@ -717,6 +774,14 @@ registrarRol('especialista', {
     diaPaso(el, m) {
       const c = cambio(m);
       c.dia = moverDia(c.dia, Number(el.dataset.valor) > 0 ? 1 : -1);
+      c.enviado = false;
+      pintarCambio(m);
+    },
+    elegirDia(el, m) {
+      const c = cambio(m);
+      const n = Number(el.dataset.valor);
+      if (!n || n <= C.hoy || n > 30 || esDomingo(n)) return;
+      c.dia = n;
       c.enviado = false;
       pintarCambio(m);
     },
@@ -769,7 +834,7 @@ registrarRol('especialista', {
       e.precioProgramado = d.programado.sugerido;
       e.programado = 'enviado';
       pintarProgramado(m, true);
-      m.anunciar(completar(d.programado.enviadoTitulo, { monto: pesos(d.programado.sugerido) }));
+      m.anunciar(`${d.programado.enviadoTitulo} ${completar(d.programado.enviadoTexto, { monto: pesos(d.programado.sugerido) })}`);
     },
     rechazarProgramado(_el, m) {
       est(m).programado = 'rechazado';

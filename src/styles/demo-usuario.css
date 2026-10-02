@@ -965,6 +965,8 @@
   flex-direction: column;
   gap: 0.2em;
   width: 100%;
+  padding: 0.2em 0.3em 0.45em;
+  border-radius: 1em;
   color: #fff;
   text-align: center;
 }
@@ -1379,6 +1381,14 @@
   color: #fff;
   font-size: 0.66em;
   font-weight: 800;
+}
+
+.du-estado--verde {
+  background: var(--color-exito);
+}
+
+.du-estado--rojo {
+  background: var(--color-error);
 }
 
 .du-pagado {
