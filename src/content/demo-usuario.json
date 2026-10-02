@@ -1,14 +1,563 @@
 {
-  "_nota": "Demo · lado del usuario: textos de las pantallas y del recorrido (base mínima).",
-  "recorrido": [
-    { "pantalla": "u-inicio", "titulo": "Inicio", "texto": "Elegís el rubro de lo que se rompió." },
-    { "pantalla": "u-turnos", "titulo": "Turnos", "texto": "Tus turnos en un calendario." }
-  ],
-  "pantallas": {
-    "inicio": "Inicio",
-    "turnos": "Turnos",
-    "mensajes": "Mensajes",
+  "_nota": "Demo · lado del usuario: textos de las pantallas y del recorrido. {esp}, {rubro}, {tipo}, {dia}, {diaCorto}, {diaSiguiente}, {fecha}, {franja}, {cuando}, {precio}, {tarifa}, {total} y {problema} los completa la demo según lo que se va eligiendo; {tarifaCliente} sale de tarifas.json. Personas, direcciones y precios son de ejemplo.",
+  "titulos": {
+    "u-inicio": "Inicio",
+    "u-urgencia": "Urgencia",
+    "u-opciones": "Elegí una opción",
+    "u-programar": "Programá el turno",
+    "u-describir": "Contanos qué pasó",
+    "u-buscando": "Buscando especialistas",
+    "u-presupuestos": "Presupuestos",
+    "u-perfil": "Perfil del especialista",
+    "u-confirmar": "Confirmá el turno",
+    "u-seguimiento": "Seguimiento del turno",
+    "u-chat": "Chat con el especialista",
+    "u-terminado": "Trabajo terminado",
+    "u-resena": "Calificá el trabajo",
+    "u-handia": "HandIA",
+    "u-turnos": "Turnos",
+    "u-turno-detalle": "Tu turno",
+    "u-cambiar": "Cambiar la fecha",
+    "u-cancelar": "Cancelar el turno",
+    "u-mensajes": "Mensajes",
+    "u-cuenta": "Cuenta",
+    "u-datos": "Datos personales",
+    "u-pagos": "Tus pagos",
+    "u-ayuda": "Centro de ayuda",
+    "u-ayuda-detalle": "Respuesta",
+    "u-soporte": "Chat de soporte",
+    "u-notificaciones": "Notificaciones"
+  },
+  "inicial": {
+    "rubro": "plomeria",
+    "tipo": 1,
+    "dia": 2,
+    "franja": 4,
+    "presupuesto": 0,
+    "pago": 0
+  },
+  "comun": {
+    "verificado": "Verificado",
+    "verMas": "Ver más información",
+    "escribiendo": "Escribiendo…",
+    "enviarAria": "Enviar",
+    "fotoAria": "Foto del problema",
+    "avisoDemo": "En la demo esta opción no hace nada todavía."
+  },
+  "inicio": {
+    "titulo": "¿Qué necesitás hoy?",
+    "handia": {
+      "titulo": "¿No sabés qué rubro es?",
+      "texto": "Contale a HandIA"
+    },
+    "quieroTitulo": "Quiero…",
+    "tareas": [
+      { "texto": "Cambiar un flexible", "icono": "canilla", "rubro": "plomeria", "problema": "Quiero cambiar el flexible de la pileta del baño: pierde agua." },
+      { "texto": "Service del aire", "icono": "aire", "rubro": "aire_acondicionado", "problema": "Quiero hacerle el service al aire del living: enfría poco." },
+      { "texto": "Cambiar un enchufe", "icono": "rayo", "rubro": "electricidad", "problema": "Quiero cambiar un enchufe de la cocina que está flojo." },
+      { "texto": "Abrir la puerta", "icono": "llave", "rubro": "cerrajeria", "problema": "Me quedé afuera: la llave no gira en la cerradura de la entrada." },
+      { "texto": "Arreglar humedad", "icono": "ladrillos", "rubro": "albanileria", "problema": "Tengo humedad en la pared del dormitorio y se descascara la pintura." },
+      { "texto": "Revisar el calefón", "icono": "llama", "rubro": "gas", "problema": "Quiero que revisen el calefón: le cuesta prender el piloto." }
+    ],
+    "urgencia": "Urgencia"
+  },
+  "problemas": {
+    "electricidad": "Saltó la térmica y no vuelve: no hay luz en la cocina.",
+    "plomeria": "Pierde agua la canilla de la cocina, gotea todo el tiempo.",
+    "gas": "El calefón no prende el piloto.",
+    "cerrajeria": "Se trabó la cerradura de la puerta de entrada.",
+    "albanileria": "Hay humedad en la pared del dormitorio y se descascara.",
+    "aire_acondicionado": "El aire no enfría y hace ruido."
+  },
+  "urgencia": {
+    "titulo": "Urgencia",
+    "texto": "¿De qué es la urgencia?",
+    "nota": "Les avisamos a los especialistas de tu zona que toman urgencias. Cada uno te dice a qué hora puede ir."
+  },
+  "opciones": {
+    "titulo": "Elegí una opción",
+    "para": "Tu pedido de",
+    "items": [
+      { "texto": "Urgencia", "detalle": "Para lo que no puede esperar", "icono": "alerta" },
+      { "texto": "Programado", "detalle": "Elegís el día y la franja", "icono": "calendario" },
+      { "texto": "Obra", "detalle": "Trabajos grandes, con visita", "icono": "ladrillos" }
+    ]
+  },
+  "programar": {
+    "titulo": "Programá el turno",
+    "ruedaAria": "Elegí el día",
+    "franjasAria": "Elegí la franja horaria",
+    "dias": [
+      { "rueda": "Hoy", "largo": "Hoy, sábado 14", "corto": "Hoy", "fecha": "14/11/2026", "num": 14 },
+      { "rueda": "Dom 15", "largo": "Domingo 15", "corto": "Dom 15", "fecha": "15/11/2026", "num": 15 },
+      { "rueda": "Lun 16", "largo": "Lunes 16", "corto": "Lun 16", "fecha": "16/11/2026", "num": 16 },
+      { "rueda": "Mar 17", "largo": "Martes 17", "corto": "Mar 17", "fecha": "17/11/2026", "num": 17 },
+      { "rueda": "Mié 18", "largo": "Miércoles 18", "corto": "Mié 18", "fecha": "18/11/2026", "num": 18 },
+      { "rueda": "Jue 19", "largo": "Jueves 19", "corto": "Jue 19", "fecha": "19/11/2026", "num": 19 },
+      { "rueda": "Vie 20", "largo": "Viernes 20", "corto": "Vie 20", "fecha": "20/11/2026", "num": 20 }
+    ],
+    "franjas": ["8 a 10 h", "10 a 12 h", "12 a 14 h", "14 a 16 h", "16 a 18 h", "18 a 20 h"],
+    "info": "Elegí el día y la franja que te quedan cómodos. Cada especialista te dice en qué horario puede ir.",
+    "dia": "Día",
+    "franja": "Franja",
+    "mes": "Mes",
+    "anio": "Año",
+    "mesValor": "Noviembre",
+    "anioValor": "2026",
+    "siguiente": "Siguiente"
+  },
+  "describir": {
+    "titulo": "Contanos qué pasó",
+    "rubro": "Rubro",
+    "cuando": "Cuándo",
+    "pedido": "Tu pedido",
+    "ayuda": "Contalo con tus palabras, como te salga.",
+    "fotos": "Fotos (opcional)",
+    "agregarFoto": "Agregar foto",
+    "direccion": "Dirección",
+    "casa": "Casa",
+    "calle": "25 de Mayo 3250, Mar del Plata",
+    "pedir": "Pedir presupuestos",
+    "nota": "Ves cada precio antes de confirmar."
+  },
+  "buscando": {
+    "titulo": "Estamos avisando a especialistas de tu zona",
+    "estados": [
+      "Esperando presupuestos…",
+      "Te llegó 1 presupuesto",
+      "Te llegaron 2 presupuestos",
+      "Te llegaron 3 presupuestos"
+    ],
+    "pedido": "Tu pedido",
+    "nota": "Cada especialista verificado revisa tu pedido y te manda su precio.",
+    "esperando": "Esperando presupuestos…",
+    "ver": "Ver presupuestos"
+  },
+  "presupuestos": {
+    "titulo": "Presupuestos",
+    "panel": "Te llegaron 3",
+    "verPerfil": "Ver perfil",
+    "elegir": "Elegir",
+    "nota": "Cada especialista pone su precio y su horario.",
+    "items": [
+      {
+        "nombre": "Especialista 1",
+        "ejemplo": true,
+        "horario": "{diaCorto} · {franja}",
+        "zona": "Villa Primera, La Perla y Centro",
+        "declaro": "Lunes a sábado, de 8 a 19 h",
+        "otros": ["Gas"]
+      },
+      {
+        "nombre": "Especialista 2",
+        "precio": 48000,
+        "horario": "{diaCorto} · 18 a 20 h",
+        "zona": "Centro, Plaza Mitre y Los Troncos",
+        "declaro": "Todos los días, de 10 a 20 h",
+        "otros": ["Electricidad"]
+      },
+      {
+        "nombre": "Especialista 3",
+        "precio": 43500,
+        "horario": "{diaSiguiente} · 9 a 11 h",
+        "zona": "Chauvín, San José y Don Bosco",
+        "declaro": "Lunes a viernes, de 9 a 17 h",
+        "otros": ["Albañilería"]
+      }
+    ]
+  },
+  "perfil": {
+    "titulo": "Perfil del especialista",
+    "verificado": "Verificado por Handy",
+    "rubros": "Rubros",
+    "zona": "Zona donde trabaja",
+    "horario": "Horario que declaró",
+    "presupuesto": "Su presupuesto",
+    "propone": "Te propone: {horarioEsp}",
+    "nota": "El precio lo pone el especialista.",
+    "elegir": "Elegir este presupuesto"
+  },
+  "confirmar": {
+    "titulo": "Confirmá el turno",
+    "especialista": "Especialista",
+    "fecha": "Fecha",
+    "direccion": "Dirección",
+    "costo": "Costo",
+    "presupuestoDe": "Presupuesto de {esp}",
+    "tarifa": "Tarifa de servicio Handy ({tarifaCliente})",
+    "total": "Total",
+    "nota": "Lo del trabajo va directo a la cuenta del especialista. Handy solo cobra su tarifa.",
+    "pagoTitulo": "¿Cómo querés pagar?",
+    "pagos": [
+      { "texto": "Pagar ahora", "icono": "billetera" },
+      { "texto": "Pagar al terminar", "icono": "reloj" }
+    ],
+    "confirmar": "Confirmar turno",
+    "cancelar": "Cancelar"
+  },
+  "seguimiento": {
+    "estados": [
+      "{esp} confirmó tu turno",
+      "{esp} va para tu casa",
+      "{esp} llegó a tu casa",
+      "{esp} está trabajando en tu casa"
+    ],
+    "avanzar": "Pasar al siguiente estado",
+    "horarioLabel": "Horario que declaró",
+    "infoAria": "Ver el turno",
+    "cancelarAria": "Cancelar el turno",
+    "llegada": "Confirmar llegada",
+    "llegadaNota": "Confirmalo cuando lo tengas en la puerta.",
+    "especialistaLabel": "Tu especialista es",
+    "especialista": "{esp} · verificado",
+    "chatAria": "Abrir el chat con el especialista"
+  },
+  "chat": {
+    "subtitulo": "{rubro} · verificado",
+    "inicial": [
+      { "de": "otro", "texto": "¡Hola! Ya estoy en tu casa, arranco con el arreglo." },
+      { "de": "vos", "foto": true, "texto": "Así estaba esta mañana" },
+      { "de": "otro", "texto": "Gracias por la foto. Ya vi qué es y tengo lo que hace falta." }
+    ],
+    "etapas": [
+      {
+        "rapidas": [
+          { "texto": "¡Genial, gracias!", "respuestas": ["De nada. Te aviso cuando termine."] },
+          { "texto": "¿Necesitás algo?", "respuestas": ["No, tengo todo. Te aviso cuando termine."] },
+          { "texto": "Estoy en el living", "respuestas": ["Dale, cuando termine te llamo para que lo pruebes."] }
+        ]
+      }
+    ],
+    "final": ["Listo, ya quedó. Probalo y, si está todo bien, confirmalo en la app."],
+    "terminar": "Confirmar que terminó",
+    "input": "Escribí un mensaje…"
+  },
+  "terminado": {
+    "titulo": "¡Listo, quedó arreglado!",
+    "pagaste": "Pagaste",
+    "aPagar": "Total a pagar",
+    "alEspecialista": "A la cuenta de {esp}",
+    "tarifa": "Tarifa de servicio Handy",
+    "total": "Total",
+    "nota": "La plata del trabajo va directo a la cuenta del especialista. Handy solo cobra su tarifa.",
+    "calificar": "Calificar a {esp}",
+    "inicio": "Volver al inicio"
+  },
+  "resena": {
+    "titulo": "¿Cómo te fue?",
+    "estrella": "{n} estrella",
+    "estrellas": "{n} estrellas",
+    "elegi": "Tocá las estrellas para calificar",
+    "bien": "¿Qué fue lo mejor?",
+    "mal": "Contanos qué estuvo mal",
+    "chipsBien": ["Puntual", "Prolijo", "Explicó todo", "Buen trato"],
+    "chipsMal": ["Llegó tarde", "Quedó a medias", "Dejó desorden", "Otra cosa"],
+    "comentario": "Contá algo más, si querés…",
+    "enviar": "Enviar",
+    "gracias": "¡Gracias por calificar!",
+    "graciasTexto": "Tu calificación nos ayuda a cuidar la calidad de cada trabajo.",
+    "inicio": "Volver al inicio"
+  },
+  "handia": {
+    "nombre": "HandIA",
+    "subtitulo": "Asistente de Handy",
+    "inicial": [
+      { "de": "otro", "texto": "¡Hola! Soy HandIA. Contame qué pasó en tu casa, como te salga." }
+    ],
+    "etapas": [
+      {
+        "rapidas": [
+          {
+            "texto": "Se tapó la pileta de la cocina",
+            "rubro": "plomeria",
+            "problema": "Se tapó la pileta de la cocina y sale agua por abajo.",
+            "respuestas": ["Uh, qué embole. Parece un tema de plomería. ¿Me mandás una foto de abajo de la pileta?"]
+          },
+          {
+            "texto": "Saltó la térmica y no vuelve",
+            "rubro": "electricidad",
+            "problema": "Saltó la térmica y no vuelve: no hay luz en la cocina.",
+            "respuestas": ["Eso es de electricidad. Mientras tanto, no toques los cables. ¿Me mandás una foto del tablero?"]
+          },
+          {
+            "texto": "Hay humedad en una pared",
+            "rubro": "albanileria",
+            "problema": "Hay humedad en la pared del dormitorio y se descascara.",
+            "respuestas": ["Suena a albañilería. ¿Me mandás una foto de la pared?"]
+          }
+        ]
+      },
+      {
+        "rapidas": [
+          {
+            "texto": "Mandar una foto",
+            "foto": true,
+            "propia": "Así está",
+            "respuestas": ["Gracias. Armé tu pedido de {rubro} con la foto: «{problema}» ¿Lo mandamos para recibir presupuestos?"]
+          },
+          {
+            "texto": "No tengo foto",
+            "respuestas": ["No pasa nada. Armé tu pedido de {rubro}: «{problema}» ¿Lo mandamos para recibir presupuestos?"]
+          }
+        ]
+      }
+    ],
+    "acciones": ["Pedir presupuestos", "Programar turno"],
+    "input": "Escribile a HandIA…"
+  },
+  "turnos": {
+    "panel": "Tus turnos",
+    "mes": "Noviembre",
+    "anio": "2026",
+    "dias": 30,
+    "hoy": 14,
+    "estados": {
+      "confirmado": "Confirmado",
+      "terminado": "Terminado",
+      "cancelado": "Cancelado"
+    },
+    "pasados": [
+      {
+        "rubro": "gas",
+        "tipo": "Programado",
+        "num": 7,
+        "estilo": "amarillo",
+        "fecha": "07/11/2026",
+        "largo": "Sábado 7",
+        "franja": "9 a 11 h",
+        "precio": 36000,
+        "especialista": "Especialista 3"
+      },
+      {
+        "rubro": "electricidad",
+        "tipo": "Urgencia",
+        "num": 3,
+        "estilo": "noche",
+        "fecha": "03/11/2026",
+        "largo": "Martes 3",
+        "franja": "20 a 22 h",
+        "precio": 32000,
+        "especialista": "Especialista 2"
+      }
+    ],
+    "diaAria": "Ver el turno del {fecha}"
+  },
+  "turnoDetalle": {
+    "titulo": "Tu turno",
+    "rubro": "Rubro",
+    "fecha": "Fecha",
+    "especialista": "Especialista",
+    "costo": "Costo",
+    "presupuesto": "Presupuesto",
+    "tarifa": "Tarifa de servicio Handy ({tarifaCliente})",
+    "total": "Total",
+    "pagado": "Pagado",
+    "cambioPedido": "Pediste cambiarlo a: {cambio}. Te avisamos cuando {tEsp} lo confirme.",
+    "cancelado": "Cancelaste este turno. Ya le avisamos a {tEsp}.",
+    "chatear": "Chatear con el especialista",
+    "cambiar": "Cambiar fecha",
+    "cancelar": "Cancelar turno",
+    "verPago": "Ver el pago"
+  },
+  "cambiar": {
+    "titulo": "Cambiar la fecha",
+    "dia": "Día",
+    "franja": "Franja",
+    "pedir": "Pedir el cambio",
+    "nota": "El especialista te confirma si puede en el nuevo horario."
+  },
+  "cancelar": {
+    "titulo": "¿Cancelás el turno?",
+    "texto": "Le avisamos a {tEsp} que ya no hace falta que vaya.",
+    "si": "Sí, cancelar",
+    "no": "No, mantener el turno"
+  },
+  "mensajes": {
+    "items": [
+      { "nombre": "{esp}", "ultimo": "Turno de {rubro} · {diaCorto}", "badge": "1", "ir": "u-chat", "icono": "usuario" },
+      { "nombre": "HandIA", "ultimo": "Contame qué pasó en tu casa…", "ir": "u-handia", "icono": "lamparita" },
+      { "nombre": "Soporte de Handy", "ultimo": "¿En qué te ayudo?", "ir": "u-soporte", "icono": "chat" },
+      { "nombre": "Centro de ayuda", "ultimo": "Preguntas frecuentes", "ir": "u-ayuda", "icono": "info" }
+    ],
+    "nota": "Tu número no se comparte: hablás con los especialistas desde la app."
+  },
+  "cuenta": {
+    "nombre": "Tu nombre",
+    "zona": "Villa Primera, Mar del Plata",
+    "fotoAria": "Cambiar la foto",
     "cuenta": "Cuenta",
-    "notificaciones": "Notificaciones"
-  }
+    "configuracion": "Configuración",
+    "filasCuenta": [
+      { "texto": "Datos personales", "icono": "usuario", "ir": "u-datos" },
+      { "texto": "Tarjetas y pagos", "icono": "billetera", "ir": "u-pagos" }
+    ],
+    "filasConfiguracion": [
+      { "texto": "Notificaciones", "icono": "campana", "ir": "u-notificaciones" },
+      { "texto": "Centro de ayuda", "icono": "info", "ir": "u-ayuda" }
+    ],
+    "cerrarSesion": "Cerrar sesión"
+  },
+  "datos": {
+    "campos": [
+      { "label": "Nombre", "valor": "Tu nombre" },
+      { "label": "Email", "valor": "tunombre@correo.com" },
+      { "label": "Teléfono", "valor": "223 ••• ••••" },
+      { "label": "Dirección", "valor": "25 de Mayo 3250, Mar del Plata" }
+    ],
+    "nota": "Tu teléfono no se comparte con los especialistas.",
+    "editar": "Editar mis datos"
+  },
+  "pagos": {
+    "tarjeta": {
+      "tipo": "Débito",
+      "numero": "•••• •••• •••• 9010",
+      "titular": "TU NOMBRE",
+      "vence": "12/29"
+    },
+    "agregar": "Agregar tarjeta",
+    "panel": "Tus movimientos",
+    "pagaste": "Pagaste {rubro}",
+    "medio": "Débito ••••9010",
+    "alEspecialista": "A la cuenta de {esp}",
+    "tarifa": "Tarifa de servicio Handy ({tarifaCliente})",
+    "verMenos": "Ver menos"
+  },
+  "ayuda": {
+    "subtitulo": "Preguntas frecuentes",
+    "preguntas": [
+      {
+        "pregunta": "¿Cómo cancelo un turno?",
+        "respuesta": "Andá a Turnos, tocá el turno y elegí «Cancelar turno». Le avisamos al especialista por vos.",
+        "boton": "Ir a Turnos",
+        "raiz": "u-turnos"
+      },
+      {
+        "pregunta": "¿Cuánto cobra Handy?",
+        "respuesta": "Cada trabajo tiene el precio que pone el especialista. A eso se suma una tarifa de servicio de Handy del {tarifaCliente}, que ves desglosada antes de confirmar."
+      },
+      {
+        "pregunta": "¿Cómo le pago al especialista?",
+        "respuesta": "Desde la app, con tu tarjeta: al confirmar o cuando termina el trabajo. Lo del trabajo va directo a la cuenta del especialista y Handy solo cobra su tarifa.",
+        "boton": "Ver mis pagos",
+        "ir": "u-pagos"
+      },
+      {
+        "pregunta": "¿Cómo sé que es de confianza?",
+        "respuesta": "Todos los especialistas pasan por una verificación antes de recibir pedidos. En su perfil ves sus rubros, su zona y el horario que declaró."
+      },
+      {
+        "pregunta": "¿Qué hago si algo salió mal?",
+        "respuesta": "Escribinos por el chat de soporte y contanos qué pasó, con fotos si podés. Lo vemos con vos y con el especialista.",
+        "boton": "Chatear con soporte",
+        "ir": "u-soporte"
+      }
+    ],
+    "otra": "¿No encontraste lo que buscabas?",
+    "chatear": "Chatear con soporte",
+    "sirvio": "¿Te sirvió la respuesta?",
+    "no": "No",
+    "si": "Sí",
+    "gracias": "¡Gracias por contarnos!"
+  },
+  "soporte": {
+    "nombre": "Soporte de Handy",
+    "subtitulo": "Chat de ayuda",
+    "inicial": [
+      { "de": "otro", "texto": "¡Hola! Soy del equipo de soporte de Handy. ¿En qué te ayudo?" }
+    ],
+    "etapas": [
+      {
+        "rapidas": [
+          { "texto": "El especialista no llegó", "respuestas": ["Uh, perdón. Ya le escribimos al especialista para saber qué pasó y te contamos por acá."] },
+          { "texto": "Tengo una duda con un pago", "respuestas": ["Dale. En Cuenta → Tarjetas y pagos tenés cada movimiento con el detalle. Si algo no te cierra, contame cuál."] },
+          { "texto": "Algo salió mal con el arreglo", "respuestas": ["Lamento que haya pasado. ¿Me mandás una foto y me contás qué pasó? Lo vemos con vos y con el especialista."] }
+        ]
+      }
+    ],
+    "input": "Escribí tu consulta…"
+  },
+  "notificaciones": {
+    "borrar": "Borrar todas",
+    "borrarAria": "Borrar este aviso",
+    "avisos": [
+      { "icono": "verificado", "texto": "{esp} confirmó tu turno de {rubro} para el {fecha}.", "estilo": "azul" },
+      { "icono": "alerta", "texto": "Cuando llegue el especialista, confirmá la llegada desde la app.", "estilo": "amarillo" },
+      { "icono": "billetera", "texto": "Pagaste {total}. Lo del trabajo fue directo a la cuenta del especialista.", "estilo": "azul" }
+    ],
+    "vacio": "No hay nada más por acá."
+  },
+  "recorrido": [
+    {
+      "pantalla": "u-inicio",
+      "titulo": "Inicio",
+      "texto": "Elegís el rubro de lo que se rompió. Si no sabés cuál es, se lo contás a HandIA, y el botón de alerta es para urgencias."
+    },
+    {
+      "pantalla": "u-opciones",
+      "base": "u-inicio",
+      "titulo": "Elegís el tipo de pedido",
+      "texto": "Urgencia, programado u obra: el pedido les llega a los especialistas que trabajan de eso."
+    },
+    {
+      "pantalla": "u-programar",
+      "titulo": "Programás el día",
+      "texto": "Elegís el día y la franja que te quedan cómodos. Cada especialista después te dice en qué horario puede ir."
+    },
+    {
+      "pantalla": "u-describir",
+      "titulo": "Contás qué pasó",
+      "texto": "Lo describís con tus palabras y sumás fotos. Al pedir presupuestos, avisamos a los especialistas verificados de tu zona."
+    },
+    {
+      "pantalla": "u-presupuestos",
+      "titulo": "Comparás presupuestos",
+      "texto": "Cada especialista pone su precio y su horario. Los comparás antes de decidir."
+    },
+    {
+      "pantalla": "u-perfil",
+      "titulo": "Ves quién va a tu casa",
+      "texto": "Perfil verificado por Handy, con sus rubros, la zona donde trabaja y el horario que declaró."
+    },
+    {
+      "pantalla": "u-confirmar",
+      "titulo": "Confirmás con el precio a la vista",
+      "texto": "El presupuesto del especialista más la tarifa de servicio de Handy del {tarifaCliente}, desglosado antes de confirmar."
+    },
+    {
+      "pantalla": "u-seguimiento",
+      "titulo": "Seguís el turno",
+      "texto": "Confirmado, en camino y en tu casa. Cuando llega, confirmás la llegada desde la app."
+    },
+    {
+      "pantalla": "u-chat",
+      "titulo": "Chateás sin dar tu número",
+      "texto": "Hablás con el especialista por el chat de la app, con respuestas rápidas. Tu teléfono no se comparte."
+    },
+    {
+      "pantalla": "u-terminado",
+      "titulo": "Trabajo terminado",
+      "texto": "La plata del trabajo va directo a la cuenta del especialista. Handy solo cobra su tarifa."
+    },
+    {
+      "pantalla": "u-resena",
+      "base": "u-terminado",
+      "titulo": "Calificás",
+      "texto": "Calificás el trabajo con estrellas y un comentario. Así cuidamos la calidad de cada especialista."
+    },
+    {
+      "pantalla": "u-handia",
+      "titulo": "HandIA arma el pedido",
+      "texto": "Le contás el problema como te salga: HandIA te pregunta, te pide una foto y arma el pedido del rubro que corresponde."
+    },
+    {
+      "pantalla": "u-turnos",
+      "titulo": "Tus turnos",
+      "texto": "Todos tus turnos en un calendario: qué rubro, qué día, en qué estado y cuánto pagaste."
+    },
+    {
+      "pantalla": "u-pagos",
+      "titulo": "Tus pagos",
+      "texto": "Cada movimiento con el detalle: lo que fue a la cuenta del especialista y la tarifa de Handy."
+    }
+  ]
 }
