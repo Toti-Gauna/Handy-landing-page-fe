@@ -799,6 +799,10 @@ export function iniciarDemo() {
           { duration: 650, easing: CURVA, fill: 'forwards' },
         ).finished;
         if (mio !== vuelo) return false;
+        // La onda del toque (como el feedback táctil de un celular).
+        dedo.classList.remove('demo-dedo--toca');
+        void dedo.offsetWidth;
+        dedo.classList.add('demo-dedo--toca');
         await dedo.animate(
           [
             { transform: `translate(${x}px, ${y}px) scale(1)` },

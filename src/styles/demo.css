@@ -213,7 +213,18 @@
   min-width: 0;
 }
 
+.demo__escenario {
+  position: relative;
+}
+
+.demo__escenario > .mosaicos-fondo {
+  inset: -4% -12%;
+  opacity: 0.9;
+}
+
 .demo__fijo {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -555,23 +566,47 @@
   }
 }
 
-/* Dedo del modo automático */
+/* Dedo del modo automático: un punto blanco con aro azul y la onda del toque. */
 .demo-dedo {
   position: absolute;
   z-index: 30;
   left: 0;
   top: 0;
-  width: 2.6em;
-  height: 2.6em;
-  margin: -1.3em 0 0 -1.3em;
+  width: 2.5em;
+  height: 2.5em;
+  margin: -1.25em 0 0 -1.25em;
   border-radius: 50%;
-  background: rgb(14 29 54 / 0.28);
+  background: rgb(255 255 255 / 0.55);
   box-shadow:
-    0 0 0 0.25em rgb(255 255 255 / 0.85),
-    0 0.4em 1em rgb(0 0 0 / 0.25);
+    inset 0 0 0 0.2em rgb(31 87 168 / 0.85),
+    0 0.5em 1.2em -0.2em rgb(14 29 54 / 0.45);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
+}
+
+.demo-dedo::after {
+  content: '';
+  position: absolute;
+  inset: -0.2em;
+  border-radius: 50%;
+  border: 0.18em solid var(--color-amarillo);
+  opacity: 0;
+}
+
+.demo-dedo--toca::after {
+  animation: demo-onda-toque 0.55s ease-out;
+}
+
+@keyframes demo-onda-toque {
+  from {
+    opacity: 1;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
 }
 
 .demo-dedo--visible {
@@ -1002,7 +1037,8 @@
 .demo-app .demo-fin,
 .demo-app .demo-dedo,
 .demo-app .telefono__boton,
-.demo-app .telefono__isla {
+.demo-app .telefono__isla,
+.demo-app .mosaicos-fondo {
   display: none;
 }
 

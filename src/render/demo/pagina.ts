@@ -151,6 +151,7 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
     </div>
 
     <div class="demo__escenario">
+      <span class="mosaicos-fondo" aria-hidden="true"></span>
       <div class="demo__fijo">
         <figure class="telefono telefono--demo" aria-label="${esc(demo.ui.pantalla)}">
           <div class="telefono__marco">
