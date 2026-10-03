@@ -129,3 +129,7 @@ export const tildeExito = `<span class="hd-tilde" aria-hidden="true"><svg viewBo
 export function tituloMarcado(texto: string, clase = 'hd-titulo', tag = 'p'): string {
   return `<${tag} class="${clase}">${esc(texto).replace(/==(.+?)==/g, '<mark>$1</mark>')}</${tag}>`;
 }
+
+/** Botón "Salir de la demo": solo se ve en el modo app (va en la Cuenta de cada rol). */
+export const salirDeLaDemo = () =>
+  `<button type="button" class="hd-boton hd-boton--claro hd-solo-app" data-demo-salir-app>${icono('salir')}${esc(demo.app.salirFila)}</button>`;

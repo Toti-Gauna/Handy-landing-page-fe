@@ -76,6 +76,15 @@
   display: none;
 }
 
+/* Lo que solo existe en el modo app (p. ej., "Salir de la demo" en la Cuenta). */
+.hd-solo-app {
+  display: none;
+}
+
+.demo-app .hd-solo-app {
+  display: flex;
+}
+
 /* ── Tipografía ──────────────────────────────────────────────────────── */
 
 .hd-titulo {

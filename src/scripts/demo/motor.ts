@@ -1263,7 +1263,10 @@ export function iniciarDemo() {
     telefono?.scrollIntoView({ block: 'center' });
   }
 
-  raizEl.querySelector('[data-demo-salir-app]')?.addEventListener('click', () => salirApp());
+  // "Salir": la pastilla de arriba y la fila de la Cuenta (solo se ven en el modo app).
+  raizEl.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('[data-demo-salir-app]')) salirApp();
+  });
   window.addEventListener('popstate', () => {
     if (enApp && !history.state?.demoApp) salirApp(true);
   });

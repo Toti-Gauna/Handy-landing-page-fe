@@ -80,14 +80,15 @@
     "salirAria": "Salir del modo app y volver a la demo",
     "bienvenida": {
       "titulo": "Así se usa en tu celular",
-      "texto": "Tocá todo como en la app. Arriba tenés «Salir» para volver a la demo."
+      "texto": "Tocá todo como en la app. Para volver a la demo: Cuenta → «Salir de la demo»."
     },
     "cambioRol": {
       "usuario": "Estás en el modo usuario",
       "especialista": "Estás en el modo especialista"
     },
     "nombre": "Handy",
-    "tituloCorto": "Handy demo"
+    "tituloCorto": "Handy demo",
+    "salirFila": "Salir de la demo"
   },
   "mapa": {
     "calles": {

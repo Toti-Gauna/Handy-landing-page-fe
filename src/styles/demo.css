@@ -1122,7 +1122,7 @@
   font: 700 12px/1 var(--fuente);
   transform: translateX(-50%);
   cursor: pointer;
-  animation: demo-salir-discreto 0.4s 4s ease forwards;
+  animation: demo-salir-discreto 0.5s 5s ease forwards;
 }
 
 .demo-app .demo-app-salir .icono {
@@ -1130,7 +1130,6 @@
   height: 14px;
 }
 
-.demo-app .demo-app-salir:hover,
 .demo-app .demo-app-salir:focus-visible {
   opacity: 1;
   animation: none;
@@ -1143,8 +1142,10 @@
   transition: opacity 0.2s ease;
 }
 
+/* Después de unos segundos se va (para no tapar la app); queda la fila "Salir de la demo" en la Cuenta. */
 @keyframes demo-salir-discreto {
   to {
-    opacity: 0.45;
+    opacity: 0;
+    visibility: hidden;
   }
 }
