@@ -26,7 +26,7 @@ import rubrosJson from '../../content/rubros.json' with { type: 'json' };
 import tarifas from '../../content/tarifas.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
 import { esc, formatoPesos, variables } from '../util.ts';
-import { avatar, boton, cabeceraDemo, iniciales, navDemo, tildeExito, tituloHoja, tituloMarcado, type Toque } from './piezas.ts';
+import { avatar, boton, cabeceraDemo, iniciales, navDemo, salirDeLaDemo, tildeExito, tituloHoja, tituloMarcado, type Toque } from './piezas.ts';
 import { mapaVivo } from './mapa.ts';
 import type { DemoRol, PantallaDemo } from './tipos.ts';
 
@@ -995,6 +995,7 @@ function cuenta(): PantallaDemo {
   )}
   <section class="du-bloque" ${E}>${sobre(c.cuenta)}<div class="hd-tarjeta hd-tarjeta--gris hd-tarjeta--compacta hd-lista">${filasLista(c.filasCuenta)}</div></section>
   <section class="du-bloque" ${E}>${sobre(c.configuracion)}<div class="hd-tarjeta hd-tarjeta--gris hd-tarjeta--compacta hd-lista">${filasLista(c.filasConfiguracion)}</div></section>
+  ${salirDeLaDemo()}
   ${boton({ accion: 'aviso', extra: E }, `${icono('salir')}${esc(c.cerrarSesion)}`, 'hd-boton hd-boton--fantasma du-rojo')}
 </div>
 ${navDemo('usuario', 3)}`),

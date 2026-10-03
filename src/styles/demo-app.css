@@ -77,11 +77,11 @@
 }
 
 /* Lo que solo existe en el modo app (p. ej., "Salir de la demo" en la Cuenta). */
-.hd-solo-app {
+[data-demo-pantallas] .hd-solo-app {
   display: none;
 }
 
-.demo-app .hd-solo-app {
+.demo-app [data-demo-pantallas] .hd-solo-app {
   display: flex;
 }
 
@@ -551,7 +551,7 @@ button.hd-chip:active {
   border-radius: 1.1em;
 }
 
-button.hd-tarjeta {
+:where(button).hd-tarjeta {
   display: block;
   width: 100%;
   text-align: left;
