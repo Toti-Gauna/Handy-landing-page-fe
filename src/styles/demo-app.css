@@ -1,0 +1,1788 @@
+/* Demo · sistema visual de la app ("Handy por dentro").
+   Componentes .hd-* para las pantallas de la demo (los dos roles) y ajustes a las piezas .app-* de main.css.
+   Todo en em: escala con el ancho de la pantalla (font-size = ancho / 22.5), en el celular y en el modo app.
+
+   Lenguaje: el de la app de Handy (azul de marca, mosaicos grises, botones cuadrados, hojas con manija,
+   marcador amarillo) llevado a una app on demand premium:
+   - todo lo que se toca tiene base y se hunde (como los botones de la landing);
+   - mapas vivos de Mar del Plata (con la costa), radar, ruta que se dibuja y especialista que se mueve;
+   - avisos que salen de la isla del celular ("isla Handy");
+   - errores con los Handys rotos; confeti de mosaicos cuando algo sale bien.
+   Nada de vidrio esmerilado, manchas de gradiente ni bordes laterales de color. */
+
+/* ── Tokens ───────────────────────────────────────────────────────────── */
+
+[data-demo-pantallas] {
+  --hd-azul: var(--color-azul);
+  --hd-azul-hondo: #143e7e;
+  --hd-azul-ui: var(--color-azul-ui);
+  --hd-azul-vivo: var(--color-azul-personajes);
+  --hd-azul-tinte: #e9eff9;
+  --hd-noche: var(--color-noche);
+  --hd-tinta: var(--color-tinta);
+  --hd-texto: var(--color-texto);
+  --hd-suave: var(--color-texto-suave);
+  --hd-linea: #e6e9ef;
+  --hd-mosaico: var(--color-mosaico);
+  --hd-mosaico-hondo: #d3d6dc;
+  --hd-fondo: #fff;
+  --hd-fondo-2: #f4f5f8;
+  --hd-amarillo: var(--color-amarillo);
+  --hd-amarillo-hondo: #d8d65e;
+  --hd-exito: var(--color-exito);
+  --hd-exito-tinte: #e3f5ea;
+  --hd-error: var(--color-error);
+  --hd-error-hondo: #a3221a;
+  --hd-naranja: var(--color-naranja);
+  --hd-curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --hd-salida: cubic-bezier(0.32, 0.72, 0, 1);
+  --hd-resorte: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --hd-sombra-1: 0 0.06em 0.2em rgb(14 29 54 / 0.06), 0 0.5em 1.4em -0.5em rgb(14 29 54 / 0.16);
+  --hd-sombra-2: 0 0.1em 0.3em rgb(14 29 54 / 0.08), 0 1.2em 2.6em -0.9em rgb(14 29 54 / 0.32);
+  --hd-titulos: var(--fuente-titulos);
+  font-synthesis: none;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  [data-demo-pantallas] {
+    /* Resorte con un rebote corto (para hojas, chips y lo que "aterriza"). */
+    --hd-resorte: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163 27%, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+  }
+}
+
+/* ── Base de las pantallas ───────────────────────────────────────────── */
+
+[data-demo-pantallas] .app,
+[data-demo-pantallas] .demo-hoja {
+  color: var(--hd-tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-demo-pantallas] .icono {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Cuerpo con scroll (sin barra) para pantallas largas. */
+.hd-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.hd-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Tipografía ──────────────────────────────────────────────────────── */
+
+.hd-titulo {
+  font-family: var(--hd-titulos);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 1.55em;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--hd-tinta);
+  text-wrap: balance;
+}
+
+.hd-titulo--azul {
+  color: var(--hd-azul);
+}
+
+.hd-titulo--chico {
+  font-size: 1.22em;
+}
+
+.hd-titulo--grande {
+  font-size: 1.95em;
+}
+
+.hd-titulo--claro {
+  color: #fff;
+}
+
+/* ==texto== del contenido: el marcador amarillo de la marca. */
+.hd-titulo mark,
+.hd-marca {
+  padding: 0 0.12em;
+  margin: 0 -0.06em;
+  color: inherit;
+  background: linear-gradient(transparent 52%, var(--hd-amarillo) 52% 92%, transparent 92%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.hd-sobre {
+  font-size: 0.64em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hd-suave);
+}
+
+.hd-texto {
+  font-size: 0.8em;
+  line-height: 1.38;
+  color: var(--hd-texto);
+}
+
+.hd-texto--suave {
+  color: var(--hd-suave);
+}
+
+.hd-precio {
+  font-family: var(--hd-titulos);
+  font-weight: 800;
+  font-stretch: 112%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.hd-precio--grande {
+  font-size: 2.1em;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hd-positivo {
+  color: var(--hd-exito);
+}
+
+.hd-negativo {
+  color: var(--hd-error);
+}
+
+/* ── Botones táctiles (con base que se hunde) ────────────────────────── */
+
+.hd-boton {
+  --b-fondo: var(--hd-azul);
+  --b-base: var(--hd-azul-hondo);
+  --b-texto: #fff;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  width: 100%;
+  min-height: 3.15em;
+  padding: 0.4em 1.1em;
+  border-radius: 1em;
+  background: var(--b-fondo);
+  color: var(--b-texto);
+  font-size: 0.88em;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  box-shadow: 0 0.28em 0 var(--b-base);
+  transform: translateY(0);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.hd-boton .icono {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+}
+
+:where(.demo-pantalla) .hd-boton:active:not(:disabled) {
+  transform: translateY(0.28em);
+  box-shadow: 0 0 0 var(--b-base);
+  filter: none;
+}
+
+.hd-boton:disabled {
+  opacity: 0.42;
+  box-shadow: 0 0.28em 0 var(--b-base);
+}
+
+.hd-boton--amarillo {
+  --b-fondo: var(--hd-amarillo);
+  --b-base: var(--hd-amarillo-hondo);
+  --b-texto: var(--hd-tinta);
+}
+
+.hd-boton--claro {
+  --b-fondo: var(--hd-mosaico);
+  --b-base: var(--hd-mosaico-hondo);
+  --b-texto: var(--hd-tinta);
+}
+
+.hd-boton--blanco {
+  --b-fondo: #fff;
+  --b-base: #c9d3e6;
+  --b-texto: var(--hd-azul);
+}
+
+.hd-boton--peligro {
+  --b-fondo: var(--hd-error);
+  --b-base: var(--hd-error-hondo);
+}
+
+.hd-boton--exito {
+  --b-fondo: var(--hd-exito);
+  --b-base: #13703c;
+}
+
+.hd-boton--noche {
+  --b-fondo: var(--hd-noche);
+  --b-base: #0b1426;
+}
+
+.hd-boton--fantasma {
+  --b-fondo: transparent;
+  --b-base: transparent;
+  --b-texto: var(--hd-azul);
+  min-height: 2.4em;
+}
+
+.hd-boton--chico {
+  width: auto;
+  min-height: 2.35em;
+  padding: 0.3em 0.9em;
+  border-radius: 0.8em;
+  font-size: 0.74em;
+  box-shadow: 0 0.2em 0 var(--b-base);
+}
+
+:where(.demo-pantalla) .hd-boton--chico:active:not(:disabled) {
+  transform: translateY(0.2em);
+}
+
+/* Botón que está trabajando (un envío, un pago): ruedita en vez del ícono. */
+.hd-boton[aria-busy='true'] {
+  pointer-events: none;
+}
+
+.hd-boton[aria-busy='true']::after {
+  content: '';
+  width: 1.1em;
+  height: 1.1em;
+  border: 0.16em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: hd-girar 0.7s linear infinite;
+}
+
+.hd-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+}
+
+.hd-botones--fila {
+  flex-direction: row;
+}
+
+.hd-botones--fila > * {
+  flex: 1;
+}
+
+/* Botón redondo con ícono (cerrar, info, chat). */
+.hd-circulo {
+  display: grid;
+  place-items: center;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  background: var(--hd-mosaico);
+  color: var(--hd-tinta);
+  flex: none;
+  transition: transform 0.15s ease;
+}
+
+.hd-circulo .icono {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+:where(.demo-pantalla) .hd-circulo:active {
+  transform: scale(0.9);
+}
+
+.hd-circulo--azul {
+  background: var(--hd-azul);
+  color: #fff;
+}
+
+.hd-circulo--rojo {
+  background: var(--hd-error);
+  color: #fff;
+}
+
+.hd-circulo--claro {
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+
+/* ── Mosaicos (la grilla de rubros de la app) ────────────────────────── */
+
+.hd-mosaicos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7em;
+}
+
+.hd-mosaico {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  width: 100%;
+  aspect-ratio: 1 / 0.94;
+  padding: 0.4em 0.3em;
+  border-radius: 1.3em;
+  background: var(--hd-mosaico);
+  color: var(--hd-tinta);
+  font-size: 0.7em;
+  font-weight: 700;
+  line-height: 1.08;
+  text-align: center;
+  overflow-wrap: anywhere;
+  box-shadow: 0 0.26em 0 var(--hd-mosaico-hondo);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.hd-mosaico .icono {
+  width: 2.6em;
+  height: 2.6em;
+  stroke-width: 1.7;
+  transition: transform 0.35s var(--hd-resorte);
+}
+
+:where(.demo-pantalla) .hd-mosaico:active {
+  transform: translateY(0.26em);
+  box-shadow: 0 0 0 var(--hd-mosaico-hondo);
+  filter: none;
+}
+
+:where(.demo-pantalla) .hd-mosaico:active .icono {
+  transform: scale(0.86) rotate(-8deg);
+}
+
+.hd-mosaico[aria-pressed='true'],
+.hd-mosaico--activo {
+  background: var(--hd-azul);
+  color: #fff;
+  box-shadow: 0 0.26em 0 var(--hd-azul-hondo);
+}
+
+.hd-mosaico[aria-pressed='true'] .icono,
+.hd-mosaico--activo .icono {
+  animation: hd-salto 0.5s var(--hd-resorte);
+}
+
+/* ── Chips y pastillas ───────────────────────────────────────────────── */
+
+.hd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: 2em;
+  padding: 0.25em 0.75em;
+  border-radius: 999px;
+  background: var(--hd-mosaico);
+  color: var(--hd-tinta);
+  font-size: 0.7em;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.25s var(--hd-resorte);
+}
+
+.hd-chip .icono {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+button.hd-chip:active {
+  transform: scale(0.94);
+}
+
+.hd-chip[aria-pressed='true'],
+.hd-chip--azul {
+  background: var(--hd-azul);
+  color: #fff;
+}
+
+.hd-chip--tinte {
+  background: var(--hd-azul-tinte);
+  color: var(--hd-azul);
+}
+
+.hd-chip--amarillo {
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.hd-chip--exito {
+  background: var(--hd-exito-tinte);
+  color: #137140;
+}
+
+.hd-chip--noche {
+  background: var(--hd-noche);
+  color: #fff;
+}
+
+.hd-chip--claro {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+
+.hd-chip--mini {
+  min-height: 1.6em;
+  padding: 0.15em 0.6em;
+  font-size: 0.62em;
+}
+
+/* Punto "en vivo" que late. */
+.hd-vivo::before {
+  content: '';
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: hd-latido 1.6s ease-out infinite;
+}
+
+.hd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45em;
+}
+
+/* Fila de chips con scroll horizontal (sin barra). */
+.hd-chips--carril {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin-inline: -1.2em;
+  padding: 0.1em 1.2em 0.3em;
+  scrollbar-width: none;
+}
+
+.hd-chips--carril::-webkit-scrollbar {
+  display: none;
+}
+
+/* Insignia (número sobre la campana o un ícono). */
+.hd-insignia {
+  position: absolute;
+  top: -0.3em;
+  right: -0.3em;
+  display: grid;
+  place-items: center;
+  min-width: 1.45em;
+  height: 1.45em;
+  padding: 0 0.3em;
+  border: 0.14em solid #fff;
+  border-radius: 999px;
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+  font-size: 0.62em;
+  font-weight: 900;
+  animation: hd-aparecer-pop 0.5s var(--hd-resorte) both;
+}
+
+.app-cabecera--azul .hd-insignia {
+  border-color: var(--hd-azul);
+}
+
+/* ── Tarjetas ────────────────────────────────────────────────────────── */
+
+.hd-tarjeta {
+  position: relative;
+  padding: 1em;
+  border-radius: 1.3em;
+  background: #fff;
+  box-shadow: var(--hd-sombra-1);
+}
+
+.hd-tarjeta--gris {
+  background: var(--hd-fondo-2);
+  box-shadow: none;
+}
+
+.hd-tarjeta--azul {
+  background: var(--hd-azul);
+  color: #fff;
+  box-shadow: 0 0.3em 0 var(--hd-azul-hondo);
+}
+
+.hd-tarjeta--noche {
+  background: var(--hd-noche);
+  color: #fff;
+}
+
+.hd-tarjeta--amarillo {
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.hd-tarjeta--compacta {
+  padding: 0.75em 0.85em;
+  border-radius: 1.1em;
+}
+
+button.hd-tarjeta {
+  display: block;
+  width: 100%;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+
+:where(.demo-pantalla) button.hd-tarjeta:active {
+  transform: scale(0.98);
+  filter: none;
+}
+
+/* Ticket (como los cupones de la app): dos partes con el corte troquelado. */
+.hd-ticket {
+  --corte: 62%;
+  position: relative;
+  filter: drop-shadow(0 0.4em 0.7em rgb(14 29 54 / 0.14));
+}
+
+.hd-ticket__papel {
+  position: relative;
+  border-radius: 1.3em;
+  background: #fff;
+  -webkit-mask:
+    radial-gradient(circle at 0 var(--corte), transparent 0.62em, #000 0.64em) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% var(--corte), transparent 0.62em, #000 0.64em) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 var(--corte), transparent 0.62em, #000 0.64em) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% var(--corte), transparent 0.62em, #000 0.64em) right / 51% 100% no-repeat;
+}
+
+.hd-ticket--azul .hd-ticket__papel {
+  background: var(--hd-azul);
+  color: #fff;
+}
+
+.hd-ticket__corte {
+  height: 0;
+  margin: 0 0.9em;
+  border-top: 0.14em dashed rgb(14 29 54 / 0.16);
+}
+
+.hd-ticket--azul .hd-ticket__corte {
+  border-color: rgb(255 255 255 / 0.3);
+}
+
+/* ── Filas de lista ──────────────────────────────────────────────────── */
+
+.hd-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.hd-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  width: 100%;
+  min-height: 3.4em;
+  padding: 0.55em 0;
+  text-align: left;
+  border-bottom: 0.07em solid var(--hd-linea);
+  transition: background-color 0.2s ease;
+}
+
+.hd-lista > .hd-fila:last-child,
+.hd-lista > :last-child > .hd-fila {
+  border-bottom: 0;
+}
+
+.hd-fila__ico {
+  display: grid;
+  place-items: center;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 0.85em;
+  background: var(--hd-fondo-2);
+  color: var(--hd-azul);
+  flex: none;
+}
+
+.hd-fila__ico .icono {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.hd-fila__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18em;
+  flex: 1;
+  min-width: 0;
+}
+
+.hd-fila__texto strong {
+  font-size: 0.82em;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hd-fila__texto small {
+  font-size: 0.68em;
+  color: var(--hd-suave);
+  line-height: 1.25;
+}
+
+.hd-fila__fin {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--hd-suave);
+  font-size: 0.78em;
+  flex: none;
+}
+
+.hd-fila__fin .icono {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Fila "dato: valor" de los costos. */
+.hd-dato {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.3em 0;
+  font-size: 0.76em;
+}
+
+.hd-dato > :last-child {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hd-dato--total {
+  margin-top: 0.3em;
+  padding-top: 0.6em;
+  border-top: 0.08em dashed currentColor;
+  font-size: 0.86em;
+  font-weight: 800;
+}
+
+/* ── Avatares ────────────────────────────────────────────────────────── */
+
+.hd-avatar {
+  --tono: var(--hd-azul);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.7em;
+  height: 2.7em;
+  border-radius: 50%;
+  background: var(--tono);
+  color: #fff;
+  font-family: var(--hd-titulos);
+  font-weight: 900;
+  font-stretch: 110%;
+  font-size: 1em;
+  flex: none;
+}
+
+.hd-avatar > span {
+  font-size: 0.85em;
+}
+
+.hd-avatar .icono {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.hd-avatar--chico {
+  width: 2.1em;
+  height: 2.1em;
+}
+
+.hd-avatar--chico > span {
+  font-size: 0.7em;
+}
+
+.hd-avatar--grande {
+  width: 4.6em;
+  height: 4.6em;
+}
+
+.hd-avatar--grande > span {
+  font-size: 1.5em;
+}
+
+/* Tilde de verificado, abajo a la derecha. */
+.hd-avatar--verificado::after {
+  content: '';
+  position: absolute;
+  right: -0.08em;
+  bottom: -0.08em;
+  width: 36%;
+  height: 36%;
+  min-width: 0.95em;
+  min-height: 0.95em;
+  border: 0.13em solid #fff;
+  border-radius: 50%;
+  background: var(--hd-exito)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+    center / 62% no-repeat;
+}
+
+/* ── Estrellas ───────────────────────────────────────────────────────── */
+
+.hd-estrellas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  color: #f2b705;
+  font-size: 0.74em;
+  font-weight: 800;
+}
+
+.hd-estrellas .icono {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+/* ── Hojas inferiores ────────────────────────────────────────────────── */
+
+[data-demo-pantallas] .demo-velo {
+  background: rgb(14 29 54 / 0.42);
+}
+
+[data-demo-pantallas] .demo-hoja.app-sheet {
+  padding-top: 1.6em;
+  border-radius: 1.9em 1.9em 0 0;
+  background: #fff;
+  box-shadow: 0 -0.8em 2.4em -1em rgb(14 29 54 / 0.35);
+}
+
+/* La manija de las hojas de la app. */
+[data-demo-pantallas] .demo-hoja.app-sheet::before {
+  content: '';
+  position: absolute;
+  top: 0.6em;
+  left: 50%;
+  width: 2.8em;
+  height: 0.3em;
+  margin-left: -1.4em;
+  border-radius: 999px;
+  background: var(--hd-mosaico-hondo);
+}
+
+.hd-hoja-azul {
+  border-radius: 1.9em 1.9em 0 0;
+  background: var(--hd-azul);
+  color: #fff;
+}
+
+/* ── Barra inferior ──────────────────────────────────────────────────── */
+
+[data-demo-pantallas] .app-nav {
+  position: relative;
+  padding: 0.7em 0.5em 1.55em;
+  border-radius: 1.7em 1.7em 0 0;
+  box-shadow: 0 -0.5em 1.5em -0.8em rgb(14 29 54 / 0.4);
+}
+
+[data-demo-pantallas] .app-nav__item {
+  position: relative;
+  gap: 0.3em;
+  padding-bottom: 0.45em;
+  color: rgb(255 255 255 / 0.55);
+  transition: color 0.25s ease;
+}
+
+[data-demo-pantallas] .app-nav__item .icono {
+  width: 2.15em;
+  height: 2.15em;
+  transition: transform 0.35s var(--hd-resorte);
+}
+
+[data-demo-pantallas] .app-nav__item:active .icono {
+  transform: scale(0.86);
+}
+
+/* Pestaña activa: blanca, con el puntito amarillo de la marca. */
+[data-demo-pantallas] .app-nav__item--activo {
+  color: #fff;
+}
+
+[data-demo-pantallas] .app-nav__item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.42em;
+  height: 0.42em;
+  margin-left: -0.21em;
+  border-radius: 50%;
+  background: var(--hd-amarillo);
+  transform: scale(0);
+  transition: transform 0.4s var(--hd-resorte);
+}
+
+[data-demo-pantallas] .app-nav__item--activo::after {
+  transform: scale(1);
+}
+
+[data-demo-pantallas] .demo-pantalla:not([hidden]) .app-nav__item--activo .icono {
+  animation: hd-salto 0.55s var(--hd-resorte);
+}
+
+/* ── Cabecera ────────────────────────────────────────────────────────── */
+
+[data-demo-pantallas] .app-cuadrado {
+  position: relative;
+  box-shadow: 0 0.22em 0 var(--hd-azul-hondo);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+:where(.demo-pantalla) button.app-cuadrado:active {
+  transform: translateY(0.22em);
+  box-shadow: 0 0 0 var(--hd-azul-hondo);
+  filter: none;
+}
+
+[data-demo-pantallas] .app-cabecera--azul .app-cuadrado {
+  box-shadow: none;
+}
+
+[data-demo-pantallas] .app-cabecera--azul {
+  box-shadow: 0 0.6em 1.4em -0.9em rgb(14 29 54 / 0.55);
+}
+
+/* ── Mapa vivo ───────────────────────────────────────────────────────── */
+
+.hd-mapa {
+  position: relative;
+  overflow: hidden;
+  background: #eceff3;
+}
+
+.hd-mapa > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hd-mapa__mar-ola {
+  stroke-dasharray: 6 9;
+  animation: hd-olas 5s linear infinite;
+}
+
+.hd-mapa__ruta {
+  stroke-dasharray: var(--largo, 600);
+  stroke-dashoffset: var(--largo, 600);
+}
+
+.hd-mapa--ruta .hd-mapa__ruta {
+  animation: hd-dibujar 1.6s 0.3s var(--hd-curva) forwards;
+}
+
+.hd-mapa__yo-onda {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hd-onda 2.2s ease-out infinite;
+}
+
+.hd-mapa__pin {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: hd-caer-pin 0.7s 0.2s var(--hd-resorte) both;
+}
+
+/* Radar: anillos que salen de tu casa mientras se busca. */
+.hd-mapa__radar circle {
+  fill: rgb(31 87 168 / 0.1);
+  stroke: rgb(31 87 168 / 0.45);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+  animation: hd-radar 2.7s ease-out infinite;
+}
+
+.hd-mapa__radar circle:nth-child(2) {
+  animation-delay: 0.9s;
+}
+
+.hd-mapa__radar circle:nth-child(3) {
+  animation-delay: 1.8s;
+}
+
+/* ── Seguimiento (la barra de tres tramos de la app, con el muñequito caminando) ── */
+
+.hd-seguimiento {
+  --etapa: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 2.2fr 1fr;
+  gap: 0.4em;
+  padding-top: 2.1em;
+}
+
+.hd-seguimiento__tramo {
+  height: 0.38em;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.25);
+  overflow: hidden;
+}
+
+.hd-seguimiento__tramo::before {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.2s var(--hd-curva);
+}
+
+.hd-seguimiento[data-etapa='1'] .hd-seguimiento__tramo:nth-child(-n + 1)::before,
+.hd-seguimiento[data-etapa='2'] .hd-seguimiento__tramo:nth-child(-n + 2)::before,
+.hd-seguimiento[data-etapa='3'] .hd-seguimiento__tramo::before {
+  transform: scaleX(1);
+}
+
+/* Tramo en curso: se va llenando de a poco. */
+.hd-seguimiento[data-etapa='0'] .hd-seguimiento__tramo:nth-child(1)::before,
+.hd-seguimiento[data-etapa='1'] .hd-seguimiento__tramo:nth-child(2)::before,
+.hd-seguimiento[data-etapa='2'] .hd-seguimiento__tramo:nth-child(3)::before {
+  animation: hd-cargando 2.4s ease-in-out infinite;
+}
+
+.hd-seguimiento__quien {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.7em;
+  height: 1.7em;
+  margin-left: -0.85em;
+  color: #fff;
+  transition: left 1.2s var(--hd-curva);
+}
+
+.hd-seguimiento__quien .icono {
+  width: 100%;
+  height: 100%;
+  animation: hd-caminar 0.5s ease-in-out infinite alternate;
+}
+
+.hd-seguimiento[data-etapa='0'] .hd-seguimiento__quien {
+  left: 8%;
+}
+
+.hd-seguimiento[data-etapa='1'] .hd-seguimiento__quien {
+  left: 30%;
+}
+
+.hd-seguimiento[data-etapa='2'] .hd-seguimiento__quien {
+  left: 75%;
+}
+
+.hd-seguimiento[data-etapa='3'] .hd-seguimiento__quien {
+  left: 94%;
+}
+
+.hd-seguimiento[data-etapa='3'] .hd-seguimiento__quien .icono {
+  animation: hd-salto 0.6s var(--hd-resorte) 2;
+}
+
+/* ── Isla Handy: los avisos salen de la isla del celular ─────────────── */
+
+.hd-isla {
+  position: absolute;
+  z-index: 26;
+  top: 0.7em;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  width: 31%;
+  height: 1.75em;
+  padding: 0 0.5em;
+  border-radius: 1em;
+  background: #000;
+  color: #fff;
+  transform: translateX(-50%);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    width 0.55s var(--hd-resorte),
+    height 0.55s var(--hd-resorte),
+    border-radius 0.45s ease,
+    padding 0.4s ease,
+    opacity 0.2s ease;
+}
+
+.hd-isla--abierta {
+  width: 92%;
+  height: 3.9em;
+  padding: 0 0.7em;
+  border-radius: 1.6em;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hd-isla__ico {
+  display: grid;
+  place-items: center;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  background: var(--hd-azul);
+  color: #fff;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 0.25s 0.15s ease,
+    transform 0.45s 0.15s var(--hd-resorte);
+}
+
+.hd-isla__ico .icono {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.hd-isla__ico img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+}
+
+.hd-isla--exito .hd-isla__ico {
+  background: var(--hd-exito);
+}
+
+.hd-isla--amarillo .hd-isla__ico {
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.hd-isla__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  min-width: 0;
+  opacity: 0;
+  transition: opacity 0.25s 0.2s ease;
+}
+
+.hd-isla__texto strong {
+  font-size: 0.74em;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hd-isla__texto small {
+  font-size: 0.64em;
+  color: rgb(255 255 255 / 0.7);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hd-isla--abierta .hd-isla__ico {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hd-isla--abierta .hd-isla__texto {
+  opacity: 1;
+}
+
+/* ── Errores con los Handys rotos ────────────────────────────────────── */
+
+.hd-error {
+  position: absolute;
+  z-index: 24;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4.2em 1.6em 2em;
+  background: #fff;
+  color: var(--hd-tinta);
+  font-family: var(--fuente);
+  text-align: center;
+  outline: none;
+}
+
+.hd-error[hidden] {
+  display: none;
+}
+
+.hd-error__escena {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: 17em;
+}
+
+/* Fondo: un mosaico gris "partido" detrás del personaje. */
+.hd-error__escena::before {
+  content: '';
+  position: absolute;
+  width: 11em;
+  height: 11em;
+  border-radius: 2.2em;
+  background: var(--hd-mosaico);
+  transform: rotate(-6deg);
+}
+
+.hd-error__personaje {
+  position: relative;
+  width: 9.5em;
+  height: 12em;
+}
+
+/* El personaje se parte en dos: la misma imagen, recortada por una grieta en zigzag. */
+.hd-error__pieza {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: var(--anim) 0.9s 0.25s var(--hd-resorte) both;
+}
+
+.hd-error__pieza--a {
+  clip-path: polygon(0 0, 52% 0, 46% 18%, 56% 34%, 45% 52%, 55% 70%, 47% 86%, 52% 100%, 0 100%);
+  --anim: hd-partir-a;
+}
+
+.hd-error__pieza--b {
+  clip-path: polygon(52% 0, 100% 0, 100% 100%, 52% 100%, 47% 86%, 55% 70%, 45% 52%, 56% 34%, 46% 18%);
+  --anim: hd-partir-b;
+}
+
+/* Después de partirse, tiembla de a ratos. */
+.hd-error__personaje {
+  animation: hd-temblor 3.2s 1.3s ease-in-out infinite;
+}
+
+/* Efectos según el personaje. */
+.hd-error__fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hd-error__fx i {
+  position: absolute;
+  display: block;
+}
+
+/* Lamparita: chispas que saltan de la grieta. */
+.hd-error[data-tipo='conexion'] .hd-error__fx i {
+  left: 50%;
+  top: 30%;
+  width: 0.28em;
+  height: 0.9em;
+  border-radius: 999px;
+  background: #f2c400;
+  opacity: 0;
+  animation: hd-chispa 1.4s ease-out infinite;
+}
+
+.hd-error[data-tipo='conexion'] .hd-error__fx i:nth-child(2) {
+  --r: 60deg;
+  animation-delay: 0.25s;
+}
+
+.hd-error[data-tipo='conexion'] .hd-error__fx i:nth-child(3) {
+  --r: -55deg;
+  animation-delay: 0.6s;
+}
+
+.hd-error[data-tipo='conexion'] .hd-error__fx i:nth-child(4) {
+  --r: 120deg;
+  animation-delay: 0.9s;
+}
+
+/* Caño: gotas que se escapan. */
+.hd-error[data-tipo='especialistas'] .hd-error__fx i {
+  left: 20%;
+  top: 42%;
+  width: 0.7em;
+  height: 0.9em;
+  border-radius: 50% 50% 50% 50% / 62% 62% 40% 40%;
+  background: #8fc8ff;
+  opacity: 0;
+  animation: hd-gotear 1.6s ease-in infinite;
+}
+
+.hd-error[data-tipo='especialistas'] .hd-error__fx i:nth-child(2) {
+  left: 50%;
+  top: 8%;
+  animation-delay: 0.5s;
+}
+
+.hd-error[data-tipo='especialistas'] .hd-error__fx i:nth-child(3) {
+  left: 24%;
+  animation-delay: 1s;
+}
+
+.hd-error[data-tipo='especialistas'] .hd-error__fx i:nth-child(4) {
+  left: 54%;
+  top: 10%;
+  animation-delay: 1.3s;
+}
+
+/* Engranaje: humito. */
+.hd-error[data-tipo='general'] .hd-error__fx i {
+  left: 52%;
+  top: 10%;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+  background: #c9ced8;
+  opacity: 0;
+  animation: hd-humo 2.4s ease-out infinite;
+}
+
+.hd-error[data-tipo='general'] .hd-error__fx i:nth-child(2) {
+  left: 40%;
+  animation-delay: 0.8s;
+}
+
+.hd-error[data-tipo='general'] .hd-error__fx i:nth-child(3) {
+  left: 60%;
+  animation-delay: 1.6s;
+}
+
+.hd-error[data-tipo='general'] .hd-error__fx i:nth-child(4) {
+  display: none;
+}
+
+/* Llave: estrellitas de mareo. */
+.hd-error[data-tipo='cobro'] .hd-error__fx i {
+  left: 50%;
+  top: 34%;
+  width: 0.7em;
+  height: 0.7em;
+  background: #f2b705;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: hd-orbita 2.4s linear infinite;
+}
+
+.hd-error[data-tipo='cobro'] .hd-error__fx i:nth-child(2) {
+  animation-delay: -0.8s;
+}
+
+.hd-error[data-tipo='cobro'] .hd-error__fx i:nth-child(3) {
+  animation-delay: -1.6s;
+}
+
+.hd-error[data-tipo='cobro'] .hd-error__fx i:nth-child(4) {
+  display: none;
+}
+
+.hd-error__codigo {
+  margin-top: 1em;
+}
+
+.hd-error__titulo {
+  margin-top: 0.5em;
+}
+
+.hd-error__texto {
+  margin-top: 0.6em;
+  max-width: 19em;
+}
+
+.hd-error .hd-botones {
+  width: 100%;
+  margin-top: 1.4em;
+}
+
+/* Error chico, dentro de un formulario. */
+.hd-error-linea {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.6em 0.75em;
+  border-radius: 0.9em;
+  background: #fdecea;
+  color: #8f1d16;
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1.3;
+  animation: hd-sacudir 0.45s ease;
+}
+
+.hd-error-linea img {
+  width: 2.4em;
+  height: 2.4em;
+  object-fit: contain;
+  flex: none;
+}
+
+/* ── Éxito: tilde que se dibuja + confeti de mosaicos ────────────────── */
+
+.hd-tilde {
+  display: grid;
+  place-items: center;
+  width: 4.6em;
+  height: 4.6em;
+  border-radius: 50%;
+  background: var(--hd-exito);
+  color: #fff;
+  box-shadow: 0 0 0 0.6em var(--hd-exito-tinte);
+  animation: hd-aparecer-pop 0.6s var(--hd-resorte) both;
+}
+
+.hd-tilde svg {
+  width: 52%;
+  height: 52%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: hd-dibujar-tilde 0.5s 0.35s ease-out forwards;
+}
+
+.hd-confeti {
+  position: absolute;
+  z-index: 23;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hd-confeti i {
+  position: absolute;
+  top: -1em;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 0.16em;
+  will-change: transform;
+}
+
+/* ── Cargando ────────────────────────────────────────────────────────── */
+
+.hd-esqueleto {
+  border-radius: 0.6em;
+  background: linear-gradient(90deg, #eef0f3 0 40%, #f8f9fb 50%, #eef0f3 60% 100%) 0 0 / 300% 100%;
+  animation: hd-brillo 1.3s linear infinite;
+}
+
+.hd-escribiendo {
+  display: inline-flex;
+  gap: 0.25em;
+  padding: 0.7em 0.85em;
+  border-radius: 1.1em;
+  background: var(--hd-mosaico);
+}
+
+.hd-escribiendo i {
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: var(--hd-suave);
+  animation: hd-puntos 1.1s ease-in-out infinite;
+}
+
+.hd-escribiendo i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.hd-escribiendo i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* ── Entradas en cascada ─────────────────────────────────────────────────
+   Lo marcado con data-entra aparece en orden cada vez que se abre su pantalla
+   (el motor pone .hd-entrando y el índice --i). */
+
+.hd-entrando [data-entra] {
+  animation: hd-entrar 0.55s var(--hd-salida) both;
+  animation-delay: calc(var(--i, 0) * 55ms + 60ms);
+}
+
+.hd-entrando [data-entra='pop'] {
+  animation-name: hd-aparecer-pop;
+  animation-timing-function: var(--hd-resorte);
+}
+
+.hd-entrando [data-entra='lado'] {
+  animation-name: hd-entrar-lado;
+}
+
+.hd-entrando [data-entra='abajo'] {
+  animation-name: hd-subir;
+}
+
+/* ── Personajes (Handys) vivos ───────────────────────────────────────── */
+
+.hd-handy {
+  display: block;
+  object-fit: contain;
+  animation: hd-flotar 3.2s ease-in-out infinite;
+}
+
+.hd-handy--salta {
+  animation: hd-saltito 1.4s var(--hd-resorte) infinite;
+}
+
+/* ── Animaciones ─────────────────────────────────────────────────────── */
+
+@keyframes hd-girar {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes hd-salto {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.82) translateY(0.1em);
+  }
+  70% {
+    transform: scale(1.12) translateY(-0.12em);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hd-saltito {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-0.6em);
+  }
+}
+
+@keyframes hd-flotar {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-0.35em) rotate(-2deg);
+  }
+}
+
+@keyframes hd-latido {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  80%,
+  100% {
+    box-shadow: 0 0 0 0.6em transparent;
+  }
+}
+
+@keyframes hd-aparecer-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hd-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(1.1em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hd-entrar-lado {
+  from {
+    opacity: 0;
+    transform: translateX(1.6em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hd-subir {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes hd-dibujar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hd-dibujar-tilde {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hd-olas {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+@keyframes hd-onda {
+  from {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes hd-caer-pin {
+  from {
+    opacity: 0;
+    transform: translateY(-40%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hd-radar {
+  0% {
+    transform: scale(0.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes hd-cargando {
+  0% {
+    transform: scaleX(0);
+  }
+  70%,
+  100% {
+    transform: scaleX(0.85);
+    opacity: 0.4;
+  }
+}
+
+@keyframes hd-caminar {
+  from {
+    transform: translateY(0) rotate(-4deg);
+  }
+  to {
+    transform: translateY(-0.12em) rotate(4deg);
+  }
+}
+
+@keyframes hd-brillo {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@keyframes hd-puntos {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-0.3em);
+    opacity: 1;
+  }
+}
+
+@keyframes hd-partir-a {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translate(-7%, 3%) rotate(-7deg);
+  }
+}
+
+@keyframes hd-partir-b {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translate(7%, 1%) rotate(6deg);
+  }
+}
+
+@keyframes hd-temblor {
+  0%,
+  86%,
+  100% {
+    transform: none;
+  }
+  88% {
+    transform: translateX(-0.12em) rotate(-1deg);
+  }
+  90% {
+    transform: translateX(0.12em) rotate(1deg);
+  }
+  92% {
+    transform: translateX(-0.08em);
+  }
+  94% {
+    transform: translateX(0.06em);
+  }
+}
+
+@keyframes hd-chispa {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--r, 0deg)) translateY(0) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--r, 0deg)) translateY(-3.2em) scaleY(0.3);
+  }
+}
+
+@keyframes hd-gotear {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(7em) scale(0.9);
+  }
+}
+
+@keyframes hd-humo {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.4);
+  }
+  25% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4em) scale(2);
+  }
+}
+
+@keyframes hd-orbita {
+  from {
+    transform: rotate(0) translateX(3.6em) rotate(0) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) translateX(3.6em) rotate(-180deg) scale(0.6);
+  }
+  to {
+    transform: rotate(360deg) translateX(3.6em) rotate(-360deg) scale(1);
+  }
+}
+
+@keyframes hd-sacudir {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-0.4em);
+  }
+  40% {
+    transform: translateX(0.35em);
+  }
+  60% {
+    transform: translateX(-0.25em);
+  }
+  80% {
+    transform: translateX(0.15em);
+  }
+}
+
+/* ── Movimiento reducido ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-demo-pantallas] *,
+  [data-demo-pantallas] *::before,
+  [data-demo-pantallas] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hd-mapa__ruta {
+    stroke-dashoffset: 0;
+  }
+
+  .hd-mapa__radar,
+  .hd-error__fx,
+  .hd-confeti {
+    display: none;
+  }
+}

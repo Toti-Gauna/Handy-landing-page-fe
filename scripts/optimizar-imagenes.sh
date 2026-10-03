@@ -21,4 +21,5 @@ convert assets/brand/handy-gota-y-cano.png -crop 130x190+0+190 +repage -trim -st
 # Gota y caño por separado, para animar la gota cayendo del caño.
 convert assets/brand/handy-gota-y-cano.png -crop 130x210+0+190 +repage -trim -strip -quality 85 "$OUT/handy-gota.webp"
 convert assets/brand/handy-gota-y-cano.png -region 135x215+0+190 -alpha transparent +region -strip -quality 85 "$OUT/handy-cano.webp"
+sh scripts/handys-rotos.sh
 ls -la "$OUT"

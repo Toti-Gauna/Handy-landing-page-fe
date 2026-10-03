@@ -4,12 +4,36 @@ import demo from '../../content/demo.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
 import { boton as botonSitio, etiqueta } from '../componentes.ts';
 import { type Ctx, esc, plano, titular, url } from '../util.ts';
+import { ICONOS_CLIENTE } from './piezas.ts';
 import type { PaginaRender } from '../paginas.ts';
 import { demoUsuario } from './usuario.ts';
 import { demoEspecialista } from './especialista.ts';
 import type { DemoRol, PantallaDemo, RolDemo } from './tipos.ts';
 
 const ROLES: RolDemo[] = ['usuario', 'especialista'];
+type TipoError = keyof typeof demo.errores;
+
+/** Título de la app con ==marcador==. */
+const marcado = (t: string) => esc(t).replace(/==(.+?)==/g, '<mark>$1</mark>');
+
+/** Pantalla de error con el Handy roto (una por tipo; el motor muestra la que corresponde). */
+function pantallaError(tipo: TipoError): string {
+  const e = demo.errores[tipo];
+  const img = (lado: string) => `<img class="hd-error__pieza hd-error__pieza--${lado}" src="/src/img/${e.personaje}.webp" alt="" width="300" height="300" loading="lazy" decoding="async" />`;
+  const otro = 'otro' in e ? e.otro : null;
+  return `<div class="hd-error" data-demo-error="${tipo}" data-tipo="${tipo}" role="alertdialog" aria-modal="true" aria-labelledby="demo-error-${tipo}" tabindex="-1" hidden>
+  <div class="hd-error__escena" aria-hidden="true">
+    <div class="hd-error__personaje">${img('a')}${img('b')}<span class="hd-error__fx"><i></i><i></i><i></i><i></i></span></div>
+  </div>
+  <p class="hd-sobre hd-error__codigo">${esc(e.sobre)}</p>
+  <p class="hd-titulo hd-error__titulo" id="demo-error-${tipo}">${marcado(e.titulo)}</p>
+  <p class="hd-texto hd-texto--suave hd-error__texto">${esc(e.texto)}</p>
+  <div class="hd-botones">
+    <button type="button" class="hd-boton" data-demo-error-boton="reintentar">${icono('reintentar')}${esc(e.reintentar)}</button>
+    ${otro ? `<button type="button" class="hd-boton hd-boton--claro" data-demo-error-boton="otro"${otro.ir ? ` data-ir-error="${esc(otro.ir)}"` : ''}>${esc(otro.texto)}</button>` : ''}
+  </div>
+</div>`;
+}
 
 function validar(rol: RolDemo, d: DemoRol) {
   const pre = rol === 'usuario' ? 'u-' : 'e-';
@@ -116,6 +140,13 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
       <div class="demo__cta">
         ${ROLES.map((r, i) => `<div data-demo-cta="${r}"${i ? ' hidden' : ''}>${botonSitio(ctx, demo.cta[r], 'azul', 'boton--grande', true)}</div>`).join('')}
       </div>
+      <div class="demo__simular">
+        <p class="demo__recorrido-titulo">${esc(demo.simular.titulo)}</p>
+        <p class="demo__simular-bajada">${esc(demo.simular.bajada)}</p>
+        ${ROLES.map((r, i) => `<div class="demo__simular-botones" data-demo-simular-rol="${r}"${i ? ' hidden' : ''}>${(demo.simular.roles[r] as TipoError[])
+          .map((t) => `<button type="button" class="demo-simular" data-demo-simular="${t}"><img src="/src/img/${demo.errores[t].personaje}.webp" alt="" width="40" height="40" loading="lazy" decoding="async" />${esc(demo.errores[t].boton)}</button>`)
+          .join('')}</div>`).join('')}
+      </div>
       <p class="demo__aviso">${plano(demo.aviso)}</p>
     </div>
 
@@ -126,7 +157,10 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
             <span class="telefono__boton telefono__boton--a" aria-hidden="true"></span><span class="telefono__boton telefono__boton--b" aria-hidden="true"></span><span class="telefono__boton telefono__boton--c" aria-hidden="true"></span>
             <div class="telefono__pantalla" data-demo-pantallas>
               ${pantallas}
+              ${(Object.keys(demo.errores) as TipoError[]).map(pantallaError).join('')}
+              <div class="hd-confeti" data-demo-confeti aria-hidden="true"></div>
               <span class="telefono__isla" aria-hidden="true"></span>
+              <div class="hd-isla" data-demo-isla aria-hidden="true"><span class="hd-isla__ico"></span><span class="hd-isla__texto"><strong></strong><small></small></span></div>
               <span class="demo-dedo" aria-hidden="true" data-demo-dedo></span>
               ${fin}
             </div>
@@ -139,12 +173,22 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
           ${control('reiniciar', 'reintentar', c.reiniciar)}
           ${control('presentacion', 'expandir', c.presentacion)}
         </div>
+        <button type="button" class="demo-app-boton" data-demo-control="app">${icono('telefono')}<span><strong>${esc(demo.app.boton)}</strong><small>${esc(demo.app.detalle)}</small></span></button>
         <p class="demo__ayuda">${plano(demo.ayuda)}</p>
         <noscript><p class="demo__ayuda">${plano(demo.sinJs)}</p></noscript>
       </div>
     </div>
   </div>
   <p class="sr" aria-live="polite" data-demo-anuncio></p>
+  <button type="button" class="demo-app-salir" data-demo-salir-app aria-label="${esc(demo.app.salirAria)}">${icono('cerrar')}<span>${esc(demo.app.salir)}</span></button>
+  <template data-demo-iconos>${ICONOS_CLIENTE.map((n) => `<span data-icono="${n}">${icono(n)}</span>`).join('')}</template>
 </section>`;
-  return { meta: demo.meta, cuerpo };
+  const headExtra = `
+<link rel="manifest" href="${esc(url(ctx, '/demo.webmanifest'))}" />
+<link rel="apple-touch-icon" href="${esc(url(ctx, '/icono-app-180.png'))}" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="${esc(demo.app.nombre)}" />`;
+  return { meta: demo.meta, cuerpo, headExtra };
 }

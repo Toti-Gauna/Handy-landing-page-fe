@@ -393,13 +393,17 @@
     order: 3;
   }
 
-  .demo__cta {
+  .demo__simular {
     order: 4;
+  }
+
+  .demo__cta {
+    order: 5;
     margin-top: 0;
   }
 
   .demo__aviso {
-    order: 5;
+    order: 6;
   }
 }
 
@@ -837,4 +841,274 @@
 .demo-presentando .header,
 .demo-presentando .footer {
   visibility: hidden;
+}
+
+.demo-presentando .demo-app-boton {
+  display: none;
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .demo-presentando .demo__simular {
+    display: none;
+  }
+}
+
+/* ── Simular un error ─────────────────────────────────────────────────── */
+
+.demo__simular {
+  width: 100%;
+  max-width: 460px;
+}
+
+.demo__simular-bajada {
+  margin: 2px 0 10px;
+  font-size: 0.92rem;
+  color: var(--color-texto-suave);
+}
+
+.demo__simular-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo__simular-botones[hidden] {
+  display: none;
+}
+
+.demo-simular {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 5px 14px 5px 5px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-tinta);
+  font: 700 0.92rem var(--fuente);
+  box-shadow: 0 3px 0 var(--color-borde);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.demo-simular img {
+  width: 34px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--color-mosaico);
+  object-fit: contain;
+}
+
+.demo-simular:hover {
+  box-shadow: 0 3px 0 var(--color-azul-ui);
+}
+
+.demo-simular:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--color-borde);
+}
+
+.demo-simular:focus-visible {
+  outline: 3px solid var(--color-azul-personajes);
+  outline-offset: 2px;
+}
+
+/* ── Modo app: botón para entrar ──────────────────────────────────────── */
+
+.demo-app-boton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 360px);
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--color-azul);
+  color: #fff;
+  font-family: var(--fuente);
+  text-align: left;
+  box-shadow: 0 4px 0 #143e7e;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.demo-app-boton .icono {
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--color-amarillo);
+  color: var(--color-tinta);
+  flex: none;
+}
+
+.demo-app-boton strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.demo-app-boton small {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+
+.demo-app-boton:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #143e7e;
+}
+
+.demo-app-boton:focus-visible {
+  outline: 3px solid var(--color-azul-personajes);
+  outline-offset: 3px;
+}
+
+/* En pantallas anchas (sin el iPad en la mano) queda más discreto, abajo de los controles. */
+@media (min-width: 900px) and (max-height: 900px) {
+  .demo-app-boton {
+    display: none;
+  }
+}
+
+.demo-app-salir {
+  display: none;
+}
+
+/* ── Modo app: la pantalla ocupa todo, sin marco (como la app instalada) ── */
+
+.demo-app,
+.demo-app body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--color-tinta);
+}
+
+.demo-app .header,
+.demo-app .footer,
+.demo-app .intro,
+.demo-app .demo__panel,
+.demo-app .demo__controles,
+.demo-app .demo__ayuda,
+.demo-app .demo-app-boton,
+.demo-app .demo-fin,
+.demo-app .demo-dedo,
+.demo-app .telefono__boton,
+.demo-app .telefono__isla {
+  display: none;
+}
+
+.demo-app .demo {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  min-height: 0;
+  padding: 0;
+  background: var(--color-tinta);
+}
+
+.demo-app .demo__grilla {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  padding: 0;
+}
+
+.demo-app .demo__escenario,
+.demo-app .demo__fijo {
+  position: static;
+  display: block;
+  height: 100%;
+  margin: 0;
+}
+
+.demo-app .telefono--demo {
+  --ancho: min(100vw, 480px);
+  height: 100%;
+  margin: 0 auto;
+}
+
+.demo-app .telefono__marco {
+  aspect-ratio: auto;
+  height: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.demo-app .telefono__pantalla {
+  border-radius: 0;
+}
+
+/* La barra de estado la pone el celular de verdad: queda solo el espacio de arriba (muesca o isla). */
+.demo-app [data-demo-pantallas] .app-estado {
+  height: max(env(safe-area-inset-top, 0px), 0.7em);
+  padding: 0;
+  visibility: hidden;
+}
+
+.demo-app [data-demo-pantallas] .app-nav {
+  padding-bottom: max(1.1em, calc(env(safe-area-inset-bottom, 0px) + 0.4em));
+}
+
+.demo-app [data-demo-pantallas] .demo-hoja {
+  padding-bottom: calc(1.2em + env(safe-area-inset-bottom, 0px));
+}
+
+.demo-app .hd-isla {
+  top: calc(env(safe-area-inset-top, 0px) + 0.35em);
+}
+
+.demo-app .demo-app-salir {
+  position: fixed;
+  z-index: 400;
+  top: calc(env(safe-area-inset-top, 0px) + 6px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 11px 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(14 29 54 / 0.62);
+  color: #fff;
+  font: 700 12px/1 var(--fuente);
+  transform: translateX(-50%);
+  cursor: pointer;
+  animation: demo-salir-discreto 0.4s 4s ease forwards;
+}
+
+.demo-app .demo-app-salir .icono {
+  width: 14px;
+  height: 14px;
+}
+
+.demo-app .demo-app-salir:hover,
+.demo-app .demo-app-salir:focus-visible {
+  opacity: 1;
+  animation: none;
+}
+
+/* Mientras un aviso sale de la isla, "Salir" se corre para no taparlo. */
+.demo-app:has(.hd-isla--abierta) .demo-app-salir {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+@keyframes demo-salir-discreto {
+  to {
+    opacity: 0.45;
+  }
 }

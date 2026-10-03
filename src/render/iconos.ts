@@ -77,3 +77,6 @@ export function icono(nombre: string, clase = 'icono'): string {
   if (!d) throw new Error(`Ícono inexistente: ${nombre}`);
   return `<svg class="${clase}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
 }
+
+/** Todos los nombres de íconos (la demo los deja en un <template> para usarlos desde el navegador). */
+export const NOMBRES_ICONOS = Object.keys(trazos);

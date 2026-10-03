@@ -9,8 +9,14 @@
   "bajada": "Así va a funcionar la app. Elegí un lado, tocá la pantalla o seguí el recorrido paso a paso.",
   "rolesAria": "Qué lado de la app querés ver",
   "roles": {
-    "usuario": { "texto": "Usuario", "detalle": "Pedís un arreglo" },
-    "especialista": { "texto": "Especialista", "detalle": "Recibís trabajos y cobrás" }
+    "usuario": {
+      "texto": "Usuario",
+      "detalle": "Pedís un arreglo"
+    },
+    "especialista": {
+      "texto": "Especialista",
+      "detalle": "Recibís trabajos y cobrás"
+    }
   },
   "recorridoTitulo": "Recorrido",
   "pasoDe": "Paso {n} de {total}",
@@ -22,7 +28,9 @@
     "reiniciar": "Volver a empezar",
     "presentacion": "Modo presentación",
     "salirPresentacion": "Salir del modo presentación",
-    "guia": "Mostrar dónde tocar"
+    "guia": "Mostrar dónde tocar",
+    "app": "Usar como app",
+    "salirApp": "Salir del modo app"
   },
   "ayuda": "Tocá los botones del celular para navegar. Con el teclado: ← y → recorren los pasos.",
   "fin": "Fin del recorrido. Podés seguir tocando la app o cambiar de lado.",
@@ -44,11 +52,114 @@
     "pantalla": "Pantalla de la app"
   },
   "cta": {
-    "usuario": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" },
-    "especialista": { "texto": "Quiero sumarme", "href": "/registro/?tipo=especialista" }
+    "usuario": {
+      "texto": "Quiero usar Handy",
+      "href": "/registro/?tipo=usuario"
+    },
+    "especialista": {
+      "texto": "Quiero sumarme",
+      "href": "/registro/?tipo=especialista"
+    }
   },
   "banda": {
-    "usuario": { "texto": "¿Querés verla andando?", "link": "Probá la demo de la app", "href": "/demo/?rol=usuario" },
-    "especialista": { "texto": "¿Querés ver cómo te llegan los pedidos?", "link": "Probá la demo para especialistas", "href": "/demo/?rol=especialista" }
+    "usuario": {
+      "texto": "¿Querés verla andando?",
+      "link": "Probá la demo de la app",
+      "href": "/demo/?rol=usuario"
+    },
+    "especialista": {
+      "texto": "¿Querés ver cómo te llegan los pedidos?",
+      "link": "Probá la demo para especialistas",
+      "href": "/demo/?rol=especialista"
+    }
+  },
+  "app": {
+    "boton": "Usar como app",
+    "detalle": "Pantalla completa, sin el marco: como si la tuvieras instalada.",
+    "salir": "Salir",
+    "salirAria": "Salir del modo app y volver a la demo",
+    "bienvenida": {
+      "titulo": "Así se usa en tu celular",
+      "texto": "Tocá todo como en la app. Arriba tenés «Salir» para volver a la demo."
+    },
+    "cambioRol": {
+      "usuario": "Estás en el modo usuario",
+      "especialista": "Estás en el modo especialista"
+    },
+    "nombre": "Handy",
+    "tituloCorto": "Handy demo"
+  },
+  "mapa": {
+    "calles": {
+      "colon": "Av. Colón",
+      "luro": "Av. Luro",
+      "independencia": "Av. Independencia",
+      "plaza": "Plaza",
+      "mar": "MAR ARGENTINO",
+      "barrio": "LA PERLA"
+    }
+  },
+  "simular": {
+    "titulo": "Probá un error",
+    "bajada": "Así se ven los avisos cuando algo no sale como esperabas.",
+    "roles": {
+      "usuario": [
+        "conexion",
+        "especialistas",
+        "general"
+      ],
+      "especialista": [
+        "conexion",
+        "cobro",
+        "general"
+      ]
+    }
+  },
+  "errores": {
+    "conexion": {
+      "personaje": "handy-lamparita-rota",
+      "boton": "Sin conexión",
+      "sobre": "Sin conexión",
+      "titulo": "Se nos ==quemó== la lamparita",
+      "texto": "No pudimos conectarnos. Revisá tu wifi o tus datos y probá de nuevo.",
+      "reintentar": "Probar de nuevo",
+      "listo": "Volvió la conexión"
+    },
+    "especialistas": {
+      "personaje": "handy-cano-roto",
+      "boton": "Nadie disponible",
+      "sobre": "Sin especialistas libres",
+      "titulo": "Ahora no hay nadie ==libre==",
+      "texto": "Los especialistas de tu zona están ocupados en este momento. Programalo para otro día o probá de nuevo en un rato.",
+      "reintentar": "Probar de nuevo",
+      "otro": {
+        "texto": "Programar para otro día",
+        "ir": "u-programar"
+      },
+      "listo": "Encontramos especialistas cerca"
+    },
+    "general": {
+      "personaje": "handy-engranaje-roto",
+      "boton": "Algo falló",
+      "sobre": "Algo falló",
+      "titulo": "Se nos trabó un ==engranaje==",
+      "texto": "Algo no salió bien de nuestro lado. Probá de nuevo en unos segundos.",
+      "reintentar": "Probar de nuevo",
+      "listo": "Listo, ya anda"
+    },
+    "cobro": {
+      "personaje": "handy-llave-rota",
+      "boton": "CBU inválido",
+      "sobre": "Datos de cobro",
+      "titulo": "Ese CBU ==no cierra==",
+      "texto": "Revisá que tenga los 22 números o usá tu alias. Así los clientes te pueden pagar directo a tu cuenta.",
+      "reintentar": "Revisar mis datos",
+      "otro": {
+        "texto": "Más tarde",
+        "ir": ""
+      },
+      "irReintentar": "e-editar-cobro",
+      "listo": "Datos de cobro guardados"
+    }
   }
 }

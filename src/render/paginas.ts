@@ -30,6 +30,8 @@ export interface PaginaRender {
   meta: Meta;
   cuerpo: string;
   header?: 'claro' | 'azul';
+  /** Etiquetas extra para el <head> (ya escapadas). */
+  headExtra?: string;
 }
 
 // Los ids de rubros del contenido tienen que ser los mismos que acepta el esquema.

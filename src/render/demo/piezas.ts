@@ -3,7 +3,7 @@
 
 import demo from '../../content/demo.json' with { type: 'json' };
 import p from '../../content/pantallas.json' with { type: 'json' };
-import { icono } from '../iconos.ts';
+import { icono, NOMBRES_ICONOS } from '../iconos.ts';
 import { esc } from '../util.ts';
 import { estado, logo } from '../pantallas.ts';
 import type { RolDemo } from './tipos.ts';
@@ -99,4 +99,33 @@ export function tituloHoja(texto: string): string {
 /** Tarjeta blanca con franja gris; la franja es el botón (como "Ver más información"). */
 export function tarjetaDemo(cuerpo: string, franja: string, t: Toque = {}): string {
   return `<div class="app-tarjeta"><div class="app-tarjeta__cuerpo">${cuerpo}</div>${boton(t, esc(franja), 'app-tarjeta__franja')}</div>`;
+}
+
+/** Íconos que el navegador puede pedir por nombre (avisos de la isla): todos, en un <template> de la página. */
+export const ICONOS_CLIENTE = NOMBRES_ICONOS;
+
+/** Iniciales para un avatar: "Especialista 1" → "E1", "Cliente · La Perla" → "LP". */
+export function iniciales(nombre: string): string {
+  const partes = nombre.split(/[\s·-]+/).filter((p) => /[\p{L}\d]/u.test(p));
+  const ultima = partes[partes.length - 1] ?? '';
+  if (partes.length > 1 && /^\d+$/.test(ultima)) return (partes[0][0] + ultima).toUpperCase();
+  const dos = partes.length > 2 ? partes.slice(-2) : partes.slice(0, 2);
+  return dos.map((p) => p[0]).join('').toUpperCase();
+}
+
+/** Avatar redondo con iniciales (y el tilde de verificado). `tono`: color de fondo (CSS). */
+export function avatar(nombre: string, opciones: { tamano?: 'chico' | 'grande'; verificado?: boolean; tono?: string; clase?: string } = {}): string {
+  const c = ['hd-avatar'];
+  if (opciones.tamano) c.push(`hd-avatar--${opciones.tamano}`);
+  if (opciones.verificado) c.push('hd-avatar--verificado');
+  if (opciones.clase) c.push(opciones.clase);
+  return `<span class="${c.join(' ')}"${opciones.tono ? ` style="--tono:${esc(opciones.tono)}"` : ''} aria-hidden="true"><span>${esc(iniciales(nombre))}</span></span>`;
+}
+
+/** Tilde de éxito que se dibuja sola (ver .hd-tilde). */
+export const tildeExito = `<span class="hd-tilde" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>`;
+
+/** Título con ==marcador== amarillo (el texto viene del contenido). */
+export function tituloMarcado(texto: string, clase = 'hd-titulo', tag = 'p'): string {
+  return `<${tag} class="${clase}">${esc(texto).replace(/==(.+?)==/g, '<mark>$1</mark>')}</${tag}>`;
 }
