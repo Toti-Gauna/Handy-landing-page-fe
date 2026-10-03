@@ -3,17 +3,18 @@
 // El HTML sale de src/render/demo/usuario.ts con el estado inicial. Acá se guarda lo que se va eligiendo
 // (en m.estado, que el motor vacía al reiniciar) y se vuelve a pintar todo lo marcado con data-du-*:
 //   data-du-tpl, data-du-icono, data-du-ver, data-du-guia, data-du-habilitar, data-du-clase, data-du-grupo,
-//   data-du-rueda, data-du-dia.
+//   data-du-monto, data-du-tono, data-du-etapa, data-du-dia, data-du-insignia.
 // Hay tres juegos de valores (ver "contextos" en demo-usuario.json):
 //   - pedido: lo que se está pidiendo ahora (rubro, tipo, día, franja, presupuesto elegido);
 //   - turno: el turno confirmado (arranca con uno de ejemplo; se reemplaza al tocar "Confirmar turno");
 //   - ia: lo que se le contó a HandIA (pasa al pedido recién al tocar "Pedir para hoy" o "Programar turno").
+// Los avisos en tiempo real salen de la isla del celular (m.isla); los éxitos llevan confeti (m.confeti).
 // Todo lo temporizado usa m.timeout (se cancela solo al salir de la pantalla).
 
 import '../../styles/demo-usuario.css';
 import d from '../../content/demo-usuario.json';
 import rubrosJson from '../../content/rubros.json';
-import { registrarRol, type Motor } from './motor';
+import { registrarRol, type AvisoIsla, type Motor } from './motor';
 import { completar, formatoPesos, TARIFAS, tarifaCliente, totalCliente } from './util';
 
 // ── Estado ────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ type IdChat = 'u-chat' | 'u-handia' | 'u-soporte';
 type Contexto = 'pedido' | 'turno' | 'ia';
 
 interface Msg {
+  /** 'vos', 'otro' o 'detectado' (la pastilla de HandIA con el rubro que detectó). */
   de: string;
   texto: string;
   foto?: boolean;
@@ -67,6 +69,8 @@ interface Estado {
   ia: { rubro: string; problema: string; foto: boolean };
   // Turno confirmado
   tc: Turno;
+  /** Se acaba de confirmar: el seguimiento arranca con el festejo. */
+  festejo: boolean;
   estrellas: number;
   resEnviada: boolean;
   /** Turno que se ve en "Tu turno": 0 = el confirmado; 1… = los pasados. */
@@ -102,6 +106,18 @@ const CHATS: Record<IdChat, { etapas: { rapidas: { texto: string; respuestas: st
   'u-soporte': { etapas: d.soporte.etapas },
 };
 
+/** Iniciales para un avatar (igual que iniciales() de src/render/demo/piezas.ts). */
+function iniciales(nombre: string): string {
+  const partes = nombre.split(/[\s·-]+/).filter((p) => /[\p{L}\d]/u.test(p));
+  const ultima = partes[partes.length - 1] ?? '';
+  if (partes.length > 1 && /^\d+$/.test(ultima)) return (partes[0][0] + ultima).toUpperCase();
+  const dos = partes.length > 2 ? partes.slice(-2) : partes.slice(0, 2);
+  return dos.map((p) => p[0]).join('').toUpperCase();
+}
+
+/** Índice del especialista por nombre (para el color de su avatar). */
+const indiceEsp = (nombre: string) => Math.max(0, items.findIndex((it) => it.nombre === nombre));
+
 /** Horario que propone el presupuesto i para un pedido (índices de día y franja). Igual que en el build. */
 function propuesta(tipo: number, dia: number, franja: number, i: number) {
   const pr = items[i].propone;
@@ -109,7 +125,7 @@ function propuesta(tipo: number, dia: number, franja: number, i: number) {
   return { dia: Math.min(dia + pr.dia, dias.length - 1), franja: pr.franja ?? franja };
 }
 
-/** Día de la rueda que toca la guía: el siguiente al elegido (se ve cómo gira). Igual que en el build. */
+/** Día que toca la guía: el siguiente al elegido (se ve cómo cambia). Igual que en el build. */
 const diaGuia = (dia: number) => (dia + 1 < dias.length ? dia + 1 : dia - 1);
 
 function turnoInicial(): Turno {
@@ -147,6 +163,7 @@ function S(m: Motor): Estado {
       llegados: 0,
       ia: { rubro: ini.rubro, problema: problemaDe(ini.rubro), foto: false },
       tc,
+      festejo: false,
       estrellas: 0,
       resEnviada: false,
       turno: 0,
@@ -196,6 +213,7 @@ function valoresPedido(e: Estado): Record<string, string> {
     franja: urgencia ? d.urgencia.franja : franjas[e.franja],
     problema: e.problema,
     esp: it.nombre,
+    espIni: iniciales(it.nombre),
     zona: it.zona,
     declaro: it.declaro,
     otro: it.otros.find((o) => o !== r.nombre) ?? '',
@@ -236,6 +254,7 @@ function valoresTurno(e: Estado): Record<string, string> {
     franja: franjas[t.franja],
     problema: t.problema,
     esp: it.nombre,
+    espIni: iniciales(it.nombre),
     zona: it.zona,
     precio: formatoPesos(p),
     tarifa: formatoPesos(tarifaCliente(p)),
@@ -253,6 +272,7 @@ function valoresTurno(e: Estado): Record<string, string> {
       tFecha: v.fecha,
       tFranja: v.franja,
       tEsp: v.esp,
+      tEspIni: v.espIni,
       tPrecio: v.precio,
       tTarifa: v.tarifa,
       tTotal: v.total,
@@ -267,6 +287,7 @@ function valoresTurno(e: Estado): Record<string, string> {
       tFecha: x.fecha,
       tFranja: x.franja,
       tEsp: x.especialista,
+      tEspIni: iniciales(x.especialista),
       tPrecio: formatoPesos(x.precio),
       tTarifa: formatoPesos(tarifaCliente(x.precio)),
       tTotal: formatoPesos(totalCliente(x.precio)),
@@ -284,16 +305,29 @@ function valoresIa(e: Estado): Record<string, string> {
 
 const valoresDe = (e: Estado, ctx: Contexto) => (ctx === 'pedido' ? valoresPedido(e) : ctx === 'ia' ? valoresIa(e) : valoresTurno(e));
 
+/** Montos que cuentan (data-du-monto), según el contexto de la pantalla. */
+function montosDe(e: Estado, ctx: Contexto): Record<string, number> {
+  const p = precioDe(ctx === 'turno' ? e.tc.pres : e.pres);
+  return { precio: p, tarifa: tarifaCliente(p), total: totalCliente(p) };
+}
+
 /** Rubro (id) de cada ícono dinámico, según el contexto de la pantalla. */
 const iconos = (e: Estado, ctx: Contexto): Record<string, string> => ({
   rubro: ctx === 'pedido' ? e.rubro : ctx === 'ia' ? e.ia.rubro : e.tc.rubro,
   tRubro: e.turno === 0 ? e.tc.rubro : pasados[e.turno - 1].rubro,
 });
 
+/** Índice del especialista (color del avatar) de cada avatar dinámico. */
+const tonos = (e: Estado, ctx: Contexto): Record<string, number> => ({
+  esp: ctx === 'turno' ? e.tc.pres : e.pres,
+  tEsp: e.turno === 0 ? e.tc.pres : indiceEsp(pasados[e.turno - 1].especialista),
+});
+
 function condiciones(e: Estado): Record<string, boolean> {
   const t = e.tc;
   const flujo = e.turno === 0;
   const pagoHecho = t.pago === 0 && !t.cancelado;
+  const activo = flujo && !t.terminado && !t.cancelado;
   const c: Record<string, boolean> = {
     foto1: e.fotos >= 1,
     foto2: e.fotos >= 2,
@@ -304,6 +338,7 @@ function condiciones(e: Estado): Record<string, boolean> {
     segAntes: t.seg < 2,
     segLlego: t.seg === 2,
     segTrabajando: t.seg >= 3,
+    tcActivo: !t.terminado && !t.cancelado,
     pagoAhora: t.pago === 0,
     pagoDespues: t.pago === 1,
     pagoHecho,
@@ -314,7 +349,8 @@ function condiciones(e: Estado): Record<string, boolean> {
     resConEstrellas: e.estrellas > 0,
     resEnviada: e.resEnviada,
     tFlujo: flujo,
-    tActivo: flujo && !t.terminado && !t.cancelado,
+    tActivo: activo,
+    tChatSolo: flujo && !activo && !t.cancelado,
     tPagado: !flujo || pagoHecho,
     tPorPagar: flujo && t.terminado && !t.cancelado && t.pago === 1,
     tTerminado: !flujo || (t.terminado && !t.cancelado),
@@ -328,6 +364,7 @@ function condiciones(e: Estado): Record<string, boolean> {
   d.buscando.estados.forEach((_, i) => (c[`busc${i}`] = e.llegados === i));
   items.forEach((_, i) => (c[`llego${i + 1}`] = e.llegados >= i + 1));
   d.seguimiento.estados.forEach((_, i) => (c[`seg${i}`] = t.seg === i));
+  d.seguimiento.etapas.forEach((_, i) => (c[`segEtapa${i}`] = t.seg >= i));
   d.ayuda.preguntas.forEach((_, i) => (c[`resp${i}`] = e.pregunta === i));
   dias.forEach((_, i) => (c[`guiaDia${i}`] = !e.diaTocado && i === diaGuia(e.dia)));
   // Avisos: los que no se borraron y que corresponden (el de "Pagaste" solo si se pagó).
@@ -340,9 +377,9 @@ function condiciones(e: Estado): Record<string, boolean> {
     const ch = chatDe(e, id);
     const libre = ch.cola.length === 0 && !ch.escribiendo;
     // El chat con el especialista no sigue si el turno se canceló o ya terminó.
-    const activo = id !== 'u-chat' || (!t.cancelado && !t.terminado);
-    CHATS[id].etapas.forEach((_, n) => (c[`chat:${id}:${n}`] = libre && activo && ch.etapa === n));
-    c[`final:${id}`] = libre && activo && ch.etapa >= CHATS[id].etapas.length && (id !== 'u-chat' || ch.final);
+    const activoChat = id !== 'u-chat' || (!t.cancelado && !t.terminado);
+    CHATS[id].etapas.forEach((_, n) => (c[`chat:${id}:${n}`] = libre && activoChat && ch.etapa === n));
+    c[`final:${id}`] = libre && activoChat && ch.etapa >= CHATS[id].etapas.length && (id !== 'u-chat' || ch.final);
   });
   return c;
 }
@@ -356,6 +393,12 @@ const pantallaDe = (id: string) => document.querySelector<HTMLElement>(`.demo-pa
 function svgRubro(id: string): Node | null {
   const svg = pantallaDe('u-inicio')?.querySelector(`[data-accion="rubro"][data-valor="${id}"] svg`);
   return svg ? svg.cloneNode(true) : null;
+}
+
+/** Etapa de la barra de tres tramos: búsqueda (presupuestos que llegaron) y seguimiento. */
+function etapa(e: Estado, cual: string): number {
+  if (cual === 'busq') return Math.min(3, e.llegados);
+  return Math.min(3, e.tc.seg + 1);
 }
 
 function pintar(m: Motor) {
@@ -379,6 +422,19 @@ function pintar(m: Motor) {
       if (!svg) return;
       el.replaceChildren(svg);
       el.dataset.duActual = id;
+    });
+    const tn = tonos(e, ctx);
+    p.querySelectorAll<HTMLElement>('[data-du-tono]').forEach((el) => {
+      const i = tn[el.dataset.duTono!] ?? 0;
+      items.forEach((_, j) => el.classList.toggle(`du-tono-${j}`, j === i));
+    });
+    // Montos: si cambian, cuentan del valor anterior al nuevo.
+    const mt = montosDe(e, ctx);
+    p.querySelectorAll<HTMLElement>('[data-du-monto]').forEach((el) => {
+      const n = mt[el.dataset.duMonto!];
+      if (n === undefined) return;
+      if (el.dataset.hdMonto === undefined) el.dataset.hdMonto = String(n);
+      if (el.dataset.hdMonto !== String(n)) m.contar(el, n);
     });
   });
   const cumple = (cond: string) => (cond.startsWith('!') ? !c[cond.slice(1)] : !!c[cond]);
@@ -412,8 +468,14 @@ function pintar(m: Motor) {
     if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(activo));
     else el.classList.toggle('du-sel', activo);
   });
-  mias('[data-du-rueda]').forEach((el) => {
-    el.style.setProperty('--du-i', String(el.dataset.duRueda === 'dia' ? e.dia : e.franja));
+  mias('[data-du-etapa]').forEach((el) => {
+    const n = String(etapa(e, el.dataset.duEtapa!));
+    if (el.dataset.etapa !== n) el.dataset.etapa = n;
+  });
+  // La campana: cuántos avisos quedan sin leer.
+  const sinLeer = d.notificaciones.avisos.filter((_, i) => c[`aviso${i}`]).length;
+  mias('[data-du-insignia]').forEach((el) => {
+    if (el.textContent !== String(sinLeer)) el.textContent = String(sinLeer);
   });
   // Calendario: solo el día del turno confirmado se puede tocar. Si el trabajo ya terminó, "hoy" es ese día.
   const t = e.tc;
@@ -422,8 +484,8 @@ function pintar(m: Motor) {
     const b = el as HTMLButtonElement;
     const sel = Number(b.dataset.duDia) === t.dia && !t.cancelado;
     b.disabled = !sel;
-    b.classList.toggle('app-dia--azul', sel);
-    b.classList.toggle('app-dia--hoy', !sel && Number(b.dataset.num) === hoy);
+    b.classList.toggle('du-celda--azul', sel);
+    b.classList.toggle('du-celda--hoy', !sel && Number(b.dataset.num) === hoy);
     if (sel) b.setAttribute('aria-label', b.dataset.duAria ?? '');
     else b.removeAttribute('aria-label');
   });
@@ -435,6 +497,10 @@ function pintar(m: Motor) {
   });
   const seg = pantallaDe('u-seguimiento')?.querySelector<HTMLElement>('[data-du-seg]');
   if (seg) seg.dataset.duSeg = String(t.seg);
+  // El especialista del mapa lleva sus iniciales.
+  const marca = pantallaDe('u-seguimiento')?.querySelector<SVGTextElement>('.hd-mapa__esp text');
+  const ini2 = iniciales(items[t.pres].nombre);
+  if (marca && marca.textContent !== ini2) marca.textContent = ini2;
 }
 
 // ── Utilidades ────────────────────────────────────────────────────────────
@@ -446,16 +512,34 @@ function sinGuia(el: HTMLElement, selector: string) {
     .forEach((x) => x.removeAttribute('data-guia'));
 }
 
+/** Aviso de la isla con textos del contenido (las variables salen del contexto dado). */
+function isla(m: Motor, a: { titulo: string; texto?: string; icono?: string }, ctx: Contexto, extra: Partial<AvisoIsla> = {}, vars: Record<string, string> = {}) {
+  const v = { ...valoresDe(S(m), ctx), ...vars };
+  m.isla({ titulo: completar(a.titulo, v), texto: a.texto ? completar(a.texto, v) : undefined, icono: a.icono, ...extra });
+}
+
 function avisar(m: Motor, texto: string) {
-  const p = m.pantalla();
-  const caja = p.querySelector<HTMLElement>('.app') ?? p.querySelector<HTMLElement>('.demo-hoja') ?? p;
-  p.querySelectorAll('.du-toast').forEach((t) => t.remove());
-  const t = document.createElement('div');
-  t.className = 'du-toast';
-  t.textContent = texto;
-  caja.append(t);
-  m.anunciar(texto);
-  m.timeout(() => t.remove(), 2600);
+  m.isla({ titulo: d.comun.avisoIsla, texto, icono: 'info' });
+}
+
+/** Cuenta desde cero los montos de una pantalla (al entrar). */
+function contarDesdeCero(p: HTMLElement, m: Motor) {
+  const mt = montosDe(S(m), contextoDe(p.dataset.pantalla ?? ''));
+  p.querySelectorAll<HTMLElement>('[data-du-monto]').forEach((el) => {
+    const n = mt[el.dataset.duMonto!];
+    if (n !== undefined) m.contar(el, n, { desde: 0, ms: 1100 });
+  });
+}
+
+/** El troquel de los tickets va justo donde está el corte (depende de lo que tenga arriba). */
+function ajustarTickets(p: HTMLElement) {
+  p.querySelectorAll<HTMLElement>('.hd-ticket').forEach((tk) => {
+    const papel = tk.querySelector<HTMLElement>('.hd-ticket__papel');
+    const corte = tk.querySelector<HTMLElement>('.hd-ticket__corte');
+    if (!papel || !corte || !papel.offsetHeight) return;
+    const y = corte.offsetTop + corte.offsetHeight / 2;
+    tk.style.setProperty('--corte', `${((y / papel.offsetHeight) * 100).toFixed(2)}%`);
+  });
 }
 
 // ── Reiniciar: el DOM vuelve a como salió del build ────────────────────────
@@ -488,20 +572,34 @@ function desplegar(tarjeta: Element | null, abierto: boolean) {
 
 // ── Chats guionados ───────────────────────────────────────────────────────
 
+function alFondo(lista: HTMLElement, suave: boolean) {
+  lista.scrollTo({ top: lista.scrollHeight, behavior: suave ? 'smooth' : 'auto' });
+}
+
 function burbuja(id: IdChat, msg: Msg, nueva: boolean): HTMLElement {
   const pantalla = pantallaDe(id);
-  const div = document.createElement('div');
-  div.className = `app-burbuja app-burbuja--${msg.de === 'vos' ? 'propia' : 'otra'}${msg.foto ? ' app-burbuja--foto' : ''}${nueva ? ' du-nueva' : ''}`;
-  if (msg.foto) {
-    // La "foto" es la ilustración del rubro (pintar() le pone el ícono que corresponde).
-    const tpl = pantalla.querySelector<HTMLTemplateElement>('template[data-du-foto]');
-    const foto = tpl?.content.firstElementChild?.cloneNode(true);
-    if (foto) div.append(foto);
+  const lista = pantalla.querySelector<HTMLElement>('[data-du-mensajes]')!;
+  let div: HTMLElement;
+  if (msg.de === 'detectado') {
+    // Pastilla de HandIA con el rubro que detectó (pintar() le pone el ícono y el texto).
+    const tpl = pantalla.querySelector<HTMLTemplateElement>('template[data-du-detectado]');
+    div = (tpl?.content.firstElementChild?.cloneNode(true) as HTMLElement) ?? document.createElement('div');
+    if (nueva) div.classList.add('du-nueva');
+  } else {
+    div = document.createElement('div');
+    div.className = `du-burbuja du-burbuja--${msg.de === 'vos' ? 'propia' : 'otra'}${msg.foto ? ' du-burbuja--foto' : ''}${nueva ? ' du-nueva' : ''}`;
+    if (msg.foto) {
+      // La "foto" es la ilustración del rubro (pintar() le pone el ícono que corresponde).
+      const tpl = pantalla.querySelector<HTMLTemplateElement>('template[data-du-foto]');
+      const foto = tpl?.content.firstElementChild?.cloneNode(true);
+      if (foto) div.append(foto);
+    }
+    const span = document.createElement('span');
+    span.textContent = msg.texto;
+    div.append(span);
   }
-  const span = document.createElement('span');
-  span.textContent = msg.texto;
-  div.append(span);
-  pantalla.querySelector('[data-du-mensajes]')!.append(div);
+  lista.append(div);
+  alFondo(lista, nueva);
   return div;
 }
 
@@ -511,13 +609,15 @@ function quitarEscribiendo(pantalla: HTMLElement) {
 
 function escribiendo(pantalla: HTMLElement) {
   const div = document.createElement('div');
-  div.className = 'app-burbuja app-burbuja--otra du-escribiendo';
+  div.className = 'hd-escribiendo du-escribiendo';
   div.innerHTML = '<i></i><i></i><i></i>';
   const sr = document.createElement('span');
   sr.className = 'sr';
   sr.textContent = d.comun.escribiendo;
   div.append(sr);
-  pantalla.querySelector('[data-du-mensajes]')!.append(div);
+  const lista = pantalla.querySelector<HTMLElement>('[data-du-mensajes]')!;
+  lista.append(div);
+  alFondo(lista, true);
 }
 
 const textoDe = (e: Estado, id: IdChat, msg: Msg): Msg => ({ ...msg, texto: completar(msg.texto, valoresDe(e, contextoDe(id))) });
@@ -533,8 +633,9 @@ function seguirChat(m: Motor, id: IdChat) {
     m.guia(null);
     return;
   }
+  const rapido = ch.cola[0].de === 'detectado';
   ch.escribiendo = true;
-  escribiendo(p);
+  if (!rapido) escribiendo(p);
   pintar(m);
   m.timeout(
     () => {
@@ -542,10 +643,11 @@ function seguirChat(m: Motor, id: IdChat) {
       ch.escribiendo = false;
       const msg = ch.cola.shift()!;
       burbuja(id, textoDe(e, id, msg), !m.reducido);
+      pintar(m);
       if (ch.cola.length) m.timeout(() => seguirChat(m, id), m.reducido ? 150 : 450);
       else seguirChat(m, id);
     },
-    m.reducido ? 500 : 1200,
+    m.reducido ? 400 : rapido ? 650 : 1200,
   );
 }
 
@@ -554,10 +656,13 @@ function completarChat(m: Motor, id: IdChat) {
   const e = S(m);
   const ch = chatDe(e, id);
   const p = pantallaDe(id);
-  if (!ch.cola.length && !ch.escribiendo) return;
-  quitarEscribiendo(p);
-  ch.escribiendo = false;
-  ch.cola.splice(0).forEach((msg) => burbuja(id, textoDe(e, id, msg), false));
+  const lista = p.querySelector<HTMLElement>('[data-du-mensajes]');
+  if (ch.cola.length || ch.escribiendo) {
+    quitarEscribiendo(p);
+    ch.escribiendo = false;
+    ch.cola.splice(0).forEach((msg) => burbuja(id, textoDe(e, id, msg), false));
+  }
+  if (lista) alFondo(lista, false);
 }
 
 /**
@@ -580,47 +685,62 @@ function responder(m: Motor, id: IdChat, etapa: number, i: number) {
   if (!conf || etapa !== ch.etapa || ch.escribiendo || ch.cola.length) return;
   const r = conf.etapas[ch.etapa]?.rapidas[i];
   if (!r) return;
+  let detecto = false;
   // Lo de HandIA queda aparte: no toca el pedido en curso ni el turno confirmado.
   if (id === 'u-handia') {
     if (r.rubro) {
       e.ia.rubro = r.rubro;
       e.ia.problema = r.problema ?? problemaDe(r.rubro);
+      detecto = true;
     }
     if (r.foto) e.ia.foto = true;
   }
   ch.etapa++;
   burbuja(id, { de: 'vos', texto: r.propia ?? r.texto, foto: r.foto }, !m.reducido);
-  ch.cola = r.respuestas.map((texto) => ({ de: 'otro', texto }));
+  ch.cola = [...(detecto ? [{ de: 'detectado', texto: '' }] : []), ...r.respuestas.map((texto) => ({ de: 'otro', texto }))];
   agregarFinal(e, id);
   seguirChat(m, id);
 }
 
 // ── Pantallas con tiempo ──────────────────────────────────────────────────
 
-function entrarBuscando(_p: HTMLElement, m: Motor) {
+function contador(p: HTMLElement, m: Motor, n: number) {
+  const el = p.querySelector<HTMLElement>('[data-du-contador]');
+  if (el) m.contar(el, n, { ms: 500, formato: (x) => String(Math.round(x)) });
+}
+
+function entrarBuscando(p: HTMLElement, m: Motor) {
   const e = S(m);
   if (e.buscado) {
     e.llegados = items.length;
+    contador(p, m, items.length);
     return;
   }
   e.llegados = 0;
+  const cont = p.querySelector<HTMLElement>('[data-du-contador]');
+  if (cont) {
+    cont.dataset.hdMonto = '0';
+    cont.textContent = '0';
+  }
   pintar(m);
-  const tiempos = m.reducido ? [700, 1300, 1900] : [1100, 2000, 2800];
+  const tiempos = m.reducido ? [700, 1300, 1900] : [1300, 2500, 3600];
   tiempos.forEach((t, i) =>
     m.timeout(() => {
       e.llegados = i + 1;
       if (e.llegados >= items.length) e.buscado = true;
       pintar(m);
+      contador(p, m, e.llegados);
+      isla(m, d.buscando.isla, 'pedido', { icono: 'billetera' }, { nombre: items[i].nombre, precio: formatoPesos(precioDe(i)) });
       if (e.buscado) m.guia(pantallaDe('u-buscando').querySelector('[data-guia]'));
     }, t),
   );
   // Si nadie toca nada, pasa solo a los presupuestos.
   m.timeout(() => {
     if (m.actual === 'u-buscando') m.ir('u-presupuestos');
-  }, tiempos[tiempos.length - 1] + 2800);
+  }, tiempos[tiempos.length - 1] + 3200);
 }
 
-function entrarSeguimiento(_p: HTMLElement, m: Motor) {
+function entrarSeguimiento(p: HTMLElement, m: Motor) {
   const e = S(m);
   // Saltando a este paso desde el recorrido, el seguimiento se cuenta desde el principio
   // (aunque el turno se haya cancelado, terminado o el especialista ya haya llegado).
@@ -635,16 +755,47 @@ function entrarSeguimiento(_p: HTMLElement, m: Motor) {
   }
   // Si el trabajo ya había terminado (se volvió a este paso del recorrido), el seguimiento arranca de nuevo.
   if (e.tc.terminado) empezarTurno(e, { ...e.tc, seg: 0, terminado: false, cambio: false });
+
+  // Recién confirmado (o saltando a este paso): festejo con la tilde, confeti y el aviso de la isla.
+  const festejo = p.querySelector<HTMLElement>('[data-du-festejo]');
+  const conFestejo = (e.festejo || m.saltando) && e.tc.seg === 0;
+  e.festejo = false;
+  if (festejo) festejo.hidden = !conFestejo;
+  if (conFestejo) {
+    m.confeti();
+    isla(m, d.confirmado.isla, 'turno', { icono: 'check', tono: 'exito' });
+    m.timeout(() => festejo?.classList.add('du-festejo--sale'), m.reducido ? 600 : 1700);
+    m.timeout(() => {
+      if (festejo) {
+        festejo.hidden = true;
+        festejo.classList.remove('du-festejo--sale');
+      }
+    }, m.reducido ? 700 : 2100);
+  }
+
+  // Si ya llegó, el especialista queda en tu casa (el viaje no se repite).
+  if (e.tc.seg >= 2) {
+    m.timeout(() => p.querySelectorAll<SVGAnimationElement>('[data-hd-viaje]').forEach((a) => {
+      try {
+        a.endElement();
+      } catch {
+        /* sin SMIL */
+      }
+    }), 0);
+  }
+
   // Confirmado → en camino → llegó: avanza solo (o al tocar la barra de estados).
   const avanzar = () => {
     const t = S(m).tc;
     if (t.seg >= 2) return;
     t.seg++;
     pintar(m);
+    const aviso = d.seguimiento.islas[t.seg];
+    if (aviso) isla(m, aviso, 'turno', { icono: aviso.icono, tono: t.seg === 2 ? 'amarillo' : 'azul' });
     m.guia(null);
-    if (t.seg < 2) m.timeout(avanzar, 2200);
+    if (t.seg < 2) m.timeout(avanzar, 2300);
   };
-  if (e.tc.seg < 2) m.timeout(avanzar, 2000);
+  if (e.tc.seg < 2) m.timeout(avanzar, conFestejo ? 2600 : 2000);
 }
 
 function entrarChat(_p: HTMLElement, m: Motor) {
@@ -656,13 +807,16 @@ function entrarChat(_p: HTMLElement, m: Motor) {
   if (chatDe(e, 'u-chat').cola.length) seguirChat(m, 'u-chat');
 }
 
-function entrarTerminado(_p: HTMLElement, m: Motor) {
+function entrarTerminado(p: HTMLElement, m: Motor) {
   // Esta pantalla es el trabajo terminado (también si se llega saltando al paso del recorrido).
   const e = S(m);
   Object.assign(e.tc, { terminado: true, cancelado: false, cambio: false, seg: 3 });
   // La calificación arranca de cero cada vez que se llega acá.
   Object.assign(e, { estrellas: 0, resEnviada: false });
   restaurar('u-resena');
+  m.confeti();
+  isla(m, d.terminado.isla, 'turno', { icono: 'check', tono: 'exito' });
+  contarDesdeCero(p, m);
 }
 
 function entrarPagos(p: HTMLElement, m: Motor) {
@@ -671,9 +825,9 @@ function entrarPagos(p: HTMLElement, m: Motor) {
   // Desde "Ver el pago": se despliega el movimiento de ese turno y se pliegan los demás.
   const i = e.verPago;
   e.verPago = -1;
-  p.querySelectorAll<HTMLElement>('[data-du-mov]').forEach((mov) => desplegar(mov.closest('.app-tarjeta'), Number(mov.dataset.duMov) === i));
-  const tarjeta = p.querySelector(`[data-du-mov="${i}"]`)?.closest<HTMLElement>('.app-tarjeta');
-  const lista = tarjeta?.closest<HTMLElement>('.du-scroll');
+  p.querySelectorAll<HTMLElement>('[data-du-mov]').forEach((mov) => desplegar(mov.closest('.du-mov-tarjeta'), Number(mov.dataset.duMov) === i));
+  const tarjeta = p.querySelector(`[data-du-mov="${i}"]`)?.closest<HTMLElement>('.du-mov-tarjeta');
+  const lista = tarjeta?.closest<HTMLElement>('.hd-scroll');
   if (tarjeta && lista) lista.scrollTop += tarjeta.getBoundingClientRect().top - lista.getBoundingClientRect().top;
 }
 
@@ -732,6 +886,7 @@ function confirmarTurno(e: Estado) {
     cancelado: false,
     cambio: false,
   });
+  e.festejo = true;
 }
 
 const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
@@ -742,12 +897,6 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
     const t = d.inicio.tareas[num(el)];
     nuevoPedido(S(m), t.rubro, t.problema);
   },
-  urgencia(el, m) {
-    const e = S(m);
-    nuevoPedido(e, el.dataset.valor!, problemaDe(el.dataset.valor!));
-    e.tipo = 0;
-    e.dia = 0;
-  },
   tipo(el, m) {
     const e = S(m);
     e.tipo = num(el);
@@ -757,6 +906,7 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
     const e = S(m);
     e.dia = num(el);
     e.diaTocado = true;
+    el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: m.reducido ? 'auto' : 'smooth' });
   },
   franja(el, m) {
     S(m).franja = num(el);
@@ -783,9 +933,11 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
   },
   llegada(_el, m) {
     S(m).tc.seg = 3;
+    isla(m, d.seguimiento.islaLlegada, 'turno', { icono: 'check', tono: 'exito' });
   },
   pagar(_el, m) {
     S(m).tc.pago = 0;
+    isla(m, d.terminado.islaPago, 'turno', { icono: 'billetera', tono: 'exito' });
   },
   chat(el, m) {
     const [id, etapa, i] = (el.dataset.valor ?? '').split(':');
@@ -813,6 +965,8 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
   },
   'enviar-resena'(_el, m) {
     S(m).resEnviada = true;
+    m.confeti();
+    isla(m, d.resena.isla, 'turno', { icono: 'estrella', tono: 'exito' });
   },
   'handia-pedir'(el, m) {
     // Recién acá lo que se le contó a HandIA pasa a ser el pedido.
@@ -853,16 +1007,18 @@ const acciones: Record<string, (el: HTMLElement, m: Motor) => void> = {
   },
   'pedir-cambio'(_el, m) {
     S(m).tc.cambio = true;
+    isla(m, d.cambiar.isla, 'turno', { icono: 'calendario' });
   },
   'cancelar-turno'(_el, m) {
     const e = S(m);
     e.tc.cancelado = true;
     e.tc.cambio = false;
+    isla(m, d.cancelar.isla, 'turno', { icono: 'prohibido', tono: 'amarillo' });
     // Si se canceló desde el seguimiento, el turno ya no se sigue: a Turnos.
     if (e.desde === 'seg') m.raiz('u-turnos');
   },
   mov(el) {
-    desplegar(el.closest('.app-tarjeta'), el.getAttribute('aria-expanded') !== 'true');
+    desplegar(el.closest('.du-mov-tarjeta'), el.getAttribute('aria-expanded') !== 'true');
   },
   pregunta(el, m) {
     const e = S(m);
@@ -907,15 +1063,17 @@ const especiales: Record<string, (p: HTMLElement, m: Motor) => void> = {
   'u-soporte': (_p, m) => completarChat(m, 'u-soporte'),
   'u-terminado': entrarTerminado,
   'u-pagos': entrarPagos,
+  'u-perfil': contarDesdeCero,
+  'u-confirmar': contarDesdeCero,
 };
 
 const entrar: Record<string, (p: HTMLElement, m: Motor) => void> = Object.fromEntries(
   Object.keys(d.titulos).map((id) => [
     id,
     (p: HTMLElement, m: Motor) => {
-      p.querySelectorAll('.du-toast').forEach((t) => t.remove());
       especiales[id]?.(p, m);
       pintar(m);
+      ajustarTickets(p);
     },
   ]),
 );

@@ -35,6 +35,6 @@ export function renderizarPagina(html: string, base: string): string {
   const ctx: Ctx = { base, pagina };
   const r = render(ctx);
   return html
-    .replace('<!--handy:head-->', head(ctx, r.meta))
+    .replace('<!--handy:head-->', head(ctx, r.meta) + (r.headExtra ?? ''))
     .replace('<!--handy:pagina-->', documento(ctx, r.cuerpo, { header: r.header }));
 }

@@ -67,7 +67,7 @@
   },
   "pantallaIlustrativa": "Pantalla ilustrativa",
   "noEncontrado": {
-    "titulo": "Esta página no existe",
+    "titulo": "Esta página ==no existe==",
     "texto": "Puede que el link esté mal escrito. Volvé al inicio y seguí desde ahí.",
     "cta": {
       "texto": "Ir al inicio",

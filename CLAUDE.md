@@ -41,6 +41,15 @@ pastillas azules del Centro de ayuda (preguntas), cupones (camada fundadora) y e
 - `vitrina()`: en pantallas anchas el celular queda fijo y cambia de pantalla con el scroll; en el celular cada paso trae la suya.
 - Pantalla de carga (`src/scripts/intro.ts`): una vez por sesión (`sessionStorage`), nunca con "reducir movimiento", máximo 5 s.
 
+## Demo (/demo/)
+
+- Pantallas en `src/render/demo/{usuario,especialista}.ts`, comportamiento en `src/scripts/demo/`, motor en `motor.ts` (contrato en `tipos.ts`).
+- Kit visual de la app: `src/styles/demo-app.css` (clases `.hd-*`), piezas en `src/render/demo/piezas.ts` y el mapa vivo de Mar del Plata en `mapa.ts`.
+  Lo propio de cada rol va con prefijo `.du-` / `.de-`. Avisos por la isla (`m.isla`), confeti (`m.confeti`), montos (`m.contar`), entradas con `data-entra`.
+- Errores con los Handys rotos (`m.error(tipo)`, textos en `demo.json → errores`); las imágenes salen de `scripts/handys-rotos.sh`.
+- Modo app (`?app=1`, botón "Usar como app" o el ícono instalado con `public/demo.webmanifest`): pantalla completa sin marco.
+  Toda pantalla tiene que funcionar de 320 a 480 px de ancho y de 568 a 932 px de alto (flex + `.hd-scroll`).
+
 ## Reglas del registro
 
 - POST `FORM_ENDPOINT + '/preregistro'`; contador con GET `FORM_ENDPOINT + '/preregistro/contador'` → `{ usuarios, especialistas }`.

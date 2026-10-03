@@ -8,11 +8,26 @@
 //   ?stand=1            modo stand: arranca en presentación y reproduciendo; al terminar el recorrido pasa
 //                       al otro lado y sigue, y si nadie la toca por un minuto vuelve a empezar sola.
 //                       Mientras dura, pide que la pantalla no se apague (Wake Lock, si el navegador lo tiene).
+//   ?app=1              modo app: la pantalla ocupa todo el celular, sin el marco ni el panel (como la app instalada).
+//                       También arranca así si se abre desde el ícono de la pantalla de inicio (demo.webmanifest).
 
 import demo from '../../content/demo.json';
 import { despuesDeIntro } from '../intro';
+import { formatoPesos } from './util';
 
 export type Rol = 'usuario' | 'especialista';
+export type TipoError = keyof typeof demo.errores;
+
+/** Aviso que sale de la isla del celular. */
+export interface AvisoIsla {
+  titulo: string;
+  texto?: string;
+  /** Nombre de un ícono de ICONOS_CLIENTE (src/render/demo/piezas.ts). */
+  icono?: string;
+  tono?: 'azul' | 'exito' | 'amarillo';
+  /** Cuánto queda abierto (ms). */
+  ms?: number;
+}
 
 export interface Motor {
   /** Rol activo. */
@@ -44,6 +59,18 @@ export interface Motor {
   readonly saltando: boolean;
   /** Estado compartido del rol (se vacía con "Volver a empezar" y al cambiar de rol). */
   estado: Record<string, unknown>;
+  /** Aviso que sale de la isla del celular (y se anuncia a los lectores de pantalla). */
+  isla(aviso: AvisoIsla): void;
+  /** Confeti de mosaicos sobre la pantalla (no hace nada con "reducir movimiento"). */
+  confeti(): void;
+  /** Cuenta un monto hasta `hasta` (formato "$ 45.000"), desde el que muestra o desde `desde`. */
+  contar(el: HTMLElement, hasta: number, opciones?: { desde?: number; ms?: number; formato?: (n: number) => string }): void;
+  /** Muestra la pantalla de error con el Handy roto. */
+  error(tipo: TipoError): void;
+  /** Vuelve a correr las entradas animadas ([data-entra]) y los mapas de una pantalla (por defecto, la actual). */
+  animar(id?: string): void;
+  /** true en el modo app (pantalla completa, sin marco). */
+  readonly app: boolean;
 }
 
 export interface ModuloRol {
@@ -63,8 +90,19 @@ export function registrarRol(rol: Rol, modulo: ModuloRol) {
 
 const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esperar = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
-const DURACION = 380;
+const DURACION = 460;
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+/** Curva de las transiciones entre pantallas (arranca rápido y frena largo, como iOS). */
+const SALIDA = 'cubic-bezier(0.32, 0.72, 0, 1)';
+/** Resorte con un rebote corto para las hojas (si el navegador entiende linear()). */
+const RESORTE =
+  typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)')
+    ? 'linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163 27%, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1)'
+    : 'cubic-bezier(0.34, 1.4, 0.64, 1)';
+/** Cuánto queda abierto un aviso de la isla. */
+const ISLA_MS = 3400;
+/** Lo que tarda "Probar de nuevo" en una pantalla de error. */
+const REINTENTO = 1400;
 /** Pausa del modo automático entre un toque y el siguiente (cada paso puede pedir otra con data-pausa). */
 const PAUSA = 2400;
 const PAUSA_INICIAL = 900;
@@ -97,6 +135,11 @@ export function iniciarDemo() {
   const progreso = raizEl.querySelector<HTMLElement>('[data-demo-progreso]');
   const botonPlay = raizEl.querySelector<HTMLButtonElement>('[data-demo-control="reproducir"]');
   const telefono = raizEl.querySelector<HTMLElement>('.telefono--demo');
+  const islaEl = cont.querySelector<HTMLElement>('[data-demo-isla]');
+  const confetiEl = cont.querySelector<HTMLElement>('[data-demo-confeti]');
+  const iconos = raizEl.querySelector<HTMLTemplateElement>('template[data-demo-iconos]');
+  const errores = new Map<string, HTMLElement>();
+  cont.querySelectorAll<HTMLElement>('[data-demo-error]').forEach((el) => errores.set(el.dataset.demoError!, el));
 
   const inicioDe = (r: Rol) =>
     raizEl.querySelector<HTMLElement>(`[data-demo-recorrido="${r}"]`)?.dataset.inicio ?? (r === 'usuario' ? 'u-inicio' : 'e-inicio');
@@ -127,6 +170,11 @@ export function iniciarDemo() {
   let navDiferida: (() => void) | null = null;
   /** colocar() está corriendo los entrar() (ver Motor.saltando). */
   let saltando = false;
+  /** Pantalla de error a la vista (encima de todo). */
+  let errorActual: HTMLElement | null = null;
+  /** Modo app: pantalla completa, sin marco. */
+  let enApp = false;
+  let tIsla = 0;
   const limpiezas = new Map<string, (() => void)[]>();
   /** Temporizadores (timeout) pendientes por pantalla: si hay, "Siguiente" espera a la guía. */
   const pendientes = new Map<string, number>();
@@ -226,7 +274,179 @@ export function iniciarDemo() {
       return reducido();
     },
     estado: {},
+    isla: (a) => isla(a),
+    confeti: () => confeti(),
+    contar: (el, hasta, o) => contar(el, hasta, o),
+    error: (tipo) => mostrarError(tipo),
+    animar: (id) => animarPantalla(pantallas.get(id ?? top())),
+    get app() {
+      return enApp;
+    },
   };
+
+  // ── Efectos: isla, confeti, montos, entradas ────────────────────────────
+
+  function isla(a: AvisoIsla) {
+    if (!islaEl) return;
+    const ico = islaEl.querySelector<HTMLElement>('.hd-isla__ico')!;
+    const fuerte = islaEl.querySelector<HTMLElement>('.hd-isla__texto strong')!;
+    const chico = islaEl.querySelector<HTMLElement>('.hd-isla__texto small')!;
+    window.clearTimeout(tIsla);
+    const abrir = () => {
+      ico.replaceChildren();
+      const svg = a.icono ? iconos?.content.querySelector(`[data-icono="${a.icono}"] svg`) : null;
+      if (svg) ico.append(svg.cloneNode(true));
+      fuerte.textContent = a.titulo;
+      chico.textContent = a.texto ?? '';
+      chico.hidden = !a.texto;
+      islaEl.className = `hd-isla hd-isla--abierta${a.tono && a.tono !== 'azul' ? ` hd-isla--${a.tono}` : ''}`;
+      tIsla = window.setTimeout(() => islaEl.classList.remove('hd-isla--abierta'), a.ms ?? ISLA_MS);
+    };
+    // Si ya había uno abierto, se cierra y vuelve a abrir (se nota que es otro aviso).
+    if (islaEl.classList.contains('hd-isla--abierta') && !reducido()) {
+      islaEl.classList.remove('hd-isla--abierta');
+      tIsla = window.setTimeout(abrir, 260);
+    } else {
+      abrir();
+    }
+    motor.anunciar(a.texto ? `${a.titulo}. ${a.texto}` : a.titulo);
+  }
+
+  function cerrarIsla() {
+    window.clearTimeout(tIsla);
+    islaEl?.classList.remove('hd-isla--abierta');
+  }
+
+  const COLORES_CONFETI = ['#1F57A8', '#F5F59A', '#2F6BFF', '#ECECEC', '#4A72B0', '#FFFFFF', '#F5F59A'];
+  function confeti() {
+    if (!confetiEl || reducido()) return;
+    const w = confetiEl.clientWidth;
+    const h = confetiEl.clientHeight;
+    for (let i = 0; i < 46; i++) {
+      const p = document.createElement('i');
+      const color = COLORES_CONFETI[i % COLORES_CONFETI.length];
+      const lado = 0.42 + Math.random() * 0.5;
+      p.style.cssText = `width:${lado}em;height:${lado * (0.7 + Math.random() * 0.6)}em;background:${color};${
+        color === '#FFFFFF' || color === '#ECECEC' ? 'box-shadow:0 0 0 0.05em rgb(14 29 54 / 0.12);' : ''
+      }`;
+      confetiEl.append(p);
+      const x0 = w * (0.3 + Math.random() * 0.4);
+      const y0 = h * 0.36;
+      const dx = (Math.random() - 0.5) * w * 0.95;
+      const alto = 90 + Math.random() * 150;
+      const giro = (Math.random() - 0.5) * 900;
+      p.animate(
+        [
+          { transform: `translate(${x0}px, ${y0}px) rotate(0deg) scale(0.4)`, opacity: 1 },
+          { transform: `translate(${x0 + dx * 0.55}px, ${y0 - alto}px) rotate(${giro * 0.4}deg) scale(1)`, opacity: 1, offset: 0.28 },
+          { transform: `translate(${x0 + dx}px, ${h + 30}px) rotate(${giro}deg) scale(1)`, opacity: 0.9 },
+        ],
+        { duration: 1700 + Math.random() * 1300, delay: Math.random() * 180, easing: 'cubic-bezier(0.2, 0.6, 0.45, 1)', fill: 'both' },
+      ).finished.then(
+        () => p.remove(),
+        () => p.remove(),
+      );
+    }
+  }
+
+  function contar(el: HTMLElement, hasta: number, o: { desde?: number; ms?: number; formato?: (n: number) => string } = {}) {
+    const formato = o.formato ?? formatoPesos;
+    const previo = Number(el.dataset.hdMonto);
+    const desde = o.desde ?? (Number.isFinite(previo) ? previo : 0);
+    el.dataset.hdMonto = String(hasta);
+    if (reducido() || desde === hasta) {
+      el.textContent = formato(hasta);
+      return;
+    }
+    const ms = o.ms ?? 900;
+    const t0 = performance.now();
+    const paso = (t: number) => {
+      if (el.dataset.hdMonto !== String(hasta)) return; // otro conteo lo reemplazó
+      const k = Math.min(1, (t - t0) / ms);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = formato(desde + (hasta - desde) * e);
+      if (k < 1) requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+  }
+
+  /** Entradas en cascada ([data-entra]) y mapas (ruta que se dibuja, especialista que viaja). */
+  function animarPantalla(el: HTMLElement | undefined) {
+    if (!el) return;
+    el.querySelectorAll<HTMLElement>('[data-entra]').forEach((x, i) => x.style.setProperty('--i', String(Math.min(i, 14))));
+    el.classList.remove('hd-entrando');
+    void el.offsetWidth;
+    if (!reducido()) el.classList.add('hd-entrando');
+    el.querySelectorAll<HTMLElement>('[data-hd-mapa]').forEach((m) => {
+      m.classList.remove('hd-mapa--ruta');
+      void m.offsetWidth;
+      m.classList.add('hd-mapa--ruta');
+    });
+    el.querySelectorAll<SVGAnimationElement>('[data-hd-viaje]').forEach((a) => {
+      try {
+        a.beginElement();
+        if (reducido()) a.endElement();
+      } catch {
+        /* SVG sin SMIL: el especialista queda quieto */
+      }
+    });
+  }
+
+  // ── Errores (pantallas con los Handys rotos) ────────────────────────────
+
+  function mostrarError(tipo: TipoError) {
+    const el = errores.get(tipo);
+    if (!el) return;
+    detener();
+    if (errorActual && errorActual !== el) errorActual.hidden = true;
+    errorActual = el;
+    el.hidden = false;
+    el.querySelectorAll<HTMLButtonElement>('[aria-busy]').forEach((b) => b.removeAttribute('aria-busy'));
+    // Que el Handy se vuelva a partir cada vez.
+    el.querySelectorAll<HTMLElement>('.hd-error__pieza, .hd-error__personaje').forEach((p) => {
+      p.style.animation = 'none';
+      void p.offsetWidth;
+      p.style.animation = '';
+    });
+    void animar(el, [{ opacity: 0, transform: 'scale(1.04)' }, { opacity: 1, transform: 'none' }], 320);
+    pintarInert();
+    el.focus({ preventScroll: true });
+    motor.anunciar(el.querySelector('.hd-error__titulo')?.textContent ?? '');
+  }
+
+  async function ocultarError() {
+    const el = errorActual;
+    if (!el) return;
+    errorActual = null;
+    await animar(el, [{ opacity: 1 }, { opacity: 0 }], 220);
+    if (errorActual !== el) el.hidden = true;
+    pintarInert();
+    enfocarPantalla();
+  }
+
+  function botonDeError(b: HTMLElement) {
+    const el = b.closest<HTMLElement>('[data-demo-error]');
+    if (!el || el !== errorActual) return;
+    const tipo = el.dataset.demoError as TipoError;
+    const e = demo.errores[tipo] as { listo: string; irReintentar?: string };
+    if (b.dataset.demoErrorBoton === 'otro') {
+      const ir = b.dataset.irError;
+      void ocultarError().then(() => {
+        if (ir && pantallas.has(ir)) navegar(ir, 'ir');
+      });
+      return;
+    }
+    // "Probar de nuevo": la ruedita un momento y vuelve a andar.
+    b.setAttribute('aria-busy', 'true');
+    window.setTimeout(() => {
+      b.removeAttribute('aria-busy');
+      if (errorActual !== el) return;
+      void ocultarError().then(() => {
+        if (e.irReintentar && pantallas.has(e.irReintentar)) navegar(e.irReintentar, 'ir');
+        else isla({ titulo: e.listo, icono: 'check', tono: 'exito' });
+      });
+    }, reducido() ? 300 : REINTENTO);
+  }
 
   function agregarLimpieza(id: string, fn: () => void) {
     const l = limpiezas.get(id) ?? [];
@@ -259,9 +479,9 @@ export function iniciarDemo() {
 
   // ── Transiciones ────────────────────────────────────────────────────────
 
-  function animar(el: HTMLElement, frames: Keyframe[], ms = DURACION): Promise<void> {
+  function animar(el: HTMLElement, frames: Keyframe[], ms = DURACION, easing = CURVA): Promise<void> {
     if (reducido() || !el.animate) return Promise.resolve();
-    return el.animate(frames, { duration: ms, easing: CURVA }).finished.then(
+    return el.animate(frames, { duration: ms, easing }).finished.then(
       () => undefined,
       () => undefined,
     );
@@ -276,17 +496,18 @@ export function iniciarDemo() {
     elNueva.style.zIndex = '2';
     if (elVieja && elVieja !== elNueva) elVieja.style.zIndex = '1';
     antes?.();
+    if (modo !== 'atras') animarPantalla(elNueva);
     const anims: Promise<void>[] = [];
     if (modo === 'adelante') {
-      anims.push(animar(elNueva, [{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }]));
-      if (elVieja) anims.push(animar(elVieja, [{ transform: 'translateX(0)', filter: 'brightness(1)' }, { transform: 'translateX(-28%)', filter: 'brightness(0.85)' }]));
+      anims.push(animar(elNueva, [{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }], DURACION, SALIDA));
+      if (elVieja) anims.push(animar(elVieja, [{ transform: 'translateX(0)', filter: 'brightness(1)' }, { transform: 'translateX(-30%)', filter: 'brightness(0.8)' }], DURACION, SALIDA));
     } else if (modo === 'atras') {
       elNueva.style.zIndex = '1';
       if (elVieja) elVieja.style.zIndex = '2';
-      anims.push(animar(elNueva, [{ transform: 'translateX(-28%)', filter: 'brightness(0.85)' }, { transform: 'translateX(0)', filter: 'brightness(1)' }]));
-      if (elVieja) anims.push(animar(elVieja, [{ transform: 'translateX(0)' }, { transform: 'translateX(100%)' }]));
+      anims.push(animar(elNueva, [{ transform: 'translateX(-30%)', filter: 'brightness(0.8)' }, { transform: 'translateX(0)', filter: 'brightness(1)' }], DURACION, SALIDA));
+      if (elVieja) anims.push(animar(elVieja, [{ transform: 'translateX(0)' }, { transform: 'translateX(100%)' }], DURACION, SALIDA));
     } else {
-      anims.push(animar(elNueva, [{ opacity: 0 }, { opacity: 1 }], 220));
+      anims.push(animar(elNueva, [{ opacity: 0, transform: 'translateY(0.7em) scale(0.985)' }, { opacity: 1, transform: 'none' }], 320, SALIDA));
     }
     await Promise.all(anims);
     // Si mientras tanto se saltó a otro paso, colocar() ya dejó todo en su lugar.
@@ -300,11 +521,12 @@ export function iniciarDemo() {
     const el = pantallas.get(id)!;
     el.hidden = false;
     antes?.();
+    animarPantalla(el);
     const hoja = el.querySelector<HTMLElement>('.demo-hoja');
     const velo = el.querySelector<HTMLElement>('.demo-velo');
     await Promise.all([
-      velo ? animar(velo, [{ opacity: 0 }, { opacity: 1 }], 260) : Promise.resolve(),
-      hoja ? animar(hoja, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }]) : Promise.resolve(),
+      velo ? animar(velo, [{ opacity: 0 }, { opacity: 1 }], 300) : Promise.resolve(),
+      hoja ? animar(hoja, [{ transform: 'translateY(105%)' }, { transform: 'translateY(0)' }], 620, RESORTE) : Promise.resolve(),
     ]);
   }
 
@@ -315,7 +537,7 @@ export function iniciarDemo() {
     const velo = el.querySelector<HTMLElement>('.demo-velo');
     await Promise.all([
       velo ? animar(velo, [{ opacity: 1 }, { opacity: 0 }], 260) : Promise.resolve(),
-      hoja ? animar(hoja, [{ transform: 'translateY(0)' }, { transform: 'translateY(110%)' }], 300) : Promise.resolve(),
+      hoja ? animar(hoja, [{ transform: 'translateY(0)' }, { transform: 'translateY(110%)' }], 280, 'cubic-bezier(0.4, 0, 1, 1)') : Promise.resolve(),
     ]);
     if (gen === generacion) el.hidden = true;
   }
@@ -324,13 +546,17 @@ export function iniciarDemo() {
   function pintarInert() {
     const arriba = top();
     const conHoja = esHoja(arriba);
-    pantallas.forEach((el, id) => el.toggleAttribute('inert', conHoja && id !== arriba && pila.includes(id)));
+    pantallas.forEach((el, id) => el.toggleAttribute('inert', !!errorActual || (conHoja && id !== arriba && pila.includes(id))));
   }
 
   // ── Navegación ──────────────────────────────────────────────────────────
 
   async function navegar(id: string, tipo: 'ir' | 'raiz') {
     if (!pantallas.has(id) || ocupado || id === top()) return;
+    if (errorActual) {
+      errorActual.hidden = true;
+      errorActual = null;
+    }
     ocupado = true;
     const gen = generacion;
     try {
@@ -421,6 +647,11 @@ export function iniciarDemo() {
     ocupado = false;
     navDiferida = null;
     cancelarToque();
+    cerrarIsla();
+    if (errorActual) {
+      errorActual.hidden = true;
+      errorActual = null;
+    }
     pila.forEach(salir);
     pantallas.forEach((el) => {
       [el, ...el.querySelectorAll<HTMLElement>(':scope > .demo-hoja, :scope > .demo-velo')].forEach((x) => x.getAnimations().forEach((a) => a.cancel()));
@@ -442,6 +673,8 @@ export function iniciarDemo() {
     } finally {
       saltando = false;
     }
+    animarPantalla(pantallas.get(base));
+    if (t !== base) animarPantalla(pantallas.get(t));
     pintarInert();
     sincronizarRecorrido();
     pintarGuia();
@@ -504,7 +737,7 @@ export function iniciarDemo() {
 
   /** En el celular (o el iPad vertical) el teléfono puede haber quedado fuera de la vista: lo trae. */
   function mostrarTelefono() {
-    if (!telefono) return;
+    if (!telefono || enApp) return;
     const presentando = document.documentElement.classList.contains('demo-presentando');
     const tope = presentando ? 0 : Math.max(0, document.querySelector('.header')?.getBoundingClientRect().bottom ?? 0);
     const r = telefono.getBoundingClientRect();
@@ -524,7 +757,8 @@ export function iniciarDemo() {
 
   function pintarGuia() {
     cont.querySelectorAll('.demo-guia').forEach((g) => g.classList.remove('demo-guia'));
-    objetivoGuia()?.classList.add('demo-guia');
+    // En el modo app no hay recorrido: se usa como la app de verdad.
+    if (!enApp) objetivoGuia()?.classList.add('demo-guia');
   }
 
   /** La pantalla está esperando algo (un temporizador, un chat que escribe, un botón que se habilita). */
@@ -565,6 +799,10 @@ export function iniciarDemo() {
           { duration: 650, easing: CURVA, fill: 'forwards' },
         ).finished;
         if (mio !== vuelo) return false;
+        // La onda del toque (como el feedback táctil de un celular).
+        dedo.classList.remove('demo-dedo--toca');
+        void dedo.offsetWidth;
+        dedo.classList.add('demo-dedo--toca');
         await dedo.animate(
           [
             { transform: `translate(${x}px, ${y}px) scale(1)` },
@@ -600,6 +838,10 @@ export function iniciarDemo() {
    */
   async function siguiente(): Promise<Avance> {
     if (ocupado || avanzando) return 'nada';
+    if (errorActual) {
+      await ocultarError();
+      return 'sigue';
+    }
     avanzando = true;
     try {
       const mio = vuelo;
@@ -668,7 +910,7 @@ export function iniciarDemo() {
   }
 
   async function reproducir() {
-    if (reproduciendo) return;
+    if (reproduciendo || enApp) return;
     // Con el recorrido terminado, arranca de nuevo desde el paso 1.
     if (raizEl.classList.contains('demo--fin')) reiniciar();
     reproduciendo = true;
@@ -740,9 +982,10 @@ export function iniciarDemo() {
     raizEl.querySelectorAll<HTMLElement>('[role="tabpanel"]').forEach((p) => (p.hidden = p.id !== `demo-recorrido-${nuevo}`));
     raizEl.querySelectorAll<HTMLElement>('[data-demo-cta]').forEach((c) => (c.hidden = c.dataset.demoCta !== nuevo));
     raizEl.querySelectorAll<HTMLElement>('[data-demo-fin-rol]').forEach((c) => (c.hidden = c.dataset.demoFinRol !== nuevo));
+    raizEl.querySelectorAll<HTMLElement>('[data-demo-simular-rol]').forEach((c) => (c.hidden = c.dataset.demoSimularRol !== nuevo));
     const u = new URL(location.href);
     u.searchParams.set('rol', nuevo);
-    history.replaceState(null, '', u);
+    history.replaceState(history.state, '', u);
     reiniciar();
   }
 
@@ -760,7 +1003,21 @@ export function iniciarDemo() {
   // ── Eventos ─────────────────────────────────────────────────────────────
 
   cont.addEventListener('click', (e) => {
-    const el = (e.target as Element).closest<HTMLElement>('[data-ir],[data-volver],[data-ir-raiz],[data-accion]');
+    const t = e.target as Element;
+    const botonError = t.closest<HTMLElement>('[data-demo-error-boton]');
+    if (botonError) {
+      botonDeError(botonError);
+      return;
+    }
+    // Desde la cuenta se puede pasar al otro lado (como "Cambiar a modo especialista" en la app).
+    const otroRol = t.closest<HTMLElement>('[data-demo-cambiar-rol]');
+    if (otroRol && cont.contains(otroRol)) {
+      const nuevo = otroRol.dataset.demoCambiarRol as Rol;
+      cambiarRol(nuevo);
+      isla({ titulo: demo.app.cambioRol[nuevo], icono: nuevo === 'usuario' ? 'usuario' : 'maletin' });
+      return;
+    }
+    const el = t.closest<HTMLElement>('[data-ir],[data-volver],[data-ir-raiz],[data-accion]');
     if (!el || !cont.contains(el) || (el as HTMLButtonElement).disabled) return;
     if (e.isTrusted && reproduciendo) pausar();
     const accion = el.dataset.accion;
@@ -830,6 +1087,13 @@ export function iniciarDemo() {
       mostrarTelefono();
       return;
     }
+    const simular = t.closest<HTMLElement>('[data-demo-simular]');
+    if (simular) {
+      pausar();
+      mostrarTelefono();
+      mostrarError(simular.dataset.demoSimular as TipoError);
+      return;
+    }
     const otro = t.closest<HTMLElement>('[data-demo-otro-rol]');
     if (otro) {
       cambiarRol(otro.dataset.demoOtroRol as Rol);
@@ -855,6 +1119,9 @@ export function iniciarDemo() {
       case 'presentacion':
         presentacion();
         break;
+      case 'app':
+        entrarApp();
+        break;
     }
   });
 
@@ -867,8 +1134,7 @@ export function iniciarDemo() {
   const enPantallaCompleta = () => document.fullscreenElement ?? docW.webkitFullscreenElement ?? null;
 
   /** Puede fallar (sin gesto del usuario, en un iPhone, en un navegador que no la tiene): la presentación sigue igual. */
-  function pedirPantallaCompleta() {
-    const el = raizEl as ElementoWebkit;
+  function pedirPantallaCompleta(el: ElementoWebkit = raizEl) {
     try {
       if (el.requestFullscreen) void el.requestFullscreen().catch(() => {});
       else void Promise.resolve(el.webkitRequestFullscreen?.()).catch(() => {});
@@ -955,8 +1221,62 @@ export function iniciarDemo() {
   document.addEventListener('fullscreenchange', alCambiarPantallaCompleta);
   document.addEventListener('webkitfullscreenchange', alCambiarPantallaCompleta);
 
+  // ── Modo app: la pantalla ocupa todo, sin marco ni panel ───────────────
+  // En el celular se ve como la app instalada. "Atrás" del navegador (o el gesto) sale del modo app.
+
+  const instalada = () =>
+    window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  function entrarApp(desdeUrl = false) {
+    if (enApp) return;
+    detener();
+    raizEl.classList.remove('demo--fin');
+    if (document.documentElement.classList.contains('demo-presentando')) {
+      salirDePantallaCompleta();
+      pintarPresentacion(false);
+    }
+    enApp = true;
+    document.documentElement.classList.add('demo-app');
+    if (!desdeUrl) {
+      history.pushState({ demoApp: true }, '');
+      // En Android esconde también las barras del navegador (en el iPhone no se puede: queda igual).
+      if (!instalada()) pedirPantallaCompleta(document.documentElement as ElementoWebkit);
+    }
+    window.scrollTo({ top: 0 });
+    pintarGuia();
+    window.setTimeout(() => isla({ titulo: demo.app.bienvenida.titulo, texto: demo.app.bienvenida.texto, icono: 'telefono', ms: 4600 }), reducido() ? 0 : 650);
+  }
+
+  function salirApp(desdeHistorial = false) {
+    if (!enApp) return;
+    enApp = false;
+    document.documentElement.classList.remove('demo-app');
+    cerrarIsla();
+    salirDePantallaCompleta();
+    pintarGuia();
+    if (!desdeHistorial && history.state?.demoApp) history.back();
+    const u = new URL(location.href);
+    if (u.searchParams.has('app')) {
+      u.searchParams.delete('app');
+      history.replaceState(history.state, '', u);
+    }
+    telefono?.scrollIntoView({ block: 'center' });
+  }
+
+  // "Salir": la pastilla de arriba y la fila de la Cuenta (solo se ven en el modo app).
+  raizEl.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('[data-demo-salir-app]')) salirApp();
+  });
+  window.addEventListener('popstate', () => {
+    if (enApp && !history.state?.demoApp) salirApp(true);
+  });
+
   document.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (enApp) {
+      if (e.key === 'Escape') salirApp();
+      return;
+    }
     const t = e.target as HTMLElement;
     if (t.closest?.('input, textarea, select, [contenteditable], [data-demo-rol]')) return;
     const presentando = document.documentElement.classList.contains('demo-presentando');
@@ -1013,4 +1333,5 @@ export function iniciarDemo() {
   else reiniciar();
   pintarPlay();
   if (stand) iniciarStand();
+  else if (parametros.get('app') === '1' || instalada()) entrarApp(true);
 }

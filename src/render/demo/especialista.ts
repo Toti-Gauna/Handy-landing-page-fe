@@ -1,17 +1,18 @@
-// Demo · lado del especialista: pantallas, hojas y recorrido.
-// Fieles a assets/fotos/especialista (mapa con "Disponible", pedido con precio sugerido, hoja de precio,
-// en camino, chat, trabajo con cronómetro, fin con el caño, agenda, detalle, cambio de fecha, avisos,
-// cuenta y caja), pero en español, en pesos y con los rubros de Handy.
-// El comportamiento (interruptores, cronómetro, precios que se recalculan) vive en src/scripts/demo/especialista.ts.
+// Demo · lado del especialista (v2): pantallas, hojas y recorrido.
+// Basadas en assets/fotos/especialista (mapa con "Disponible", pedido con precio sugerido, hoja de precio,
+// en camino, chat, trabajo con cronómetro, fin con el caño, agenda en mosaicos, avisos, cuenta y cobros),
+// llevadas al kit v2 (.hd-*, mapa vivo, isla, tickets, Handys) y en español, en pesos y con los rubros de Handy.
+// El comportamiento (interruptor, pedido que entra, precios que cuentan, chat, cronómetro, agenda, cobros)
+// vive en src/scripts/demo/especialista.ts. Los estilos propios, en src/styles/demo-especialista.css (.de-*).
 
 import d from '../../content/demo-especialista.json' with { type: 'json' };
-import demo from '../../content/demo.json' with { type: 'json' };
 import rubros from '../../content/rubros.json' with { type: 'json' };
 import tarifas from '../../content/tarifas.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
-import { esc, formatoPesos, formatoPesosJunto as pesosJuntos, plano } from '../util.ts';
-import { burbuja, calendario, estado, fotoCano, hoja, logo } from '../pantallas.ts';
-import { boton, navDemo, tituloHoja, volverDemo, type Toque } from './piezas.ts';
+import { esc, formatoPesos, formatoPesosJunto, plano } from '../util.ts';
+import { estado, fotoCano, logo } from '../pantallas.ts';
+import { boton, cabeceraDemo, navDemo, salirDeLaDemo, tildeExito, tituloHoja, tituloMarcado, volverDemo, type Toque } from './piezas.ts';
+import { mapaVivo, type OpcionesMapa } from './mapa.ts';
 import type { DemoRol, PantallaDemo } from './tipos.ts';
 
 const ROL = 'especialista' as const;
@@ -20,174 +21,194 @@ const C = d.comun;
 const SUGERIDO = d.inicio.pedido.sugerido;
 /**
  * Presupuesto que manda el especialista en el recorrido (el sugerido más lo que suma la guía): es el de ejemplo
- * de tarifas.json, el mismo que ve el usuario del otro lado. También es el precio de las pantallas que se abren
- * saltando directo a un paso.
+ * de tarifas.json, el mismo que ve el usuario del otro lado.
  */
 const PRECIO = tarifas.ejemplo.presupuesto;
 if (SUGERIDO + d.precio.sumas[0] !== PRECIO) {
   throw new Error(`Demo especialista: el sugerido (${SUGERIDO}) más la primera suma (${d.precio.sumas[0]}) tiene que dar el presupuesto de ejemplo de tarifas.json (${PRECIO})`);
 }
+if (d.cobro.cbuEjemplo.replace(/\D/g, '').length !== 22) throw new Error('Demo especialista: cobro.cbuEjemplo tiene que tener 22 números');
 
 // ── Cuentas (las mismas que hace el navegador con src/scripts/demo/util.ts) ──
 
 const retencion = (n: number) => Math.round((n * tarifas.normal.especialista) / 100);
 const neto = (n: number) => n - retencion(n);
-/** Lo que le queda al especialista: el presupuesto menos la tarifa, más los repuestos enteros. */
-const netoConRepuestos = (presupuesto: number, repuestos = 0) => neto(presupuesto) + repuestos;
 const pesos = (n: number) => esc(formatoPesos(n));
-const diaSemana = (dia: number) => C.dias[new Date(Number(C.anio), C.mesNumero - 1, dia).getDay()];
-const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const dosDigitos = (n: number) => String(n).padStart(2, '0');
-const fechaCorta = (dia: number) => `${dosDigitos(dia)}/${dosDigitos(C.mesNumero)}`;
-const fechaLarga = (dia: number) => `${fechaCorta(dia)}/${C.anio}`;
+const fecha = (dia: number) => new Date(Number(C.anio), C.mesNumero - 1, dia);
+const diaSemana = (dia: number) => C.dias[fecha(dia).getDay()];
+const dos = (n: number) => String(n).padStart(2, '0');
+const fechaCorta = (dia: number) => `${dos(dia)}/${dos(C.mesNumero)}`;
+const completar = (t: string, v: Record<string, string | number>) => t.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
 // ── Piezas propias ────────────────────────────────────────────────────────
 
-/** Cabecera de la app con la campana (avisos) y, si va, el pin que abre tus zonas de trabajo. */
-function cabecera(variante: 'blanca' | 'azul', conPin = true): string {
-  const campana = boton({ ir: 'e-notificaciones', etiqueta: demo.ui.notificaciones }, icono('campana'), 'app-cuadrado');
-  const pin = conPin ? boton({ ir: 'e-rubros', etiqueta: C.zonas }, icono('pin'), 'app-cuadrado') : '';
-  return `<div class="app-cabecera app-cabecera--${variante}">
-  ${estado(variante === 'azul')}
-  <div class="app-cabecera__fila">${logo}<span class="app-cabecera__botones">${campana}${pin}</span></div>
-</div>`;
+/** Cabecera de la app: la campana lleva a los avisos y el pin (si va) a tus rubros y zonas. */
+const cabecera = (variante: 'blanca' | 'azul', conPin = true) =>
+  cabeceraDemo(ROL, variante, conPin ? { ir: 'e-rubros', etiqueta: C.zonas } : false);
+
+/** Fila "concepto ...... monto" del kit. */
+const dato = (izq: string, der: string, clase = '') => `<p class="hd-dato ${clase}"><span>${izq}</span><span>${der}</span></p>`;
+
+/** Desglose: presupuesto − tarifa (+ repuestos, enteros) = lo que te queda. */
+function desglose(presupuesto: number, ultimo = C.aTuCuenta, extras = 0): string {
+  return `${dato(esc(C.presupuesto), pesos(presupuesto))}
+${dato(plano(C.tarifa), `− ${pesos(retencion(presupuesto))}`, 'de-dato--resta')}
+${extras ? dato(esc(C.repuestos), `+ ${pesos(extras)}`) : ''}
+${dato(esc(ultimo), `<span data-de-total>${pesos(neto(presupuesto) + extras)}</span>`, 'hd-dato--total')}`;
 }
 
-/** Fila "concepto ........ monto" (desgloses y datos del trabajo). */
-const fila = (izq: string, der: string, clase = '') => `<p class="de-fila ${clase}"><span>${izq}</span><strong>${der}</strong></p>`;
+/** Ticket troquelado (como los cupones de la app): arriba lo que es, abajo los números. */
+const ticket = (arriba: string, abajo: string, clase = '', attrs = '') =>
+  `<div class="hd-ticket de-ticket ${clase}" ${attrs}><div class="hd-ticket__papel"><div class="de-ticket__arriba">${arriba}</div><div class="hd-ticket__corte"></div><div class="de-ticket__abajo">${abajo}</div></div></div>`;
 
-/** Botón grande de la app (con las variantes de color de las referencias). */
-const btn = (t: Toque, texto: string, clase = '') => boton(t, texto, `app-boton ${clase}`.trim());
+/** Mosaico chico con el ícono del rubro. */
+const rubroIco = (nombre: string, clase = '') => `<span class="de-rubro ${clase}">${icono(nombre)}</span>`;
 
-const puntos = '<span class="de-puntos" aria-hidden="true"><i></i><i></i><i></i></span>';
+/** Avatar con iniciales fijas (los clientes de la demo no tienen nombre: se usan las del barrio). */
+const avatarDe = (inicial: string, tono: string, clase = '') =>
+  `<span class="hd-avatar ${clase}" style="--tono:${esc(tono)}" aria-hidden="true"><span>${esc(inicial)}</span></span>`;
 
-/**
- * Mapa ilustrado de La Perla: manzanas en diagonal como en Mar del Plata, avenidas, el mar y la costa.
- * Todo se dibuja en coordenadas "de calle" (múltiplos de 42 = esquinas) y el grupo se gira -28°.
- */
-interface OpcionesMapa {
-  id: string;
-  vos: [number, number];
-  cliente?: [number, number];
-  ruta?: [number, number][];
-  barrio?: string;
-  /** false: sin nombres de calles ni de la costa (el dibujo es de La Perla). */
-  calles?: boolean;
-}
+const img = (nombre: string, clase: string, w: number, h: number) =>
+  `<img class="${clase}" src="/src/img/${nombre}.webp" alt="" width="${w}" height="${h}" loading="lazy" decoding="async" />`;
 
-function mapa(o: OpcionesMapa): string {
-  const m = d.mapa;
-  const pinCliente = o.cliente
-    ? `<g transform="translate(${o.cliente[0]} ${o.cliente[1]}) rotate(28)"><g class="de-pin-cliente" data-de-pin-cliente><path transform="translate(-12 -31)" d="M12 31s10-11.6 10-19A10 10 0 0 0 2 12c0 7.4 10 19 10 19Z" fill="#E53935"/><circle cx="0" cy="-19" r="4" fill="#fff"/></g></g>`
-    : '';
-  const puntosRuta = o.ruta?.map((p) => p.join(' ')).join(' ');
-  const ruta = puntosRuta
-    ? `<polyline points="${puntosRuta}" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/><polyline class="de-ruta" points="${puntosRuta}" fill="none" stroke="#0E1D36" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>`
-    : '';
-  return `<svg class="app-mapa de-mapa__svg" viewBox="0 0 240 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-  <defs><pattern id="de-manzanas-${o.id}" width="42" height="42" patternUnits="userSpaceOnUse"><rect width="42" height="42" fill="#FBFBFC"/><rect x="4" y="4" width="34" height="34" rx="3.5" fill="#E3E6EB"/></pattern></defs>
-  <rect width="240" height="420" fill="#EEF0F3"/>
-  <g transform="rotate(-28 120 210)">
-    <rect x="-260" y="-260" width="540" height="940" fill="url(#de-manzanas-${o.id})"/>
-    <rect x="130" y="88" width="34" height="34" rx="3.5" fill="#CDE8C9"/>
-    <rect x="46" y="214" width="34" height="34" rx="3.5" fill="#CDE8C9"/>
-    <path d="M-260 210H240M126 -260V680" stroke="#FBD999" stroke-width="9"/>
-    <path d="M236 -260 C 226 -60, 248 100, 232 260 S 242 520, 232 680 L 600 680 L 600 -260 Z" fill="#BFDDF2"/>
-    <path d="M236 -260 C 226 -60, 248 100, 232 260 S 242 520, 232 680" fill="none" stroke="#FBD999" stroke-width="7"/>
-    ${o.calles === false ? '' : `<g font-family="DM Sans, sans-serif" font-weight="700" fill="#8C7440" font-size="7.5">
-      <text x="-40" y="212.6">${esc(m.calles[0])}</text>
-      <text x="150" y="212.6">${esc(m.calles[0])}</text>
-      <text transform="translate(123.4 230) rotate(90)">${esc(m.calles[1])}</text>
-      <text transform="translate(123.4 -10) rotate(90)">${esc(m.calles[1])}</text>
-      <text transform="translate(237.5 150) rotate(93)" font-size="6.5">${esc(m.costa)}</text>
-    </g>
-    <g font-family="DM Sans, sans-serif" font-weight="700" fill="#8B94A5" font-size="6.5">
-      <text transform="translate(207.7 236) rotate(90)">${esc(m.calles[2])}</text>
-      <text x="-30" y="128.3">${esc(m.calles[3])}</text>
-    </g>`}
-    <text x="133.5" y="108" font-family="DM Sans, sans-serif" font-weight="700" fill="#5E8E5A" font-size="6">${esc(m.plaza)}</text>
-    <text x="52" y="102" font-family="DM Sans, sans-serif" font-weight="800" font-size="11" letter-spacing="1" textLength="72" lengthAdjust="spacingAndGlyphs" fill="#A7AFBC">${esc(o.barrio ?? m.barrio)}</text>
-    <text transform="translate(262 128) rotate(90)" font-family="DM Sans, sans-serif" font-style="italic" font-weight="700" font-size="8.5" fill="#6E9CC4">${esc(m.mar)}</text>
-    ${ruta}
-    <g transform="translate(${o.vos[0]} ${o.vos[1]})" class="de-vos"><circle class="de-radar" r="9" fill="none" stroke="#2F6BFF" stroke-width="2"/><circle r="13" fill="#2F6BFF" opacity=".16"/><circle class="de-vos__punto" r="6" fill="#2F6BFF" stroke="#fff" stroke-width="2.5"/></g>
-    ${pinCliente}
-  </g>
-</svg>`;
-}
-
-/**
- * Pastilla "Disponible" con el interruptor. Es la misma en todas las pantallas del mapa y refleja
- * el estado real (la pinta src/scripts/demo/especialista.ts). En el inicio, apagada, es la guía.
- */
+/** Pastilla "Disponible" con el interruptor (el "Working" del diseño). La pinta el script según el estado. */
 function disponible(prendido: boolean, guia = false): string {
-  const contenido = `<span data-de-disp-texto>${esc(prendido ? C.disponible : C.noDisponible)}</span>${icono('maletin')}<span class="app-switch"></span>`;
   return boton(
     { accion: 'disponible', guia, etiqueta: C.disponible, extra: `role="switch" aria-checked="${prendido}"` },
-    contenido,
-    `app-disponible de-disponible${prendido ? '' : ' de-disponible--apagado'}`,
+    `${icono('maletin')}<span data-de-disp-texto>${esc(prendido ? C.disponible : C.noDisponible)}</span><span class="de-switch" aria-hidden="true"><i></i></span>`,
+    'de-disponible',
   );
 }
 
-/** Aviso oscuro como "Meetup scheduled accepted!" (X a la izquierda, tilde a la derecha). */
-function aviso(titulo: string, texto: string, attrs: string): string {
-  return `<div class="de-aviso" ${attrs} role="status" hidden>
-  ${boton({ accion: 'cerrarAviso', etiqueta: C.cerrar }, icono('cerrar'), 'de-aviso__x')}
-  <span class="de-aviso__texto"><strong data-de-aviso-titulo>${esc(titulo)}</strong><small data-de-aviso-texto>${esc(texto)}</small></span>
-  ${icono('checkCirculo', 'icono de-aviso__ok')}
-</div>`;
+interface OpcionesMapaEsp extends OpcionesMapa {
+  /** Dónde estás vos (punto azul). */
+  yo?: [number, number];
+  /** Radar alrededor tuyo (mientras buscás pedidos). */
+  radarYo?: boolean;
+  /** Línea punteada de vos al cliente. */
+  linea?: boolean;
 }
 
-/** Cabecera gris (pantallas de notificaciones, como un panel encima de la app). */
-function cabeceraGris(engranajeTocable: boolean): string {
-  const engranaje = engranajeTocable
-    ? boton({ ir: 'e-config-notificaciones', etiqueta: d.avisos.configurar }, icono('engranaje'), 'app-cuadrado')
-    : `<span class="app-cuadrado de-cuadrado--activo" aria-hidden="true">${icono('engranaje')}</span>`;
-  const cerrar = boton({ volver: true, etiqueta: C.cerrar }, icono('cerrar'), 'app-cuadrado de-cuadrado--rojo');
-  return `<div class="app-cabecera de-cabecera-gris">
-  ${estado()}
-  <div class="app-cabecera__fila">${logo}<span class="app-cabecera__botones">${engranaje}${cerrar}</span></div>
-</div>`;
+/** Mapa vivo con tu posición (punto azul con halo) y, si va, el radar y la línea hasta el cliente. */
+function mapa(o: OpcionesMapaEsp): string {
+  const casa = o.casa ?? [188, 262];
+  let svg = mapaVivo(o);
+  if (o.yo && o.linea) {
+    const linea = `<path class="de-mapa__linea" d="M${o.yo[0]} ${o.yo[1]} L${casa[0]} ${casa[1] - 4}" fill="none" stroke="#1F57A8" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 9"/>`;
+    svg = svg.replace(`<g transform="translate(${casa[0]} ${casa[1]})">`, `${linea}$&`);
+  }
+  if (o.yo) {
+    const [x, y] = o.yo;
+    const radar = o.radarYo ? `<g class="hd-mapa__radar de-mapa__radar" transform="translate(${x} ${y})"><circle r="150"/><circle r="150"/><circle r="150"/></g>` : '';
+    const yo = `<g class="de-mapa__yo" transform="translate(${x} ${y})"><circle class="de-mapa__halo" r="22" fill="#2F6BFF" opacity="0.18"/><circle r="10" fill="#2F6BFF" stroke="#fff" stroke-width="3.5"/></g>`;
+    svg = svg.replace('</svg>', `${radar}${yo}</svg>`);
+  }
+  return svg;
 }
 
-/** Desglose de un trabajo: presupuesto − tarifa (+ repuestos, enteros) = a tu cuenta. */
-function desglose(presupuesto: number, extras = 0, ultimo = C.aTuCuenta): string {
-  return `${fila(esc(C.presupuesto), pesos(presupuesto))}
-${fila(plano(C.tarifa), `− ${pesos(retencion(presupuesto))}`, 'de-fila--resta')}
-${extras ? fila(esc(C.repuestos), `+ ${pesos(extras)}`) : ''}
-${fila(esc(ultimo), pesos(netoConRepuestos(presupuesto, extras)), 'de-fila--total')}`;
-}
+/** Recorrido "de dónde a dónde" con los dos puntos unidos. */
+const trayecto = (desde: string, hasta: string) =>
+  `<div class="de-trayecto"><span><i></i>${esc(desde)}</span><span><i></i>${esc(hasta)}</span></div>`;
+
+/** Contenedor con scroll (sin barra) para el cuerpo de las pantallas largas. */
+const cuerpo = (html: string, clase = '') => `<div class="hd-scroll de-cuerpo ${clase}">${html}</div>`;
 
 // ── Inicio: mapa, "Disponible" y el pedido que entra ─────────────────────
 
-const POS_INICIO = { vos: [84, 210] as [number, number], cliente: [168, 126] as [number, number] };
+const YO: [number, number] = [96, 266];
+const CLIENTE: [number, number] = [206, 186];
+
+/** Tarjeta de un pedido (urgencia o programado) con el precio sugerido y los dos botones. */
+function tarjetaPedido(o: {
+  sobre: string;
+  rubro: string;
+  ico: string;
+  chip: string;
+  chipClase: string;
+  detalle: string;
+  sugeridoLabel: string;
+  sugerido: number;
+  decidis: string;
+  medio: string;
+  aceptar: Toque;
+  aceptarTexto: string;
+  cambiar: Toque;
+  cambiarTexto: string;
+  rechazar: Toque;
+  pie: string;
+}): string {
+  return `<div class="de-pedido__cabeza">
+    ${rubroIco(o.ico, 'de-rubro--azul')}
+    <span class="de-pedido__titulos"><small class="hd-sobre">${esc(o.sobre)}</small><strong>${esc(o.rubro)}</strong></span>
+    <span class="hd-chip hd-chip--mini ${o.chipClase}">${o.chip}</span>
+    ${boton(o.rechazar, icono('cerrar'), 'hd-circulo de-cerrar')}
+  </div>
+  <p class="de-cita">${esc(o.detalle)}</p>
+  <div class="de-pedido__precio">
+    <span class="de-pedido__sugerido"><small>${esc(o.sugeridoLabel)}</small><strong class="hd-precio">${pesos(o.sugerido)}</strong></span>
+    <span class="de-pedido__decidis">${icono('etiqueta')}${esc(o.decidis)}</span>
+  </div>
+  ${o.medio}
+  <div class="hd-botones hd-botones--fila de-pedido__botones">
+    ${boton(o.aceptar, esc(o.aceptarTexto), 'hd-boton')}
+    ${boton(o.cambiar, esc(o.cambiarTexto), 'hd-boton hd-boton--claro')}
+  </div>
+  <p class="de-pedido__pie">${esc(o.pie)}</p>`;
+}
 
 function inicio(): PantallaDemo {
   const i = d.inicio;
   const pd = i.pedido;
+  const misRubros = (d.rubrosHoja.rubrosActivos as string[])
+    .map((id) => rubros.rubros.find((r) => r.id === id))
+    .filter((r) => r)
+    .map((r) => `<span class="hd-chip hd-chip--tinte hd-chip--mini">${icono(r!.icono)}${esc(r!.nombre)}</span>`)
+    .join('');
   return {
     id: 'e-inicio',
     titulo: d.pantallas.inicio,
-    html: `<div class="app">
+    html: `<div class="app de-inicio" data-de-inicio data-estado="apagado">
 ${cabecera('azul')}
-<div class="app-mapa-caja de-mapa de-mapa--apagado" data-de-mapa>
-  ${mapa({ id: 'inicio', ...POS_INICIO })}
-  ${disponible(false, true)}
-  <p class="de-toast" data-de-toast role="status" hidden>${icono('alerta')}<span>${esc(i.aviso)}</span></p>
-  <div class="de-estado" data-de-estado>
-    <span class="de-estado__icono">${icono('maletin')}</span>
-    <span class="de-estado__texto"><strong data-de-estado-titulo>${esc(i.apagadoTitulo)}</strong><small data-de-estado-texto>${esc(i.apagadoTexto)}</small></span>
-    ${puntos}
+<div class="de-zona-mapa">
+  ${mapa({ id: 'de-inicio', casa: CLIENTE, yo: YO, radarYo: true, linea: true })}
+  <div class="de-flota">
+    <span class="hd-chip hd-vivo de-buscando-chip" data-de-buscando>${esc(i.buscandoChip)}</span>
+    ${disponible(false, true)}
   </div>
-  <div class="app-pedido de-pedido" data-de-pedido hidden>
-    <p class="app-pedido__titulo">${esc(pd.titulo)} ${icono('canilla')}${boton({ accion: 'rechazar', etiqueta: pd.rechazar }, icono('cerrar'), 'app-x app-x--gris')}</p>
-    <span class="app-tag de-tag--urgencia">${icono('alerta')}${esc(C.urgencia)}</span>
-    <p class="de-pedido__detalle">${esc(pd.detalle)}</p>
-    <small>${esc(pd.sugeridoLabel)}</small>
-    <p class="app-pedido__precio">${pesos(SUGERIDO)}</p>
-    <div class="app-ruta"><span><i></i>${esc(pd.desde)}</span><span><i></i>${esc(pd.hasta)}</span></div>
-    ${btn({ accion: 'aceptarSugerido', ir: 'e-aceptado' }, esc(pd.aceptar))}
-    ${btn({ ir: 'e-precio', guia: true }, esc(pd.cambiar), 'app-boton--contorno')}
-    <p class="de-pedido__pie">${esc(pd.pie)} ${icono('alerta')}</p>
+  <div class="de-abajo">
+    <div class="hd-tarjeta de-panel de-apagado" data-de-panel="apagado" data-entra="abajo">
+      ${img('handy-llave', 'hd-handy de-apagado__handy', 581, 547)}
+      <div class="de-apagado__texto">
+        <p class="hd-sobre">${esc(i.apagadoSobre)}</p>
+        ${tituloMarcado(i.apagadoTitulo, 'hd-titulo hd-titulo--chico')}
+        <p class="hd-texto hd-texto--suave">${esc(i.apagadoTexto)}</p>
+      </div>
+      ${boton({ accion: 'disponible' }, `${icono('interruptor')}${esc(i.prender)}`, 'hd-boton de-apagado__boton')}
+    </div>
+    <div class="hd-tarjeta de-panel de-buscando" data-de-panel="buscando">
+      <span class="de-buscando__ico">${icono('maletin')}</span>
+      <span class="de-buscando__texto"><strong>${esc(i.buscandoTitulo)}</strong><small data-de-buscando-texto>${esc(i.buscandoTexto)}</small><span class="hd-chips">${misRubros}</span></span>
+    </div>
+    <div class="hd-tarjeta de-panel de-pedido" data-de-panel="pedido" data-de-pedido>
+      ${tarjetaPedido({
+        sobre: pd.sobre,
+        rubro: pd.rubro,
+        ico: pd.icono,
+        chip: `${icono('alerta')}${esc(C.urgencia)}`,
+        chipClase: 'hd-chip--amarillo',
+        detalle: pd.detalle,
+        sugeridoLabel: pd.sugeridoLabel,
+        sugerido: SUGERIDO,
+        decidis: pd.decidis,
+        medio: trayecto(pd.desde, pd.hasta),
+        aceptar: { accion: 'aceptarSugerido', ir: 'e-aceptado' },
+        aceptarTexto: pd.aceptar,
+        cambiar: { ir: 'e-precio', guia: true },
+        cambiarTexto: pd.cambiar,
+        rechazar: { accion: 'rechazar', etiqueta: pd.rechazar },
+        pie: pd.pie,
+      })}
+    </div>
   </div>
 </div>
 ${navDemo(ROL, 0)}
@@ -206,47 +227,40 @@ function precio(id: 'e-precio' | 'e-precio-programado'): PantallaDemo {
   const conFranjas = id === 'e-precio';
   const sugerido = conFranjas ? SUGERIDO : d.programado.sugerido;
   const franjas = p.franjas
-    .map((f, i) =>
-      boton(
-        { accion: 'franja', valor: String(i), extra: `aria-pressed="${i === 0}"` },
-        esc(f.texto),
-        `app-chip de-chip${i === 0 ? ' app-chip--activo' : ''}`,
-      ),
-    )
+    .map((f, i) => boton({ accion: 'franja', valor: String(i), extra: `aria-pressed="${i === 0}"` }, `${icono('reloj')}${esc(f.texto)}`, 'hd-chip de-chip'))
     .join('');
   const chips = [
-    boton({ accion: 'precioSugerido', extra: 'aria-pressed="true"' }, esc(p.dejar), 'app-chip de-chip app-chip--activo'),
-    ...p.sumas.map((s, i) =>
-      boton(
-        { accion: 'precioSumar', valor: String(s), guia: i === 0, extra: 'aria-pressed="false"' },
-        `+ ${pesos(s)}`,
-        'app-chip de-chip',
-      ),
-    ),
+    boton({ accion: 'precioSugerido', extra: 'aria-pressed="true"' }, esc(p.dejar), 'hd-chip de-chip'),
+    ...p.sumas.map((s, i) => boton({ accion: 'precioSumar', valor: String(s), guia: i === 0, extra: 'aria-pressed="false"' }, `+ ${pesos(s)}`, 'hd-chip de-chip')),
   ].join('');
   const paso = formatoPesos(p.paso);
-  const bloqueFranjas = conFranjas
-    ? `<div class="de-bloque" data-de-franjas>
-  <p class="de-label">${esc(p.cuandoLabel)}</p>
-  <div class="de-chips">${franjas}</div>
-</div>`
-    : '';
   return {
     id,
     titulo: conFranjas ? d.pantallas.precio : d.pantallas.precioProgramado,
     tipo: 'hoja',
     html: `${tituloHoja(p.titulo)}
-${bloqueFranjas}
-<p class="de-sugerido">${esc(p.sugeridoLabel)} <strong data-de-sugerido>${pesos(sugerido)}</strong></p>
-<div class="de-chips de-chips--precio">${chips}</div>
-<div class="app-sheet__fila">
-  <span class="app-campo de-campo-precio"><span class="sr">${esc(p.campoLabel)}</span><span data-de-precio>${pesos(sugerido)}</span>
-    <span class="de-stepper">${boton({ accion: 'precioPaso', valor: String(p.paso), etiqueta: p.subir.replace('{monto}', paso) }, icono('arriba'))}${boton({ accion: 'precioPaso', valor: String(-p.paso), etiqueta: p.bajar.replace('{monto}', paso) }, icono('abajo'))}</span>
-  </span>
-  ${btn({ accion: 'ponerPrecio', guia: true }, esc(p.boton))}
-</div>
-<p class="de-recibis"><span>${esc(p.recibis)} <strong data-de-recibis>${pesos(neto(sugerido))}</strong></span><small data-de-retiene>${plano(p.retiene, { monto: pesosJuntos(retencion(sugerido)) })}</small></p>
-<p class="app-sheet__nota">${esc(p.nota)}</p>`,
+<div class="de-hoja de-precio">
+  ${
+    conFranjas
+      ? `<div data-entra><p class="de-etiqueta">${esc(p.cuandoLabel)}</p><div class="hd-chips de-franjas">${franjas}</div></div>`
+      : ''
+  }
+  <div class="de-precio__caja" data-entra>
+    <p class="de-precio__sugerido">${img('handy-lamparita', 'de-precio__handy', 202, 346)}<span>${esc(p.sugeridoLabel)} <strong data-de-sugerido>${pesos(sugerido)}</strong></span><span class="hd-chip hd-chip--amarillo de-chip-nota">${esc(p.sugeridoNota)}</span></p>
+    <div class="de-precio__monto">
+      ${boton({ accion: 'precioPaso', valor: String(-p.paso), etiqueta: completar(p.bajar, { monto: paso }) }, `<span aria-hidden="true">−</span>`, 'hd-circulo de-paso')}
+      <span class="de-precio__valor"><span class="sr">${esc(p.campoLabel)}</span><strong class="hd-precio hd-precio--grande" data-de-precio>${pesos(sugerido)}</strong></span>
+      ${boton({ accion: 'precioPaso', valor: String(p.paso), etiqueta: completar(p.subir, { monto: paso }) }, `<span aria-hidden="true">+</span>`, 'hd-circulo de-paso')}
+    </div>
+    <div class="hd-chips de-precio__chips">${chips}</div>
+  </div>
+  <div class="de-recibis" data-entra>
+    <span class="de-recibis__icono">${icono('billetera')}</span>
+    <span class="de-recibis__texto"><small>${esc(p.recibis)}</small><strong class="hd-precio" data-de-recibis>${pesos(neto(sugerido))}</strong></span>
+    <small class="de-recibis__retiene" data-de-retiene>${plano(p.retiene, { monto: formatoPesosJunto(retencion(sugerido)) })}</small>
+  </div>
+  ${boton({ accion: 'ponerPrecio', guia: true }, `${esc(p.boton)}${icono('enviar')}`, 'hd-boton')}
+</div>`,
   };
 }
 
@@ -254,60 +268,81 @@ ${bloqueFranjas}
 
 function aceptado(): PantallaDemo {
   const a = d.aceptado;
+  const f = d.precio.franjas[0];
   return {
     id: 'e-aceptado',
     titulo: d.pantallas.aceptado,
-    html: `<div class="app">
+    html: `<div class="app de-aceptado" data-de-aceptado data-estado="esperando">
 ${cabecera('azul')}
-<div class="app-mapa-caja de-mapa de-mapa--pedido">
-  ${mapa({ id: 'aceptado', ...POS_INICIO })}
-  ${disponible(true)}
-  ${aviso(a.avisoTitulo, a.avisoTexto, 'data-de-elegido-aviso')}
-  <div class="app-pedido de-enviado">
-    <p class="app-pedido__titulo">${icono('checkCirculo', 'icono de-ok')}<span data-de-enviado-titulo>${esc(a.titulo)}</span></p>
-    <div class="de-filas">
-      ${fila(esc(a.tuPrecio), `<span data-de-precio>${pesos(PRECIO)}</span>`)}
-      ${fila(esc(a.horario), `<span data-de-franja>${esc(d.precio.franjas[0].texto)}</span>`)}
-      ${fila(esc(C.recibis), `<span data-de-recibis>${pesos(neto(PRECIO))}</span>`, 'de-fila--total')}
+${cuerpo(`
+  <div class="de-estado de-estado--esperando" data-entra="pop">
+    <div class="de-espera">
+      <span class="de-espera__ondas" aria-hidden="true"><i></i><i></i><i></i></span>
+      ${img('handy-engranaje', 'hd-handy de-espera__handy', 338, 339)}
     </div>
-    <p class="de-esperando" data-de-esperando>${puntos}<span>${esc(a.esperando)}</span></p>
-    ${btn({ ir: 'e-en-camino', guia: true, extra: 'data-de-ir-alla hidden' }, `${esc(a.irAlla)} ${icono('flecha')}`, 'de-boton-icono')}
+    <p class="hd-sobre">${esc(a.enviadoSobre)}</p>
+    ${tituloMarcado(a.enviadoTitulo, 'hd-titulo')}
+    <p class="hd-texto hd-texto--suave">${esc(a.esperando)}</p>
+    <span class="hd-escribiendo de-espera__puntos" aria-hidden="true"><i></i><i></i><i></i></span>
   </div>
+  <div class="de-estado de-estado--elegido">
+    ${tildeExito}
+    <p class="hd-sobre">${esc(a.elegidoSobre)}</p>
+    ${tituloMarcado(a.elegidoTitulo, 'hd-titulo')}
+    <p class="hd-texto hd-texto--suave">${esc(a.elegidoTexto)}</p>
+  </div>
+  ${ticket(
+    `${rubroIco('canilla')}<span class="de-ticket__titulo"><strong>${esc(a.trabajo)}</strong><small data-de-franja>${esc(f.texto)}</small></span><span class="hd-chip hd-chip--amarillo hd-chip--mini">${icono('alerta')}${esc(C.urgencia)}</span>`,
+    `${dato(esc(a.tuPrecio), `<span data-de-precio>${pesos(PRECIO)}</span>`)}
+     ${dato(plano(C.tarifa), `− <span data-de-retencion>${pesos(retencion(PRECIO))}</span>`, 'de-dato--resta')}
+     ${dato(esc(C.recibis), `<span data-de-recibis>${pesos(neto(PRECIO))}</span>`, 'hd-dato--total')}`,
+    '',
+    'data-entra',
+  )}
+`, 'de-cuerpo--centro')}
+<div class="de-pie">
+  ${boton({ ir: 'e-en-camino', guia: true, extra: 'data-de-ir-alla disabled' }, `<span data-de-ir-texto>${esc(a.esperandoBoton)}</span>${icono('flecha')}`, 'hd-boton')}
 </div>
-${navDemo(ROL, 0)}
 </div>`,
   };
 }
 
 // ── En camino ─────────────────────────────────────────────────────────────
 
+const CASA_CAMINO: [number, number] = [188, 300];
+
 function enCamino(): PantallaDemo {
   const c = d.camino;
-  // El cliente está sobre Catamarca, cerca de Av. Libertad (como dice el destino).
-  const ruta: [number, number][] = [
-    [84, 252],
-    [84, 210],
-    [210, 210],
-  ];
   return {
     id: 'e-en-camino',
     titulo: d.pantallas.camino,
-    html: `<div class="app">
-${cabecera('azul')}
-<div class="app-mapa-caja de-mapa de-mapa--pedido de-mapa--camino">
-  ${mapa({ id: 'camino', vos: [84, 252], cliente: [210, 210], ruta })}
-  ${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'app-flotante')}
-  <div class="app-pedido de-camino">
-    <p class="app-pedido__titulo">${esc(d.inicio.pedido.titulo)} ${icono('canilla')}<span class="app-tag de-tag--urgencia">${icono('alerta')}${esc(C.urgencia)}</span></p>
-    <div class="app-ruta"><span><i></i>${esc(c.desde)}</span><span><i></i>${esc(c.hasta)}</span></div>
-    ${fila(esc(c.horario), `<span data-de-franja>${esc(d.precio.franjas[0].texto)}</span>`)}
-    ${btn({ ir: 'e-trabajo' }, `${esc(c.llegue)} ${icono('check')}`, 'de-boton-icono')}
-  </div>
+    html: `<div class="app de-camino">
+${cabecera('azul', false)}
+<div class="de-camino__mapa">
+  ${mapaVivo({ id: 'de-camino', ruta: true, especialista: C.marcador, viaje: 8, casa: CASA_CAMINO })}
+  ${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'de-flotante')}
+  <span class="hd-chip de-camino__km">${icono('pin')}${esc(c.distancia)}</span>
 </div>
-<div class="app-panel de-cliente">
-  <span class="app-avatar app-avatar--chico">${icono('usuario')}</span>
-  <span class="de-cliente__texto"><small>${esc(c.clienteLabel)}</small><strong>${esc(c.cliente)}</strong><small>${esc(c.sinTelefono)}</small></span>
-  ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat', guia: true, etiqueta: c.chatear }, icono('chat'), 'app-cuadrado app-cuadrado--claro')}
+<div class="hd-hoja-azul de-camino__hoja">
+  <span class="de-manija" aria-hidden="true"></span>
+  <div class="de-camino__destino" data-entra>
+    <p class="hd-sobre">${esc(c.sobre)}</p>
+    <p class="de-camino__direccion">${esc(c.destino)}</p>
+    <p class="de-camino__franja">${icono('reloj')}<span data-de-franja>${esc(d.precio.franjas[0].texto)}</span></p>
+  </div>
+  <div data-entra>
+    <div class="hd-seguimiento de-seguimiento" data-etapa="1" data-de-seguimiento aria-hidden="true">
+      <span class="hd-seguimiento__tramo"></span><span class="hd-seguimiento__tramo"></span><span class="hd-seguimiento__tramo"></span>
+      <span class="hd-seguimiento__quien">${icono('caminar')}</span>
+    </div>
+    <div class="de-etapas">${c.etapas.map((e) => `<span>${esc(e)}</span>`).join('')}</div>
+  </div>
+  <div class="de-cliente" data-entra>
+    ${avatarDe(c.inicial, d.chats.perla.tono, 'de-cliente__avatar')}
+    <span class="de-cliente__texto"><strong>${esc(c.cliente)}</strong><small>${esc(c.sinTelefono)}</small></span>
+    ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat', guia: true, etiqueta: c.chatear }, icono('chat'), 'hd-circulo hd-circulo--azul de-cliente__chat')}
+  </div>
+  ${boton({ ir: 'e-trabajo' }, `${esc(c.llegue)}${icono('check')}`, 'hd-boton hd-boton--amarillo')}
 </div>
 </div>`,
   };
@@ -318,13 +353,12 @@ ${cabecera('azul')}
 type IdChat = keyof typeof d.chats;
 const CHATS = Object.keys(d.chats) as IdChat[];
 
-const rapidas = (id: IdChat) =>
-  d.chats[id].rapidas
-    .map((r, i) => boton({ accion: 'rapida', valor: String(i), guia: i === 0 }, esc(r.chip), 'app-accion de-rapida'))
-    .join('');
+function burbuja(m: { de: string; texto: string; foto?: boolean }): string {
+  const propia = m.de === 'esp';
+  return `<div class="de-burbuja de-burbuja--${propia ? 'propia' : 'otra'}${m.foto ? ' de-burbuja--foto' : ''}">${m.foto ? fotoCano : ''}<span>${esc(m.texto)}</span></div>`;
+}
 
-const mensajesChat = (id: IdChat) =>
-  `<p class="de-chat-dia">${esc(d.chats[id].dia)}</p>${d.chats[id].mensajes.map((m) => burbuja(m, ['esp'])).join('')}`;
+const mensajesChat = (id: IdChat) => `<p class="de-chat__dia">${esc(d.chats[id].dia)}</p>${d.chats[id].mensajes.map(burbuja).join('')}`;
 
 /**
  * Chat con un cliente. Hay dos pantallas iguales: "e-chat" es la del recorrido (se llega desde "Vas para allá")
@@ -334,30 +368,37 @@ function chat(id: 'e-chat' | 'e-conversacion'): PantallaDemo {
   const c = d.chat;
   const inicial: IdChat = 'perla';
   const ch = d.chats[inicial];
-  const plantillas = CHATS.map(
-    (idChat) => `<template data-de-plantilla="${idChat}">${mensajesChat(idChat)}</template>`,
-  ).join('');
+  const plantillas = CHATS.map((idChat) => `<template data-de-plantilla="${idChat}">${mensajesChat(idChat)}</template>`).join('');
   return {
     id,
     titulo: id === 'e-chat' ? d.pantallas.chat : d.pantallas.conversacion,
-    html: `<div class="app">
-${cabecera('blanca', false)}
-<div class="app-chat de-chat" data-de-chat="${inicial}">
-  <div class="app-chat__cabecera">${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'app-volver__flecha')}<span class="app-chat__nombre"><strong data-de-chat-nombre>${esc(ch.nombre)}</strong><small data-de-chat-sub>${esc(ch.sub)}</small></span><span class="app-chat__avatar app-chat__avatar--icono">${icono('usuario')}</span></div>
-  <div class="app-chat__mensajes" data-de-mensajes>${mensajesChat(inicial)}</div>
-  <div class="de-rapidas" data-de-rapidas role="group" aria-label="${esc(c.rapidasLabel)}">${rapidas(inicial)}</div>
-  <div class="app-chat__acciones app-chat__acciones--centro">
-    ${boton({ ir: 'e-trabajo', extra: 'data-de-llegue' }, `${esc(c.llegue)} ${icono('check')}`, 'app-accion app-accion--principal')}
-    ${boton({ accion: 'verTurno', valor: '0', ir: 'e-turno-detalle', extra: 'data-de-ver-turno hidden' }, `${esc(c.verTurno)} ${icono('calendario')}`, 'app-accion app-accion--principal')}
+    html: `<div class="app de-chat" data-de-chat="${inicial}">
+<div class="app-cabecera de-chat__arriba">
+  ${estado()}
+  <div class="de-chat__cabeza">
+    ${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'hd-circulo de-chat__volver')}
+    <span class="hd-avatar de-chat__avatar" style="--tono:${esc(ch.tono)}" data-de-chat-avatar aria-hidden="true"><span>${esc(ch.inicial)}</span></span>
+    <span class="de-chat__nombre"><strong data-de-chat-nombre>${esc(ch.nombre)}</strong><small data-de-chat-sub>${esc(ch.sub)}</small></span>
   </div>
-  <div class="app-input">${boton({ accion: 'escribirChat', extra: 'data-de-campo-chat' }, `<span data-de-campo-texto>${esc(c.input)}</span>${icono('imagen')}`, 'app-input__campo de-input__campo')}${boton(
-    { accion: 'enviarChat', etiqueta: c.enviar, extra: 'data-de-enviar' },
-    icono('enviar'),
-    'app-input__enviar de-input__enviar',
-  )}</div>
-  ${plantillas}
-  <template data-de-plantilla-escribiendo><div class="app-burbuja app-burbuja--otra de-escribiendo">${puntos}</div></template>
+  <div class="de-chat__contexto" data-de-contexto>
+    ${rubroIco('canilla', 'de-rubro--chico')}
+    <span class="de-chat__contexto-texto"><strong>${esc(c.contexto)}</strong><small data-de-franja>${esc(d.precio.franjas[0].texto)}</small></span>
+    ${boton({ ir: 'e-trabajo', extra: 'data-de-llegue' }, `${esc(c.llegue)}${icono('check')}`, 'hd-boton hd-boton--chico hd-boton--amarillo')}
+    ${boton({ accion: 'verTurno', valor: '0', ir: 'e-turno-detalle', extra: 'data-de-ver-turno hidden' }, `${esc(c.verTurno)}${icono('calendario')}`, 'hd-boton hd-boton--chico')}
+  </div>
 </div>
+<div class="hd-scroll de-chat__mensajes" data-de-mensajes>${mensajesChat(inicial)}</div>
+<div class="de-chat__abajo">
+  <div class="hd-chips hd-chips--carril de-chat__rapidas" data-de-rapidas role="group" aria-label="${esc(c.rapidasLabel)}">${ch.rapidas
+    .map((r, i) => boton({ accion: 'rapida', valor: String(i), guia: i === 0 }, esc(r.chip), 'hd-chip hd-chip--tinte'))
+    .join('')}</div>
+  <div class="de-chat__barra">
+    ${boton({ accion: 'escribirChat', extra: 'data-de-campo-chat' }, `<span data-de-campo-texto>${esc(c.input)}</span>${icono('imagen')}`, 'de-chat__campo')}
+    ${boton({ accion: 'enviarChat', etiqueta: c.enviar, extra: 'data-de-enviar' }, icono('enviar'), 'hd-circulo hd-circulo--azul de-chat__enviar')}
+  </div>
+</div>
+${plantillas}
+<template data-de-plantilla-escribiendo><div class="de-burbuja de-burbuja--otra de-burbuja--escribiendo" aria-label="${esc(c.escribiendo)}"><span class="hd-escribiendo"><i></i><i></i><i></i></span></div></template>
 </div>`,
   };
 }
@@ -371,34 +412,45 @@ function trabajo(): PantallaDemo {
   return {
     id: 'e-trabajo',
     titulo: d.pantallas.trabajo,
-    html: `<div class="app">
+    html: `<div class="app de-trabajo">
 <div class="app-cabecera app-cabecera--blanca">
   ${estado()}
-  <div class="app-cabecera__fila">${logo}<span class="de-crono" role="timer" aria-label="${esc(t.cronoLabel)}">${icono('reloj')}<span data-de-crono>00:00</span></span></div>
+  <div class="app-cabecera__fila">${logo}<span class="hd-chip hd-chip--noche hd-vivo de-crono" role="timer" aria-label="${esc(t.cronoLabel)}"><span data-de-crono>00:00</span></span></div>
 </div>
-<div class="app-cuerpo de-cuerpo de-cuerpo--holgado">
-  <div class="de-dupla de-dupla--tipo">
-    <div><p class="de-label">${esc(t.tipoLabel)}</p><p class="de-tipo"><strong>${esc(t.tipo)} ${icono('canilla')}${icono('maletin')}</strong><small>${esc(t.tipoDetalle)}</small></p></div>
-    <div><p class="de-label">${esc(t.fechaLabel)}</p><p class="de-fecha"><strong data-de-franja-dia>${esc(f.dia)}</strong><small>${esc(fechaCorta(C.hoy))}</small><small data-de-franja-corta>${esc(f.corto)}</small></p></div>
+${cuerpo(`
+  <div class="de-encabezado" data-entra>
+    <p class="hd-sobre">${esc(t.sobre)}</p>
+    ${tituloMarcado(t.titulo, 'hd-titulo')}
+    <div class="hd-chips"><span class="hd-chip hd-chip--amarillo hd-chip--mini">${icono('alerta')}${esc(C.urgencia)}</span><span class="hd-chip hd-chip--tinte hd-chip--mini">${icono('reloj')}<span data-de-franja>${esc(f.texto)}</span></span></div>
   </div>
-  <div class="de-pedido-mini">${fotoCano}<p><small>${esc(t.pedidoLabel)}</small><span>${esc(d.inicio.pedido.detalle)}</span></p></div>
-  <p class="de-label">${esc(t.agregarLabel)}</p>
-  <div class="de-agregar">
-    <span class="de-campo" data-de-extra-nombre>${esc(primero.nombre)}</span>
-    <span class="de-campo de-campo--monto" data-de-extra-monto>${pesos(primero.monto)}</span>
+  <div class="hd-tarjeta hd-tarjeta--gris de-pedido-cliente" data-entra>
+    ${fotoCano}
+    <p><small>${esc(t.pedidoLabel)}</small><span>${esc(d.inicio.pedido.detalle)}</span></p>
   </div>
-  ${btn({ accion: 'agregarExtra', guia: true }, esc(t.agregar), 'de-boton--claro de-boton--chico')}
-  <p class="de-label">${esc(t.costoLabel)} ${icono('info')}</p>
-  <div class="de-costo" data-de-costo>${desglose(PRECIO, 0, C.recibis)}</div>
-  <template data-de-plantilla-quitar>${boton({ accion: 'quitarExtra', valor: '0' }, icono('cerrar'), 'de-quitar')}</template>
-  <div class="de-pie">
-    ${btn({ accion: 'abrirChat', valor: 'perla', ir: 'e-conversacion' }, esc(t.chatear), 'app-boton--contorno')}
-    ${btn({ ir: 'e-ayuda' }, `${esc(t.ayuda)} ${icono('pregunta')}`, 'de-boton--claro de-boton-icono')}
-    <div class="de-dos">
-      ${btn({ ir: 'e-cancelar' }, esc(t.cancelar), 'de-boton--rojo')}
-      ${btn({ ir: 'e-fin', guia: true }, esc(t.terminar))}
+  <div data-entra>
+    <p class="de-etiqueta">${esc(t.repuestosLabel)}</p>
+    <div class="de-sugerencia" data-de-sugerencia>
+      <span class="de-sugerencia__ico">${icono('mas')}</span>
+      <span class="de-sugerencia__texto"><strong data-de-extra-nombre>${esc(primero.nombre)}</strong><small class="hd-precio" data-de-extra-monto>${pesos(primero.monto)}</small></span>
+      ${boton({ accion: 'agregarExtra', guia: true }, esc(t.agregar), 'hd-boton hd-boton--chico')}
     </div>
+    <p class="de-nota" data-de-sin-mas hidden>${icono('checkCirculo')}${esc(t.sinMas)}</p>
   </div>
+  ${ticket(
+    `${rubroIco('billetera')}<span class="de-ticket__titulo"><strong>${esc(t.costoLabel)}</strong><small>${plano(C.tarifa)}</small></span>`,
+    `<div data-de-costo>${desglose(PRECIO, C.recibis)}</div>`,
+    '',
+    'data-entra',
+  )}
+  <div class="de-enlaces" data-entra>
+    ${boton({ ir: 'e-ayuda' }, `${icono('pregunta')}${esc(t.ayuda)}`, 'hd-boton hd-boton--fantasma')}
+    ${boton({ ir: 'e-cancelar' }, `${icono('prohibido')}${esc(t.cancelar)}`, 'hd-boton hd-boton--fantasma de-peligro')}
+  </div>
+  <template data-de-plantilla-quitar>${boton({ accion: 'quitarExtra', valor: '0' }, icono('cerrar'), 'de-quitar')}</template>
+`)}
+<div class="de-pie de-pie--fila">
+  ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-conversacion', etiqueta: t.chatear }, icono('chat'), 'de-cuadro')}
+  ${boton({ ir: 'e-fin', guia: true }, `${esc(t.terminar)}${icono('check')}`, 'hd-boton')}
 </div>
 </div>`,
   };
@@ -411,19 +463,33 @@ function fin(): PantallaDemo {
   return {
     id: 'e-fin',
     titulo: d.pantallas.fin,
-    html: `<div class="app">
+    html: `<div class="app de-fin">
 ${cabecera('blanca')}
-<div class="app-cuerpo app-cuerpo--centro de-fin">
-  <p class="app-titulo app-titulo--negro">${esc(f.titulo)}</p>
-  <div class="app-fin__handy de-fin__handy">
-    <img class="handy handy--cano" src="/src/img/handy-cano.webp" alt="" width="354" height="405" loading="lazy" decoding="async" />
-    <img class="handy cano-gota__gota" src="/src/img/handy-gota.webp" alt="" width="93" height="125" loading="lazy" decoding="async" data-de-gota />
+${cuerpo(`
+  <div class="de-fin__escena" data-entra="pop">
+    <span class="de-fin__mosaico" aria-hidden="true"></span>
+    ${img('handy-cano', 'de-fin__cano', 354, 405)}
+    ${img('handy-gota', 'hd-handy hd-handy--salta de-fin__gota', 93, 125)}
+    <span class="de-fin__tilde">${tildeExito}</span>
   </div>
-  <p class="app-ganaste">${esc(f.ganaste)} <strong data-de-ganaste>${pesos(neto(PRECIO))}</strong></p>
-  <div class="de-costo de-costo--fin" data-de-costo>${desglose(PRECIO)}</div>
-  <p class="app-nota-fin">${esc(f.texto)}</p>
-  ${btn({ raiz: 'e-inicio' }, esc(f.inicio), 'app-boton--contorno')}
-  ${btn({ raiz: 'e-turnos', guia: true }, esc(f.agenda))}
+  <div class="de-fin__texto" data-entra>
+    <p class="hd-sobre">${esc(f.sobre)}</p>
+    ${tituloMarcado(f.titulo, 'hd-titulo')}
+  </div>
+  <p class="de-fin__ganaste" data-entra><small>${esc(f.ganaste)}</small><strong class="hd-precio hd-precio--grande hd-positivo" data-de-ganaste>${pesos(neto(PRECIO))}</strong></p>
+  ${ticket(
+    `${rubroIco('canilla')}<span class="de-ticket__titulo"><strong>${esc(d.aceptado.trabajo)}</strong><small>${esc(d.caja.hoy)}</small></span><span class="hd-chip hd-chip--exito hd-chip--mini">${icono('check')}${esc(C.aTuCuenta)}</span>`,
+    `<div data-de-costo>${desglose(PRECIO)}</div>`,
+    '',
+    'data-entra',
+  )}
+  <p class="de-nota de-nota--centro" data-entra>${icono('billetera')}<span>${plano(f.texto)}</span></p>
+`, 'de-cuerpo--centro')}
+<div class="de-pie">
+  <div class="hd-botones">
+    ${boton({ raiz: 'e-turnos', guia: true }, `${icono('calendario')}${esc(f.agenda)}`, 'hd-boton')}
+    ${boton({ raiz: 'e-inicio' }, esc(f.inicio), 'hd-boton hd-boton--claro')}
+  </div>
 </div>
 </div>`,
   };
@@ -435,33 +501,56 @@ ${cabecera('blanca')}
 const verMas = (contexto: string, abierto = false) =>
   `<span data-de-ver-mas-texto>${esc(abierto ? C.verMenos : C.verMas)}</span><span class="sr">: ${esc(contexto)}</span>`;
 
+function calendario(): string {
+  const t = d.turnos;
+  const primero = fecha(1).getDay();
+  const ultimo = new Date(Number(C.anio), C.mesNumero, 0).getDate();
+  const celdas: string[] = [];
+  for (let i = 0; i < primero; i++) celdas.push('<span class="de-cal__dia de-cal__dia--vacio" aria-hidden="true"></span>');
+  for (let n = 1; n <= ultimo; n++) {
+    const turno = t.items.find((x) => x.dia === n);
+    const pasado = t.pasados.find((x) => x.dia === n);
+    const clase = turno ? ' de-cal__dia--turno' : pasado ? ' de-cal__dia--hecho' : n === C.hoy ? ' de-cal__dia--hoy' : n < C.hoy ? ' de-cal__dia--pasado' : '';
+    const ic = turno ? icono(turno.icono) : pasado ? icono(pasado.icono) : '';
+    celdas.push(`<span class="de-cal__dia${clase}" data-dia="${n}"><b>${n}</b>${ic}</span>`);
+  }
+  return `<div class="de-cal" data-entra aria-hidden="true">
+  <div class="de-cal__cabeza"><span>${icono('izquierda')}</span><strong>${esc(C.mesTitulo)} ${esc(C.anio)}</strong><span>${icono('derecha')}</span></div>
+  <div class="de-cal__semana">${t.semana.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
+  <div class="de-cal__dias">${celdas.join('')}</div>
+</div>`;
+}
+
+const corto = (dia: number) => diaSemana(dia).slice(0, 3);
+
 function tarjetaTurno(t: (typeof d.turnos.items)[number], i: number): string {
-  const cuerpo = `<span class="app-tarjeta__datos"><strong>${esc(t.rubro)} ${icono(t.icono)}</strong><small>${esc(mayuscula(diaSemana(t.dia)))} ${esc(fechaCorta(t.dia))} · ${esc(t.franja)}</small></span>
-  <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--verde" data-de-monto>+ ${pesos(neto(t.presupuesto))}</span><small data-de-programado-tag>${esc(C.programado)}</small><small class="de-tag-cancelado" data-de-cancelado hidden>${esc(d.turnos.cancelado)}</small></span>`;
-  const contexto = C.verMasDe.replace('{rubro}', t.rubro).replace('{fecha}', `${diaSemana(t.dia)} ${fechaCorta(t.dia)}`);
-  return `<div class="app-tarjeta" data-de-turno="${i}"><div class="app-tarjeta__cuerpo">${cuerpo}</div>${boton(
-    { accion: 'verTurno', valor: String(i), ir: 'e-turno-detalle', guia: i === 0 },
-    verMas(contexto),
-    'app-tarjeta__franja',
-  )}</div>`;
+  const contexto = completar(C.verMasDe, { rubro: t.rubro, fecha: `${diaSemana(t.dia)} ${fechaCorta(t.dia)}` });
+  return `<div class="de-turno" data-de-turno="${i}" data-entra>
+  <div class="de-turno__cuerpo">
+    <span class="de-turno__fecha"><small>${esc(corto(t.dia))}</small><strong>${t.dia}</strong></span>
+    <span class="de-turno__datos"><strong>${icono(t.icono)}${esc(t.detalle)}</strong><small>${esc(t.rubro)} · ${esc(t.barrio)}</small><small>${esc(t.franja)}</small></span>
+    <span class="de-turno__monto"><strong class="hd-precio">+ ${pesos(neto(t.presupuesto))}</strong><small data-de-programado-tag>${esc(C.programado)}</small><small class="de-turno__cancelado" data-de-cancelado hidden>${esc(d.turnos.cancelado)}</small></span>
+  </div>
+  ${boton({ accion: 'verTurno', valor: String(i), ir: 'e-turno-detalle', guia: i === 0 }, verMas(contexto), 'de-franja')}
+</div>`;
 }
 
 function turnos(): PantallaDemo {
   const t = d.turnos;
-  const marcados = [
-    ...t.pasados.map((p) => ({ dia: p.dia, icono: p.icono, estilo: 'noche' })),
-    ...t.items.map((it) => ({ dia: it.dia, icono: it.icono, estilo: 'azul' })),
-  ];
   return {
     id: 'e-turnos',
     titulo: d.pantallas.turnos,
-    html: `<div class="app">
+    html: `<div class="app de-turnos">
 ${cabecera('blanca')}
-<div class="app-cuerpo app-cuerpo--ajustado">${calendario({ mes: C.mesTitulo, anio: C.anio, dias: 30, hoy: C.hoy, marcados }).replace(
-      /<span class="app-dia([^"]*)">(\d+)/g,
-      (_m, clase: string, dia: string) => `<span class="app-dia${clase}" data-dia="${dia}">${dia}`,
-    )}</div>
-${hoja(t.panel, `<div class="app-lista de-lista">${t.items.map(tarjetaTurno).join('')}</div>`, 'app-hoja--llena')}
+<div class="de-turnos__arriba">
+  ${tituloMarcado(t.titulo, 'hd-titulo de-turnos__titulo')}
+  ${calendario()}
+</div>
+<div class="hd-hoja-azul de-hoja-azul">
+  <span class="de-manija" aria-hidden="true"></span>
+  <p class="de-hoja-azul__titulo">${esc(t.panel)}</p>
+  <div class="hd-scroll de-hoja-azul__lista">${t.items.map(tarjetaTurno).join('')}</div>
+</div>
 ${navDemo(ROL, 1)}
 </div>`,
   };
@@ -472,35 +561,48 @@ ${navDemo(ROL, 1)}
 function detalle(): PantallaDemo {
   const x = d.detalle;
   const t = d.turnos.items[0];
+  const ch = d.chats[t.chat as IdChat];
   const iconos = [...new Set(d.turnos.items.map((it) => it.icono))]
-    .map((n) => `<span class="de-icono-turno" data-de-icono="${n}"${n === t.icono ? '' : ' hidden'}>${icono(n)}</span>`)
+    .map((n) => `<span data-de-icono="${n}"${n === t.icono ? '' : ' hidden'}>${icono(n)}</span>`)
     .join('');
   return {
     id: 'e-turno-detalle',
     titulo: d.pantallas.detalle,
-    html: `<div class="app">
+    html: `<div class="app de-detalle">
 ${cabecera('blanca', false)}
-<div class="app-cuerpo de-cuerpo de-cuerpo--holgado">
+${cuerpo(`
   ${volverDemo(x.titulo)}
-  <div class="de-dupla de-dupla--tipo">
-    <div><p class="de-label">${esc(x.tipoLabel)}</p><p class="de-tipo"><strong><span data-de-d="rubro">${esc(t.rubro)}</span> ${iconos}${icono('maletin')}</strong><small><span data-de-d="detalle">${esc(t.detalle)}</span></small></p></div>
-    <div><p class="de-label">${esc(x.fechaLabel)}</p><p class="de-fecha"><strong data-de-d="dia">${esc(mayuscula(diaSemana(t.dia)))}</strong><small data-de-d="fecha">${esc(fechaLarga(t.dia))}</small><small data-de-d="franja">${esc(t.franja)}</small></p></div>
+  <div class="de-detalle__hero" data-entra>
+    <span class="de-detalle__fecha"><small data-de-d="dow">${esc(corto(t.dia))}</small><strong data-de-d="num">${t.dia}</strong><small>${esc(C.meses[C.mesNumero - 1])}</small></span>
+    <span class="de-detalle__que">
+      <span class="hd-chip hd-chip--claro hd-chip--mini" data-de-d="estado">${icono('checkCirculo')}<span>${esc(x.confirmado)}</span></span>
+      <strong><span data-de-d="rubro">${esc(t.rubro)}</span> · <span data-de-d="detalle">${esc(t.detalle)}</span></strong>
+      <small>${icono('reloj')}<span data-de-d="franja">${esc(t.franja)}</span></small>
+    </span>
+    <span class="de-detalle__ico">${iconos}</span>
   </div>
-  <div class="de-pedido-mini de-pedido-mini--texto"><p><small>${esc(x.pedidoLabel)}</small><span data-de-d="pedido">${esc(t.pedido)}</span></p></div>
-  <div class="de-dupla">
-    <div><p class="de-label">${esc(x.dondeLabel)}</p><p class="de-caja-azul" data-de-d="barrio">${esc(t.barrio)}</p></div>
-    <div><p class="de-label">${esc(x.repuestosLabel)}</p><p class="de-caja-azul">${esc(x.ninguno)}</p></div>
+  <div class="hd-tarjeta de-detalle__datos" data-entra>
+    <div class="hd-lista">
+      <div class="hd-fila"><span class="hd-fila__ico">${icono('pin')}</span><span class="hd-fila__texto"><small>${esc(x.dondeLabel)}</small><strong data-de-d="barrio">${esc(t.barrio)}</strong></span></div>
+      <div class="hd-fila de-fila-cita"><span class="hd-fila__ico">${icono('chat')}</span><span class="hd-fila__texto"><small>${esc(x.pedidoLabel)}</small><span class="de-cita de-cita--plana" data-de-d="pedido">${esc(t.pedido)}</span></span></div>
+    </div>
   </div>
-  <p class="de-label">${esc(x.costoLabel)} ${icono('info')}</p>
-  <div class="de-costo" data-de-d="costo">${desglose(t.presupuesto, 0, C.recibis)}</div>
-  <div class="de-pie">
-  <p class="de-estado-turno" data-de-d="estado">${esc(x.pendiente)}</p>
-  <div class="de-acciones" data-de-d="acciones">
-    ${btn({ accion: 'abrirChat', valor: t.chat, ir: 'e-conversacion', extra: 'data-de-d="chat"' }, esc(x.chatear), 'app-boton--contorno')}
-    ${btn({ ir: 'e-cambiar-fecha', guia: true }, esc(x.cambiar), 'de-boton--claro')}
-    ${btn({ ir: 'e-cancelar' }, esc(x.cancelar), 'de-boton--rojo')}
+  ${ticket(
+    `${rubroIco('billetera')}<span class="de-ticket__titulo"><strong>${esc(x.costoLabel)}</strong><small>${plano(C.tarifa)}</small></span>`,
+    `<div data-de-d="costo">${desglose(t.presupuesto, C.recibis)}</div>`,
+    'de-ticket--detalle',
+    'data-entra',
+  )}
+  <div class="de-cliente de-cliente--claro" data-entra>
+    <span class="hd-avatar" style="--tono:${esc(ch.tono)}" data-de-d="avatar" aria-hidden="true"><span>${esc(ch.inicial)}</span></span>
+    <span class="de-cliente__texto"><strong data-de-d="cliente">${esc(ch.nombre)}</strong><small>${esc(d.camino.sinTelefono)}</small></span>
+    ${boton({ accion: 'abrirChat', valor: t.chat, ir: 'e-conversacion', etiqueta: x.chatear, extra: 'data-de-d="chat"' }, icono('chat'), 'hd-circulo hd-circulo--azul')}
   </div>
-  </div>
+  <p class="hd-error-linea de-cancelado" data-de-d="cancelado" hidden>${img('handy-cano-roto', '', 354, 405)}<span>${esc(x.cancelado)}</span></p>
+`)}
+<div class="de-pie de-pie--fila" data-de-d="acciones">
+  ${boton({ ir: 'e-cancelar' }, esc(x.cancelar), 'hd-boton hd-boton--claro de-peligro')}
+  ${boton({ ir: 'e-cambiar-fecha', guia: true }, esc(x.cambiar), 'hd-boton')}
 </div>
 </div>`,
   };
@@ -508,27 +610,26 @@ ${cabecera('blanca', false)}
 
 // ── Cambiar la fecha ──────────────────────────────────────────────────────
 
-/** Tira de la semana (lunes a domingo) del día propuesto: el día del turno, el nuevo y los que no se pueden elegir. */
+/** Tira de la semana (domingo a sábado) del día propuesto: el día del turno, el nuevo y los que no se pueden elegir. */
 function semana(nuevo: number, actual: number): string {
-  const lunes = nuevo - ((new Date(Number(C.anio), C.mesNumero - 1, nuevo).getDay() + 6) % 7);
+  const domingo = nuevo - fecha(nuevo).getDay();
   let html = '';
-  for (let n = lunes; n < lunes + 7; n++) {
+  for (let n = domingo; n < domingo + 7; n++) {
     if (n < 1 || n > 30) {
       html += '<span class="de-semana__dia de-semana__dia--vacio" aria-hidden="true"></span>';
       continue;
     }
     const nombre = diaSemana(n);
-    const clases = `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}${n === nuevo ? ' de-semana__dia--nueva' : ''}`;
-    const deshabilitado = n <= C.hoy || nombre === C.dias[0];
+    const deshabilitado = n <= C.hoy || fecha(n).getDay() === 0;
     html += boton(
       {
         accion: 'elegirDia',
         valor: String(n),
-        etiqueta: d.cambio.elegirDia.replace('{dia}', nombre).replace('{fecha}', fechaCorta(n)),
+        etiqueta: completar(d.cambio.elegirDia, { dia: nombre, fecha: fechaCorta(n) }),
         extra: `aria-pressed="${n === nuevo}"${deshabilitado ? ' disabled' : ''}`,
       },
-      `<small>${esc(nombre.charAt(0).toUpperCase())}</small><strong>${n}</strong>`,
-      clases,
+      `<small>${esc(nombre.slice(0, 3))}</small><strong>${n}</strong>`,
+      `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}`,
     );
   }
   return html;
@@ -537,7 +638,7 @@ function semana(nuevo: number, actual: number): string {
 /** Primer día hábil (lunes a sábado) después de `dia`. */
 function diaSiguiente(dia: number): number {
   let n = dia + 1;
-  while (n <= 30 && new Date(Number(C.anio), C.mesNumero - 1, n).getDay() === 0) n++;
+  while (n <= 30 && fecha(n).getDay() === 0) n++;
   return Math.min(n, 30);
 }
 
@@ -547,45 +648,38 @@ function cambiarFecha(): PantallaDemo {
   const dia = diaSiguiente(t.dia);
   const franja = Math.max(0, c.franjas.indexOf(t.franja));
   const motivos = c.motivos
-    .map((m, i) =>
-      boton(
-        { accion: 'motivo', valor: String(i), guia: i === 0, extra: 'aria-pressed="false"' },
-        `${esc(m)}${i === c.motivos.length - 1 ? ` ${icono('editar')}` : ''}`,
-        'de-motivo',
-      ),
-    )
+    .map((m, i) => boton({ accion: 'motivo', valor: String(i), guia: i === 0, extra: 'aria-pressed="false"' }, esc(m), 'hd-chip de-chip'))
     .join('');
-  const stepper = (accion: string, subir: string, bajar: string) =>
-    `<span class="de-stepper">${boton({ accion, valor: '1', etiqueta: subir }, icono('arriba'))}${boton({ accion, valor: '-1', etiqueta: bajar }, icono('abajo'))}</span>`;
+  const franjas = c.franjas
+    .map((f, i) => boton({ accion: 'franjaElegir', valor: String(i), extra: `aria-pressed="${i === franja}"` }, esc(f), 'hd-chip de-chip'))
+    .join('');
   return {
     id: 'e-cambiar-fecha',
     titulo: d.pantallas.cambio,
-    html: `<div class="app">
+    html: `<div class="app de-cambio">
 ${cabecera('blanca', false)}
-<div class="app-cuerpo de-cuerpo de-cambio">
+${cuerpo(`
   ${volverDemo(c.titulo)}
-  <p class="de-actual" data-de-cambio-actual>${icono('calendario')}<span>${esc(
-    c.actual.replace('{dia}', diaSemana(t.dia)).replace('{fecha}', fechaCorta(t.dia)).replace('{franja}', t.franja),
-  )}</span></p>
-  <p class="de-subtitulo">${esc(c.motivoTitulo)}</p>
-  <div class="de-motivos">${motivos}</div>
-  <p class="de-subtitulo de-subtitulo--linea">${esc(c.nuevaTitulo)}</p>
-  <div class="de-semana" data-de-semana role="group" aria-label="${esc(c.semanaLabel)}">${semana(dia, t.dia)}</div>
-  <div class="de-campos">
-    <div class="de-campo-grupo"><p class="de-label">${esc(c.mesLabel)}</p><span class="de-campo de-campo--gris">${esc(C.mesTitulo)}</span></div>
-    <div class="de-campo-grupo"><p class="de-label">${esc(c.franjaLabel)}</p><span class="de-campo"><span data-de-cambio-franja>${esc(c.franjas[franja])}</span>${stepper('franjaPaso', c.franjaSubir, c.franjaBajar)}</span></div>
-    <div class="de-campo-grupo"><p class="de-label">${esc(c.diaLabel)}</p><span class="de-campo"><span data-de-cambio-dia>${dia}</span>${stepper('diaPaso', c.diaSubir, c.diaBajar)}</span></div>
-    <div class="de-campo-grupo"><p class="de-label">${esc(c.anioLabel)}</p><span class="de-campo de-campo--gris">${esc(C.anio)}</span></div>
+  <p class="de-actual" data-de-cambio-actual data-entra>${icono('calendario')}<span>${esc(completar(c.actual, { dia: diaSemana(t.dia), fecha: fechaCorta(t.dia), franja: t.franja }))}</span></p>
+  <div class="de-cambio__form" data-de-cambio-form>
+    <div data-entra><p class="de-etiqueta">${esc(c.motivoTitulo)}</p><div class="hd-chips">${motivos}</div></div>
+    <div data-entra>
+      <div class="de-etiqueta-fila"><p class="de-etiqueta">${esc(c.nuevaTitulo)}</p><span class="de-flechas">${boton({ accion: 'semanaPaso', valor: '-1', etiqueta: c.semanaAnterior }, icono('izquierda'), 'hd-circulo de-circulo-chico')}${boton({ accion: 'semanaPaso', valor: '1', etiqueta: c.semanaSiguiente }, icono('derecha'), 'hd-circulo de-circulo-chico')}</span></div>
+      <div class="de-semana" data-de-semana role="group" aria-label="${esc(c.semanaLabel)}">${semana(dia, t.dia)}</div>
+    </div>
+    <div data-entra><p class="de-etiqueta">${esc(c.franjaTitulo)}</p><div class="hd-chips hd-chips--carril de-carril" data-de-franjas>${franjas}</div></div>
+    <div data-entra><p class="de-etiqueta">${esc(c.mensajeLabel)}</p>${boton({ accion: 'mensajeCambio' }, `<span data-de-mensaje-texto>${esc(c.mensaje)}</span>${icono('editar')}`, 'de-campo de-campo--mensaje')}</div>
   </div>
-  <p class="de-label">${esc(c.mensajeLabel)}</p>
-  ${boton({ accion: 'mensajeCambio' }, `<span data-de-mensaje-texto>${esc(c.mensaje)}</span>${icono('editar')}`, 'de-campo de-campo--mensaje')}
-  <div class="de-pie">
-  <p class="de-resumen" data-de-cambio-resumen aria-live="polite">${esc(
-    c.resumen.replace('{dia}', diaSemana(dia)).replace('{fecha}', fechaCorta(dia)).replace('{franja}', c.franjas[franja]),
-  )}</p>
-  ${btn({ accion: 'proponerFecha', guia: true }, esc(c.proponer), 'de-boton--claro')}
-  <p class="de-listo" data-de-cambio-ok role="status" hidden>${icono('checkCirculo')}<span>${esc(c.enviado)}</span></p>
+  <div class="de-estado de-cambio__ok" data-de-cambio-ok hidden>
+    ${tildeExito}
+    ${tituloMarcado(c.enviadoTitulo, 'hd-titulo hd-titulo--chico')}
+    <p class="hd-texto hd-texto--suave" data-de-cambio-ok-texto>${esc(c.enviado)}</p>
   </div>
+`)}
+<div class="de-pie">
+  <p class="de-resumen" data-de-cambio-resumen aria-live="polite">${esc(completar(c.resumen, { dia: diaSemana(dia), fecha: fechaCorta(dia), franja: c.franjas[franja] }))}</p>
+  ${boton({ accion: 'proponerFecha', guia: true }, `${esc(c.proponer)}${icono('enviar')}`, 'hd-boton')}
+  ${boton({ volver: true, extra: 'data-de-cambio-volver hidden' }, esc(c.volverAgenda), 'hd-boton hd-boton--claro')}
 </div>
 </div>`,
   };
@@ -595,29 +689,39 @@ ${cabecera('blanca', false)}
 
 function notificaciones(): PantallaDemo {
   const a = d.avisos;
-  const items = a.items
-    .map((it) => {
-      const t: Toque = it.raiz ? { raiz: it.raiz } : { ir: it.destino, guia: !!it.guia };
-      if (it.turno !== undefined) Object.assign(t, { accion: 'verTurno', valor: String(it.turno) });
-      const texto = it.neto ? esc(it.texto).replace('{neto}', `<strong data-de-neto>${pesos(neto(PRECIO))}</strong>`) : esc(it.texto);
-      const clase = `de-notif${it.urgencia ? ' de-notif--urgencia' : ''}`;
-      return `<div class="${clase}"${it.neto ? ' data-de-cobro-hoy' : ''}>
-  ${boton(t, `<span class="de-notif__icono">${icono(it.icono)}</span><span>${texto}</span>`, 'de-notif__cuerpo')}
-  ${boton({ accion: 'quitarNotif', etiqueta: a.quitar.replace('{corto}', it.corto) }, icono('cerrar'), 'de-notif__x')}
+  const item = (it: (typeof a.items)[number]) => {
+    const t: Toque = 'raiz' in it && it.raiz ? { raiz: it.raiz } : { ir: it.destino, guia: !!it.guia };
+    if ('turno' in it && it.turno !== undefined) Object.assign(t, { accion: 'verTurno', valor: String(it.turno) });
+    const titulo = it.neto ? esc(it.titulo).replace('{neto}', `<span data-de-neto>${pesos(neto(PRECIO))}</span>`) : esc(it.titulo);
+    const tono = 'tono' in it ? ` de-notif--${it.tono}` : '';
+    return `<div class="de-notif${tono}"${it.neto ? ' data-de-cobro-hoy' : ''} data-entra="lado">
+  ${boton(t, `<span class="de-notif__ico">${icono(it.icono)}</span><span class="de-notif__texto"><strong>${titulo}</strong><small>${esc(it.texto)}</small></span>`, 'de-notif__cuerpo')}
+  ${boton({ accion: 'quitarNotif', etiqueta: completar(a.quitar, { corto: it.corto }) }, icono('cerrar'), 'de-notif__x')}
 </div>`;
-    })
-    .join('');
+  };
+  const grupo = (titulo: string, lista: typeof a.items) =>
+    `<section class="de-grupo-avisos" data-de-grupo><p class="de-etiqueta">${esc(titulo)}</p>${lista.map(item).join('')}</section>`;
   return {
     id: 'e-notificaciones',
     titulo: d.pantallas.notificaciones,
-    html: `<div class="app de-gris">
-${cabeceraGris(true)}
-<div class="app-cuerpo de-cuerpo de-avisos">
-  ${boton({ accion: 'borrarNotifs' }, `${esc(a.borrar)} ${icono('tacho')}`, 'de-borrar')}
-  <div class="de-notif-lista" data-de-notifs>${items}</div>
-  <p class="de-vacio" data-de-nada-mas>${esc(a.nadaMas)}</p>
-  <p class="de-vacio de-vacio--centro" data-de-vacio hidden>${esc(a.vacio)}</p>
-</div>
+    html: `<div class="app de-avisos">
+${cabecera('blanca', false)}
+${cuerpo(`
+  <div class="de-titulo-fila">${volverDemo(a.titulo)}${boton({ ir: 'e-config-notificaciones', etiqueta: a.configurar }, icono('engranaje'), 'hd-circulo')}</div>
+  <div class="de-avisos__lista" data-de-notifs>
+    ${grupo(a.nuevas, a.items.filter((x) => 'nuevo' in x && x.nuevo))}
+    ${grupo(a.antes, a.items.filter((x) => !('nuevo' in x && x.nuevo)))}
+  </div>
+  <div class="de-avisos__pie" data-de-hay>
+    <p class="de-nota de-nota--centro">${esc(a.nadaMas)}</p>
+    ${boton({ accion: 'borrarNotifs' }, `${icono('tacho')}${esc(a.borrar)}`, 'hd-chip de-chip')}
+  </div>
+  <div class="de-vacio" data-de-vacio hidden>
+    ${img('handy-lamparita', 'hd-handy de-vacio__handy', 202, 346)}
+    ${tituloMarcado(a.vacioTitulo, 'hd-titulo hd-titulo--chico')}
+    <p class="hd-texto hd-texto--suave">${esc(a.vacio)}</p>
+  </div>
+`)}
 ${navDemo(ROL, -1)}
 </div>`,
   };
@@ -629,24 +733,24 @@ function configNotificaciones(): PantallaDemo {
     .map((it) =>
       boton(
         { accion: 'notifToggle', extra: `role="switch" aria-checked="${it.on}"` },
-        `<span>${esc(it.texto)}</span><span class="de-check">${icono('check')}</span>`,
-        'de-check-fila',
+        `<span class="hd-fila__ico">${icono(it.icono)}</span><span class="hd-fila__texto"><strong>${esc(it.texto)}</strong></span><span class="de-switch" aria-hidden="true"><i></i></span>`,
+        'hd-fila de-fila-switch',
       ),
     )
     .join('');
   return {
     id: 'e-config-notificaciones',
     titulo: d.pantallas.config,
-    html: `<div class="app de-gris">
-${cabeceraGris(false)}
-<div class="app-cuerpo de-cuerpo">
+    html: `<div class="app de-config">
+${cabecera('blanca', false)}
+${cuerpo(`
   ${volverDemo(c.titulo)}
-  <div class="de-config">
-    <p class="de-config__titulo">${esc(c.panel)}</p>
-    <div class="de-dos">${boton({ accion: 'notifTodas', valor: '0' }, esc(c.desactivar), 'de-config__todo')}${boton({ accion: 'notifTodas', valor: '1' }, esc(c.activar), 'de-config__todo de-config__todo--claro')}</div>
-    <div class="de-config__filas">${filas}</div>
+  <div class="hd-tarjeta hd-tarjeta--azul de-config__panel" data-entra>
+    <p class="de-config__titulo">${icono('campana')}${esc(c.panel)}</p>
+    <div class="hd-botones hd-botones--fila">${boton({ accion: 'notifTodas', valor: '0' }, esc(c.desactivar), 'hd-boton hd-boton--chico hd-boton--noche')}${boton({ accion: 'notifTodas', valor: '1' }, esc(c.activar), 'hd-boton hd-boton--chico hd-boton--blanco')}</div>
   </div>
-</div>
+  <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista">${filas}</div></div>
+`)}
 ${navDemo(ROL, -1)}
 </div>`,
   };
@@ -656,29 +760,50 @@ ${navDemo(ROL, -1)}
 
 function pedidoProgramado(): PantallaDemo {
   const p = d.programado;
+  const medio = `<div class="de-pedido__dia">
+    <span><small>${esc(p.diaLabel)}</small><strong>${icono('calendario')}${esc(p.dia)}</strong></span>
+    <span><small>${esc(p.franjaLabel)}</small><strong>${icono('reloj')}${esc(p.franja)}</strong></span>
+  </div>
+  <p class="de-pedido__lugar">${icono('pin')}${esc(p.ubicacion)}</p>`;
   return {
     id: 'e-pedido-programado',
     titulo: d.pantallas.programado,
-    html: `<div class="app">
+    html: `<div class="app de-inicio de-programado" data-de-programado-app data-estado="pedido">
 ${cabecera('azul')}
-<div class="app-mapa-caja de-mapa de-mapa--pedido">
-  ${mapa({ id: 'programado', vos: [210, 168], cliente: [84, 84], barrio: d.mapa.barrioProgramado, calles: false })}
-  ${disponible(false)}
-  <div class="app-pedido de-pedido de-pedido--programado" data-de-programado>
-    <p class="app-pedido__titulo">${esc(p.titulo)} ${icono(p.icono)}${boton({ accion: 'rechazarProgramado', etiqueta: p.rechazar }, icono('cerrar'), 'app-x app-x--gris')}</p>
-    <span class="app-tag">${icono('calendario')}${esc(C.programado)}</span>
-    <p class="de-pedido__detalle">${esc(p.detalle)}</p>
-    <small>${esc(p.sugeridoLabel)}</small>
-    <p class="app-pedido__precio">${pesos(p.sugerido)}</p>
-    <p class="de-mini-titulo">${esc(p.diaLabel)}</p>
-    <div class="de-pastillas"><span class="de-pastilla">${esc(p.dia)}</span><span class="de-pastilla">${esc(p.franja)}</span></div>
-    <p class="de-mini-titulo">${esc(p.ubicacionLabel)}</p>
-    <p class="de-ubicacion">${icono('pin')}${esc(p.ubicacion)}</p>
-    ${btn({ accion: 'aceptarProgramado', guia: true }, esc(p.aceptar))}
-    ${btn({ ir: 'e-precio-programado' }, esc(p.cambiar), 'app-boton--contorno')}
-    <p class="de-pedido__pie">${esc(p.pie)} ${icono('calendario')}</p>
+<div class="de-zona-mapa">
+  ${mapa({ id: 'de-prog', casa: [150, 196], yo: [236, 128], linea: true })}
+  <div class="de-flota">${disponible(false)}</div>
+  <div class="de-abajo">
+    <div class="hd-tarjeta de-panel de-pedido" data-de-programado data-entra="abajo">
+      ${tarjetaPedido({
+        sobre: p.sobre,
+        rubro: p.rubro,
+        ico: p.icono,
+        chip: `${icono('calendario')}${esc(C.programado)}`,
+        chipClase: 'hd-chip--tinte',
+        detalle: p.detalle,
+        sugeridoLabel: p.sugeridoLabel,
+        sugerido: p.sugerido,
+        decidis: p.decidis,
+        medio,
+        aceptar: { accion: 'aceptarProgramado', guia: true },
+        aceptarTexto: p.aceptar,
+        cambiar: { ir: 'e-precio-programado' },
+        cambiarTexto: p.cambiar,
+        rechazar: { accion: 'rechazarProgramado', etiqueta: p.rechazar },
+        pie: p.pie,
+      })}
+    </div>
+    <div class="hd-tarjeta de-panel de-respuesta" data-de-programado-respuesta hidden>
+      <span data-de-resp="enviado">${tildeExito}</span>
+      <span data-de-resp="rechazado">${img('handy-engranaje', 'hd-handy de-respuesta__handy', 338, 339)}</span>
+      <span class="de-respuesta__texto">
+        <span data-de-resp="enviado">${tituloMarcado(p.enviadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+        <span data-de-resp="rechazado">${tituloMarcado(p.rechazadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+        <small class="hd-texto hd-texto--suave" data-de-resp-texto>${esc(p.rechazadoTexto)}</small>
+      </span>
+    </div>
   </div>
-  ${aviso(p.enviadoTitulo, p.enviadoTexto.replace('{monto}', pesosJuntos(p.sugerido)), 'data-de-programado-aviso')}
 </div>
 ${navDemo(ROL, 0)}
 </div>`,
@@ -687,84 +812,96 @@ ${navDemo(ROL, 0)}
 
 // ── Cuenta ────────────────────────────────────────────────────────────────
 
-function filaCuenta(t: Toque, nombreIcono: string, texto: string): string {
-  if (t.ir === 'e-config-notificaciones') t = { ...t, etiqueta: d.avisos.configurar };
-  return boton(t, `${icono(nombreIcono)}<span>${esc(texto)}</span>${icono('flecha', 'icono de-fila-cuenta__flecha')}`, 'de-fila-cuenta');
-}
-
-function misRubros(): string {
-  const activos = d.rubrosHoja.rubrosActivos as string[];
-  return rubros.rubros
-    .map((r) => `<span class="de-mi-rubro" data-de-mi-rubro="${r.id}"${activos.includes(r.id) ? '' : ' hidden'}>${icono(r.icono)}${esc(r.nombre)}</span>`)
-    .join('');
+function filaCuenta(t: Toque, nombreIcono: string, texto: string, detalle = ''): string {
+  return boton(
+    t,
+    `<span class="hd-fila__ico">${icono(nombreIcono)}</span><span class="hd-fila__texto"><strong>${esc(texto)}</strong>${detalle ? `<small>${esc(detalle)}</small>` : ''}</span><span class="hd-fila__fin">${icono('derecha')}</span>`,
+    'hd-fila',
+  );
 }
 
 function cuenta(): PantallaDemo {
   const c = d.cuenta;
+  const activos = d.rubrosHoja.rubrosActivos as string[];
+  const misRubros = rubros.rubros
+    .map((r) => `<span class="hd-chip hd-chip--tinte hd-chip--mini" data-de-mi-rubro="${r.id}"${activos.includes(r.id) ? '' : ' hidden'}>${icono(r.icono)}${esc(r.nombre)}</span>`)
+    .join('');
   return {
     id: 'e-cuenta',
     titulo: d.pantallas.cuenta,
-    html: `<div class="app">
+    html: `<div class="app de-cuenta">
 ${cabecera('blanca')}
-<div class="app-cuerpo de-cuerpo de-cuenta">
-  <div class="de-perfil">
-    <span class="de-perfil__foto">${icono('usuario')}<span class="de-perfil__camara" title="${esc(c.cambiarFoto)}">${icono('camara')}</span></span>
-    <p class="de-perfil__nombre">${esc(c.nombre)}</p>
-    <p class="de-perfil__rubros" data-de-mis-rubros>${misRubros()}</p>
-    <span class="app-verificado de-perfil__ok">${icono('verificado')}${esc(c.verificado)}</span>
+${cuerpo(`
+  <div class="de-perfil" data-entra="pop">
+    <span class="de-perfil__foto">
+      <span class="hd-avatar hd-avatar--grande hd-avatar--verificado" aria-hidden="true"><span>${esc(c.nombre.split(' ').map((x) => x[0]).join('').toUpperCase())}</span></span>
+      <span class="de-perfil__camara" aria-hidden="true" title="${esc(c.cambiarFoto)}">${icono('camara')}</span>
+    </span>
+    <p class="hd-titulo hd-titulo--chico hd-titulo--azul">${esc(c.nombre)}</p>
+    <p class="hd-chips de-perfil__rubros" data-de-mis-rubros>${misRubros}</p>
+    <span class="hd-chip hd-chip--exito hd-chip--mini">${icono('verificado')}${esc(c.verificado)}</span>
   </div>
-  <p class="de-seccion">${esc(c.seccionCuenta)}</p>
-  <div class="de-filas-cuenta">
+  <p class="de-etiqueta" data-entra>${esc(c.seccionCuenta)}</p>
+  <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista">
     ${filaCuenta({ ir: 'e-datos' }, 'usuario', c.datos)}
     ${filaCuenta({ ir: 'e-rubros' }, 'maletin', c.rubros)}
-    ${filaCuenta({ ir: 'e-caja' }, 'billetera', c.cobro)}
-    ${filaCuenta({ ir: 'e-cupones', guia: true }, 'etiqueta', c.cupones)}
-  </div>
-  <p class="de-seccion">${esc(c.seccionConfig)}</p>
-  <div class="de-filas-cuenta">${filaCuenta({ ir: 'e-config-notificaciones' }, 'campana', c.notificaciones)}</div>
-  <div class="de-pie de-pie--cuenta">
-    ${btn({ ir: 'e-salir' }, `${esc(c.salir)} ${icono('salir')}`, 'de-boton--rojo de-boton-icono')}
-    ${btn({ ir: 'e-ayuda' }, `${esc(c.ayuda)} ${icono('pregunta')}`, 'de-boton-icono')}
-  </div>
-</div>
+    ${filaCuenta({ ir: 'e-caja' }, 'billetera', c.cobro, c.cobroDetalle)}
+    ${filaCuenta({ ir: 'e-cupones', guia: true }, 'etiqueta', c.cupones, c.cuponesDetalle)}
+  </div></div>
+  <p class="de-etiqueta" data-entra>${esc(c.seccionConfig)}</p>
+  <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista">
+    ${filaCuenta({ ir: 'e-config-notificaciones' }, 'campana', c.notificaciones)}
+    ${filaCuenta({ ir: 'e-ayuda' }, 'pregunta', c.ayuda)}
+  </div></div>
+  <button type="button" class="hd-tarjeta hd-tarjeta--azul de-modo" data-demo-cambiar-rol="usuario" data-entra>
+    <span class="de-modo__ico">${icono('casa')}</span>
+    <span class="de-modo__texto"><strong>${esc(c.modoUsuario)}</strong><small>${esc(c.modoUsuarioTexto)}</small></span>
+    ${icono('flecha')}
+  </button>
+  ${salirDeLaDemo()}
+  ${boton({ ir: 'e-salir' }, `${icono('salir')}${esc(c.salir)}`, 'hd-boton hd-boton--fantasma de-peligro')}
+`)}
 ${navDemo(ROL, 3)}
 </div>`,
   };
 }
 
-// ── Caja ──────────────────────────────────────────────────────────────────
+// ── Cobros ────────────────────────────────────────────────────────────────
 
-function movimiento(titulo: string, nombreIcono: string, fecha: string, presupuesto: number, abierto: boolean, hoy = false): string {
-  return `<div class="app-tarjeta de-movimiento"${hoy ? ' data-de-mov-hoy' : ''}>
-  <div class="app-tarjeta__cuerpo">
-    <span class="app-tarjeta__datos"><strong>${esc(titulo)} ${icono(nombreIcono)}</strong><small>${esc(fecha)}</small></span>
-    <span class="app-tarjeta__derecha"><span class="app-tarjeta__monto app-tarjeta__monto--verde" data-de-mov-neto>+ ${pesos(neto(presupuesto))}</span><small>${esc(C.aTuCuenta)}</small></span>
+function movimiento(titulo: string, nombreIcono: string, fechaTexto: string, presupuesto: number, abierto: boolean, hoy = false): string {
+  return `<div class="de-turno de-mov"${hoy ? ' data-de-mov-hoy' : ''} data-entra>
+  <div class="de-turno__cuerpo">
+    ${rubroIco(nombreIcono)}
+    <span class="de-turno__datos"><strong>${esc(titulo)}</strong><small>${esc(fechaTexto)}</small></span>
+    <span class="de-turno__monto"><strong class="hd-precio" data-de-mov-neto>+ ${pesos(neto(presupuesto))}</strong><small>${esc(C.aTuCuenta)}</small></span>
   </div>
-  <div class="de-costo de-costo--mov" data-de-mov-desglose${abierto ? '' : ' hidden'}>${desglose(presupuesto)}</div>
-  ${boton({ accion: 'verMas', extra: `aria-expanded="${abierto}"` }, verMas(C.verMasDe.replace('{rubro}', titulo).replace('{fecha}', fecha), abierto), 'app-tarjeta__franja')}
+  <div class="de-mov__desglose" data-de-mov-desglose${abierto ? '' : ' hidden'}>${desglose(presupuesto)}</div>
+  ${boton({ accion: 'verMas', extra: `aria-expanded="${abierto}"` }, verMas(completar(C.verMasDe, { rubro: titulo, fecha: fechaTexto }), abierto), 'de-franja')}
 </div>`;
 }
 
 function caja(): PantallaDemo {
   const c = d.caja;
-  const lista = [
-    movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, PRECIO, true, true),
-    ...c.movimientos.map((m) => movimiento(m.rubro, m.icono, m.fecha, m.presupuesto, false)),
-  ].join('');
+  const lista = [movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, PRECIO, true, true), ...c.movimientos.map((m) => movimiento(m.rubro, m.icono, m.fecha, m.presupuesto, false))].join('');
   return {
     id: 'e-caja',
     titulo: d.pantallas.caja,
-    html: `<div class="app">
+    html: `<div class="app de-caja">
 ${cabecera('blanca')}
-<div class="app-cuerpo app-cuerpo--ajustado de-caja">
+<div class="de-caja__arriba">
   ${volverDemo(c.titulo)}
-  <div class="de-dupla de-dupla--caja">
-    <div><p class="app-label">${esc(c.cbuLabel)}</p><p class="app-valor">${esc(c.cbu)}</p></div>
-    <div><p class="app-label">${esc(c.aliasLabel)}</p><p class="app-valor">${esc(c.alias)}</p></div>
+  <div class="de-banco" data-entra>
+    <div class="de-banco__fila"><span class="hd-sobre">${esc(c.cuentaLabel)}</span>${boton({ ir: 'e-editar-cobro' }, `${icono('editar')}${esc(c.editar)}`, 'hd-boton hd-boton--chico hd-boton--blanco')}</div>
+    <p class="de-banco__cbu"><small>${esc(c.cbuLabel)}</small><strong data-de-cbu-mostrado>${esc(c.cbu)}</strong></p>
+    <p class="de-banco__alias"><small>${esc(c.aliasLabel)}</small><strong>${esc(c.alias)}</strong></p>
   </div>
-  ${btn({ ir: 'e-editar-cobro' }, esc(c.editar))}
+  <p class="de-nota" data-entra>${icono('info')}<span>${plano(c.nota)}</span></p>
 </div>
-${hoja(c.panel, `<div class="app-lista de-lista">${lista}</div>`, 'app-hoja--llena')}
+<div class="hd-hoja-azul de-hoja-azul de-hoja-azul--sola">
+  <span class="de-manija" aria-hidden="true"></span>
+  <p class="de-hoja-azul__titulo">${esc(c.panel)}</p>
+  <div class="hd-scroll de-hoja-azul__lista">${lista}</div>
+</div>
 </div>`,
   };
 }
@@ -774,37 +911,36 @@ ${hoja(c.panel, `<div class="app-lista de-lista">${lista}</div>`, 'app-hoja--lle
 function mensajes(): PantallaDemo {
   const m = d.mensajes;
   const filas = (m.orden as IdChat[])
-    .map((id, i) => {
+    .map((id) => {
       const ch = d.chats[id];
       const ultimo = ch.mensajes[ch.mensajes.length - 1];
       const badge = ch.noLeidos
-        ? `<span class="de-badge${i % 2 ? ' de-badge--amarillo' : ''}" data-de-badge="${id}" aria-label="${esc(m.noLeidos.replace('{n}', String(ch.noLeidos)))}">${ch.noLeidos}</span>`
+        ? `<span class="de-badge" data-de-badge="${id}" aria-label="${esc(completar(m.noLeidos, { n: ch.noLeidos }))}">${ch.noLeidos}</span>`
         : '';
       return boton(
         { accion: 'abrirChat', valor: id, ir: 'e-conversacion', extra: `data-de-chat-fila="${id}"` },
-        `<span class="de-chat-fila__avatar">${icono('usuario')}</span><span class="de-chat-fila__texto"><strong>${esc(ch.nombre)}</strong><small data-de-ultimo="${id}">${esc(ultimo.texto)}</small></span>${badge}`,
-        'de-chat-fila',
+        `${avatarDe(ch.inicial, ch.tono)}<span class="hd-fila__texto"><strong>${esc(ch.nombre)}</strong><small class="de-chats__sub">${esc(ch.sub)}</small><small class="de-chats__ultimo" data-de-ultimo="${id}">${esc(ultimo.texto)}</small></span><span class="de-chats__fin"><small>${esc(ch.dia)}</small>${badge}</span>`,
+        'hd-fila de-chats__fila',
       );
     })
     .join('');
   const ayuda = boton(
     { ir: 'e-ayuda' },
-    `<span class="de-chat-fila__avatar de-chat-fila__avatar--ayuda">${icono('pregunta')}</span><span class="de-chat-fila__texto"><strong>${esc(m.ayuda)}</strong><small>${esc(m.ayudaTexto)}</small></span>`,
-    'de-chat-fila',
+    `<span class="hd-avatar de-chats__ayuda" aria-hidden="true">${icono('pregunta')}</span><span class="hd-fila__texto"><strong>${esc(m.ayuda)}</strong><small>${esc(m.ayudaTexto)}</small></span><span class="hd-fila__fin">${icono('derecha')}</span>`,
+    'hd-fila de-chats__fila',
   );
   return {
     id: 'e-mensajes',
     titulo: d.pantallas.mensajes,
-    html: `<div class="app">
-<div class="app-cabecera app-cabecera--azul">
-  ${estado(true)}
-  <div class="app-cabecera__fila">${logo}${boton({ ir: 'e-contactos' }, `${esc(m.contactos)} ${icono('contactos')}`, 'de-contactos-btn')}</div>
-</div>
-<div class="app-cuerpo de-cuerpo de-mensajes">
-  <div class="de-chat-lista">${filas}${ayuda}</div>
-  <p class="de-vacio de-vacio--claro">${esc(m.nota)}</p>
-</div>
-${navDemo(ROL, 2)}
+    html: `<div class="app de-mensajes">
+${cabecera('azul')}
+${cuerpo(`
+  <div class="de-titulo-fila" data-entra><p class="hd-titulo">${esc(m.titulo)}</p>${boton({ ir: 'e-contactos' }, `${icono('contactos')}${esc(m.contactos)}`, 'hd-chip hd-chip--tinte de-chip')}</div>
+  <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista de-chats">${filas}</div></div>
+  <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista">${ayuda}</div></div>
+  <p class="de-nota de-nota--centro" data-entra>${icono('reloj')}<span>${esc(m.nota)}</span></p>
+`)}
+${navDemo(ROL, 2).replace('data-ir-raiz="e-cuenta"', 'data-ir-raiz="e-cuenta" data-guia')}
 </div>`,
   };
 }
@@ -816,14 +952,14 @@ function contactos(): PantallaDemo {
   const filas = (d.mensajes.orden as IdChat[])
     .map((id) => {
       const ch = d.chats[id];
-      return `<div class="de-contacto" data-de-chat-fila="${id}"><span class="de-chat-fila__avatar">${icono('usuario')}</span><span class="de-chat-fila__texto"><strong>${esc(ch.nombre)}</strong><small>${esc(ch.sub)}</small></span>${boton(
-        { accion: 'abrirChat', valor: id, ir: 'e-conversacion', etiqueta: c.escribir.replace('{nombre}', ch.nombre) },
+      return `<div class="hd-fila" data-de-chat-fila="${id}">${avatarDe(ch.inicial, ch.tono)}<span class="hd-fila__texto"><strong>${esc(ch.nombre)}</strong><small>${esc(ch.sub)}</small></span>${boton(
+        { accion: 'abrirChat', valor: id, ir: 'e-conversacion', etiqueta: completar(c.escribir, { nombre: ch.nombre }) },
         icono('enviar'),
-        'de-contacto__enviar',
+        'hd-circulo hd-circulo--azul',
       )}</div>`;
     })
     .join('');
-  return { id: 'e-contactos', titulo: d.pantallas.contactos, tipo: 'hoja', html: `${tituloHoja(c.titulo)}<div class="de-contactos">${filas}</div>` };
+  return { id: 'e-contactos', titulo: d.pantallas.contactos, tipo: 'hoja', html: `${tituloHoja(c.titulo)}<div class="de-hoja"><div class="hd-lista" data-entra>${filas}</div></div>` };
 }
 
 function ayuda(): PantallaDemo {
@@ -831,56 +967,53 @@ function ayuda(): PantallaDemo {
   const items = a.preguntas
     .map(
       (q) =>
-        `<div class="de-pregunta">${boton({ accion: 'pregunta', extra: 'aria-expanded="false"' }, `<span>${esc(q.pregunta)}</span>${icono('abajo')}`, 'de-pregunta__boton')}<p class="de-pregunta__respuesta" hidden>${plano(q.respuesta)}</p></div>`,
+        `<div class="de-pregunta" data-entra>${boton({ accion: 'pregunta', extra: 'aria-expanded="false"' }, `<span>${esc(q.pregunta)}</span>${icono('abajo')}`, 'de-pregunta__boton')}<p class="de-pregunta__respuesta" hidden>${plano(q.respuesta)}</p></div>`,
     )
     .join('');
-  return { id: 'e-ayuda', titulo: d.pantallas.ayuda, tipo: 'hoja', html: `${tituloHoja(a.titulo)}<div class="de-preguntas">${items}</div>` };
+  return { id: 'e-ayuda', titulo: d.pantallas.ayuda, tipo: 'hoja', html: `${tituloHoja(a.titulo)}<div class="de-hoja de-preguntas">${items}</div>` };
 }
 
 function rubrosHoja(): PantallaDemo {
   const r = d.rubrosHoja;
   const activos = r.rubrosActivos as string[];
   const mosaicos = rubros.rubros
-    .map((x) =>
-      boton(
-        { accion: 'toggleRubro', valor: x.id, extra: `aria-pressed="${activos.includes(x.id)}"` },
-        `${icono(x.icono)}<span>${esc(x.corto ?? x.nombre)}</span>`,
-        'app-mosaico de-mosaico',
-      ),
-    )
+    .map((x) => boton({ accion: 'toggleRubro', valor: x.id, extra: `aria-pressed="${activos.includes(x.id)}"` }, `${icono(x.icono)}<span>${esc(x.corto ?? x.nombre)}</span>`, 'hd-mosaico'))
     .join('');
   const zonas = r.zonas
-    .map((z, i) =>
-      boton({ accion: 'toggleZona', valor: String(i), extra: `aria-pressed="${r.zonasActivas.includes(i)}"` }, esc(z), 'app-chip de-chip de-zona'),
-    )
+    .map((z, i) => boton({ accion: 'toggleZona', valor: String(i), extra: `aria-pressed="${r.zonasActivas.includes(i)}"` }, `${icono('pin')}${esc(z)}`, 'hd-chip de-chip'))
     .join('');
   return {
     id: 'e-rubros',
     titulo: d.pantallas.rubros,
     tipo: 'hoja',
     html: `${tituloHoja(r.titulo)}
-<p class="de-label">${esc(r.rubrosLabel)}</p>
-<div class="app-grilla de-grilla">${mosaicos}</div>
-<p class="de-label">${esc(r.zonasLabel)}</p>
-<div class="de-chips">${zonas}</div>
-${btn({ accion: 'guardarRubros', volver: true }, esc(r.guardar))}`,
+<div class="de-hoja">
+  <p class="de-etiqueta">${esc(r.rubrosLabel)}</p>
+  <div class="hd-mosaicos de-mosaicos" data-entra>${mosaicos}</div>
+  <p class="de-etiqueta">${esc(r.zonasLabel)}</p>
+  <div class="hd-chips" data-entra>${zonas}</div>
+  ${boton({ accion: 'guardarRubros', volver: true }, esc(r.guardar), 'hd-boton')}
+</div>`,
   };
 }
 
 function datos(): PantallaDemo {
   const x = d.datos;
   const filas = x.filas
-    .map((f) => `<p class="de-dato"><span>${esc(f.label)}</span><strong${f.ok ? ' class="de-dato--ok"' : ''}>${f.ok ? icono('verificado') : ''}${esc(f.valor)}</strong></p>`)
+    .map(
+      (f) =>
+        `<div class="hd-fila"><span class="hd-fila__ico">${icono(f.icono)}</span><span class="hd-fila__texto"><small>${esc(f.label)}</small><strong>${esc(f.valor)}</strong></span>${f.ok ? `<span class="hd-chip hd-chip--exito hd-chip--mini">${icono('check')}</span>` : ''}</div>`,
+    )
     .join('');
   return {
     id: 'e-datos',
     titulo: d.pantallas.datos,
     tipo: 'hoja',
-    html: `${tituloHoja(x.titulo)}<div class="de-datos">${filas}</div>${btn({ volver: true }, esc(x.listo))}`,
+    html: `${tituloHoja(x.titulo)}<div class="de-hoja"><div class="hd-lista" data-entra>${filas}</div>${boton({ volver: true }, esc(x.listo), 'hd-boton')}</div>`,
   };
 }
 
-/** Hoja de cupones: la tarjeta-cupón de la camada fundadora (números de tarifas.json). */
+/** Hoja de cupones: el cupón de la camada fundadora (números de tarifas.json). */
 function cupones(): PantallaDemo {
   const x = d.cupones;
   return {
@@ -888,12 +1021,21 @@ function cupones(): PantallaDemo {
     titulo: d.pantallas.cupones,
     tipo: 'hoja',
     html: `${tituloHoja(x.titulo)}
-<div class="de-cupon">
-  <span class="de-cupon__talon">${icono('etiqueta')}</span>
-  <span class="de-cupon__cuerpo"><small class="de-cupon__etiqueta">${esc(x.etiqueta)}</small><strong>${plano(x.destacado)}</strong><span>${plano(x.texto)}</span><small>${plano(x.condicion)}</small></span>
-</div>
-<p class="app-sheet__nota">${plano(x.nota)}</p>
-${btn({ volver: true }, esc(x.listo))}`,
+<div class="de-hoja">
+  <div class="hd-ticket hd-ticket--azul de-cupon" data-entra="pop">
+    <div class="hd-ticket__papel">
+      <div class="de-cupon__arriba">
+        <span class="hd-chip hd-chip--amarillo hd-chip--mini">${icono('etiqueta')}${esc(x.etiqueta)}</span>
+        <strong class="de-cupon__destacado">${plano(x.destacado)}</strong>
+        <span class="de-cupon__texto">${plano(x.texto)}</span>
+      </div>
+      <div class="hd-ticket__corte"></div>
+      <div class="de-cupon__abajo">${img('handys-grupo', 'de-cupon__handys', 600, 311)}<small>${plano(x.condicion)}</small></div>
+    </div>
+  </div>
+  <p class="de-nota de-nota--centro">${icono('info')}<span>${plano(x.nota)}</span></p>
+  ${boton({ volver: true }, esc(x.listo), 'hd-boton')}
+</div>`,
   };
 }
 
@@ -904,22 +1046,40 @@ function cobro(): PantallaDemo {
     titulo: d.pantallas.cobro,
     tipo: 'hoja',
     html: `${tituloHoja(x.titulo)}
-<p class="de-label">${esc(x.cbuLabel)}</p><span class="app-campo de-campo-hoja">${esc(d.caja.cbu)}</span>
-<p class="de-label">${esc(x.aliasLabel)}</p><span class="app-campo de-campo-hoja">${esc(d.caja.alias)} ${icono('editar')}</span>
-<p class="app-sheet__nota">${plano(x.nota)}</p>
-${btn({ volver: true }, esc(x.guardar))}`,
+<div class="de-hoja de-cobro" data-de-cobro>
+  <div data-entra>
+    <p class="de-etiqueta">${esc(x.cbuLabel)}</p>
+    <div class="de-cbu" data-de-cbu-caja>
+      ${boton({ accion: 'escribirCbu' }, `${icono('billetera')}<span class="de-cbu__valor" data-de-cbu>${esc(x.cbuVacio)}</span>`, 'de-cbu__campo')}
+      ${boton({ accion: 'borrarCbu', etiqueta: x.borrar, extra: 'data-de-cbu-borrar hidden' }, icono('cerrar'), 'hd-circulo de-circulo-chico')}
+    </div>
+    <div class="de-cbu__medidor"><span class="de-cbu__barra"><i data-de-cbu-barra></i></span><small data-de-cbu-contador>${esc(completar(x.contador, { n: 0 }))}</small></div>
+  </div>
+  <div class="hd-error-linea de-cobro__error" data-de-cbu-error hidden>${img('handy-llave-rota', '', 581, 547)}<span data-de-cbu-error-texto>${esc(completar(x.error, { n: 0 }))}</span>${boton({ accion: 'verErrorCobro' }, esc(x.errorVer), 'de-cobro__ver')}</div>
+  <div data-entra>
+    <p class="de-etiqueta">${esc(x.aliasLabel)}</p>
+    <p class="de-campo de-campo--fijo">${icono('etiqueta')}<span>${esc(d.caja.alias)}</span></p>
+  </div>
+  <p class="de-nota">${icono('info')}<span>${plano(x.nota)}</span></p>
+  ${boton({ accion: 'guardarCobro' }, esc(x.guardar), 'hd-boton')}
+</div>`,
   };
 }
 
-function confirmar(id: string, titulo: string, x: { titulo: string; texto: string; si: string; no: string }, accion: string): PantallaDemo {
+function confirmar(id: string, titulo: string, x: { titulo: string; texto: string; si: string; no: string }, accion: string, personaje: string): PantallaDemo {
   return {
     id,
     titulo,
     tipo: 'hoja',
     html: `${tituloHoja(x.titulo)}
-<p class="de-confirmar">${esc(x.texto)}</p>
-${btn({ accion }, esc(x.si), 'de-boton--rojo')}
-${btn({ volver: true }, esc(x.no), 'app-boton--contorno')}`,
+<div class="de-hoja de-confirmar">
+  ${img(personaje, 'hd-handy de-confirmar__handy', 338, 339)}
+  <p class="hd-texto">${esc(x.texto)}</p>
+  <div class="hd-botones">
+    ${boton({ accion }, esc(x.si), 'hd-boton hd-boton--peligro')}
+    ${boton({ volver: true }, esc(x.no), 'hd-boton hd-boton--claro')}
+  </div>
+</div>`,
   };
 }
 
@@ -953,8 +1113,8 @@ export function demoEspecialista(): DemoRol {
       datos(),
       cobro(),
       cupones(),
-      confirmar('e-cancelar', d.pantallas.cancelar, d.cancelar, 'confirmarCancelar'),
-      confirmar('e-salir', d.pantallas.salir, d.salir, 'salir'),
+      confirmar('e-cancelar', d.pantallas.cancelar, d.cancelar, 'confirmarCancelar', 'handy-cano-roto'),
+      confirmar('e-salir', d.pantallas.salir, d.salir, 'salir', 'handy-engranaje-roto'),
     ],
     recorrido: d.recorrido,
   };

@@ -1,7 +1,8 @@
-// Demo · comportamiento del lado del especialista: el interruptor "Disponible" y el pedido que entra,
-// el precio que elegís (fluye al aviso, al trabajo, al fin y a los cobros), el cliente que te elige,
-// el chat con respuestas rápidas, el cronómetro y los repuestos, la agenda, el cambio de fecha,
-// los avisos y la cuenta. Todos los textos salen de src/content/demo-especialista.json.
+// Demo · comportamiento del lado del especialista (v2): el interruptor "Disponible", el radar y el pedido que
+// entra por la isla; el precio que elegís (cuenta lo que recibís y fluye al aviso, al trabajo, al fin y a los cobros);
+// el cliente que te elige (isla + confeti); el viaje; el chat con respuestas rápidas; el cronómetro y los repuestos;
+// la agenda, el cambio de fecha, los avisos, la cuenta y los datos de cobro (con el error del CBU).
+// Todos los textos salen de src/content/demo-especialista.json.
 
 import '../../styles/demo-especialista.css';
 import d from '../../content/demo-especialista.json';
@@ -34,7 +35,6 @@ interface Estado {
   /** Ya mandaste presupuesto por el pedido de urgencia: no vuelve a entrar solo al volver al inicio. */
   atendido?: boolean;
   token?: number;
-  toast?: number;
   precio?: number;
   franja?: number;
   borradores?: Partial<Record<Origen, Borrador>>;
@@ -55,16 +55,22 @@ interface Estado {
   precioProgramado?: number;
   rubros?: string[];
   zonas?: number[];
+  /** Ya salió el recordatorio del turno por la isla. */
+  recordatorio?: boolean;
+  /** Ya festejaste el cobro de hoy (isla + confeti en el fin). */
+  festejado?: boolean;
+  /** CBU que se está escribiendo en "Datos de cobro" (solo números). */
+  cbu?: string;
 }
 
 const est = (m: Motor) => m.estado as Estado;
 const C = d.comun;
-/** Precio que sugiere Handy para el pedido principal. */
 const SUGERIDO = d.inicio.pedido.sugerido;
 /** Presupuesto del recorrido (el sugerido más lo que suma la guía, igual que en el build): el de ejemplo de tarifas.json. */
 const PRECIO = TARIFAS.ejemplo.presupuesto;
 const VARS = { tarifaEspecialista: `${TARIFAS.normal.especialista}%` };
 const CURVA = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+const RESORTE = 'cubic-bezier(0.34, 1.45, 0.64, 1)';
 const pesos = formatoPesos;
 /** Lo que te queda: el presupuesto menos la tarifa de Handy, más los repuestos enteros. */
 const netoConRepuestos = (presupuesto: number, repuestos: number) => netoEspecialista(presupuesto) + repuestos;
@@ -79,43 +85,56 @@ function poner(raiz: ParentNode, sel: string, texto: string) {
   if (el && el.textContent !== texto) el.textContent = texto;
 }
 
-function animar(m: Motor, el: Element | null | undefined, frames: Keyframe[], ms = 380) {
+/** Pone un monto sin contar (y le avisa a m.contar desde dónde arrancar la próxima vez). */
+function fijar(el: HTMLElement | null, n: number, prefijo = '') {
+  if (!el) return;
+  el.dataset.hdMonto = String(n);
+  el.textContent = prefijo + pesos(n);
+}
+
+/** Cuenta un monto si cambió (con el formato $ 45.000). */
+function contarA(m: Motor, el: HTMLElement | null, n: number, ms?: number) {
+  if (!el) return;
+  if (el.dataset.hdMonto === undefined) fijar(el, n);
+  else m.contar(el, n, ms ? { ms } : undefined);
+}
+
+function animar(m: Motor, el: Element | null | undefined, frames: Keyframe[], ms = 380, easing = CURVA) {
   if (!el || m.reducido || typeof (el as HTMLElement).animate !== 'function') return;
-  (el as HTMLElement).animate(frames, { duration: ms, easing: CURVA });
+  (el as HTMLElement).animate(frames, { duration: ms, easing });
 }
 
 const aparecer = (m: Motor, el: Element | null | undefined) =>
   animar(m, el, [
-    { opacity: 0, transform: 'translateY(0.7em) scale(0.98)' },
+    { opacity: 0, transform: 'translateY(0.8em) scale(0.96)' },
     { opacity: 1, transform: 'none' },
-  ]);
+  ], 460, RESORTE);
 
 const latido = (m: Motor, el: Element | null | undefined) =>
-  animar(m, el, [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], 320);
+  animar(m, el, [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], 340);
+
+/** Ícono por nombre (del <template> que deja la página con todos). */
+function iconoDe(nombre: string): Node | null {
+  const t = document.querySelector<HTMLTemplateElement>('template[data-demo-iconos]');
+  return t?.content.querySelector(`[data-icono="${nombre}"] svg`)?.cloneNode(true) ?? null;
+}
 
 const dos = (n: number) => String(n).padStart(2, '0');
 const fecha = (dia: number) => new Date(Number(C.anio), C.mesNumero - 1, dia);
 const diaSemana = (dia: number) => C.dias[fecha(dia).getDay()];
-const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fechaCorta = (dia: number) => `${dos(dia)}/${dos(C.mesNumero)}`;
-const fechaLarga = (dia: number) => `${fechaCorta(dia)}/${C.anio}`;
 const esDomingo = (dia: number) => fecha(dia).getDay() === 0;
+const ULTIMO_DIA = new Date(Number(C.anio), C.mesNumero, 0).getDate();
+const valido = (dia: number) => dia > C.hoy && dia <= ULTIMO_DIA && !esDomingo(dia);
 /** Id de la pantalla (u hoja) que contiene a un elemento. */
 const pantallaDe = (el: Element) => el.closest<HTMLElement>('[data-pantalla]');
 
-/** Día hábil (lunes a sábado) siguiente o anterior a `dia`, dentro del mes y después de hoy. */
-function moverDia(dia: number, paso: 1 | -1): number {
-  let n = dia + paso;
-  while (n > C.hoy && n <= 30 && esDomingo(n)) n += paso;
-  return n > C.hoy && n <= 30 ? n : dia;
-}
-
-function fila(izq: string, der: string, clase = ''): HTMLParagraphElement {
+function dato(izq: string, der: string, clase = ''): HTMLParagraphElement {
   const p = document.createElement('p');
-  p.className = `de-fila ${clase}`.trim();
+  p.className = `hd-dato ${clase}`.trim();
   const a = document.createElement('span');
   a.textContent = izq;
-  const b = document.createElement('strong');
+  const b = document.createElement('span');
   b.textContent = der;
   p.append(a, b);
   return p;
@@ -123,16 +142,18 @@ function fila(izq: string, der: string, clase = ''): HTMLParagraphElement {
 
 /** Igual que el desglose del build: presupuesto − tarifa (+ repuestos, enteros) = recibís / a tu cuenta. */
 function desglose(cont: HTMLElement, presupuesto: number, extras: number, ultimo: string) {
-  const filas = [
-    fila(C.presupuesto, pesos(presupuesto)),
-    fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(presupuesto))}`, 'de-fila--resta'),
-  ];
-  if (extras) filas.push(fila(C.repuestos, `+ ${pesos(extras)}`));
-  filas.push(fila(ultimo, pesos(netoConRepuestos(presupuesto, extras)), 'de-fila--total'));
+  const total = dato(ultimo, '', 'hd-dato--total');
+  const valor = document.createElement('span');
+  valor.dataset.deTotal = '';
+  fijar(valor, netoConRepuestos(presupuesto, extras));
+  total.lastElementChild!.replaceWith(valor);
+  const filas = [dato(C.presupuesto, pesos(presupuesto)), dato(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(presupuesto))}`, 'de-dato--resta')];
+  if (extras) filas.push(dato(C.repuestos, `+ ${pesos(extras)}`));
+  filas.push(total);
   cont.replaceChildren(...filas);
 }
 
-/** Abre o cierra el desglose de una tarjeta con "Ver más información". */
+/** Abre o cierra el desglose de un movimiento con "Ver más información". */
 function abrirTarjeta(tarjeta: HTMLElement, abrir: boolean) {
   const detalle = $(tarjeta, '[data-de-mov-desglose]');
   const btn = $(tarjeta, '[data-accion="verMas"]');
@@ -155,6 +176,7 @@ function nuevoTrabajo(e: Estado) {
   e.inicioTrabajo = undefined;
   e.extras = [];
   e.pedido = 'nada';
+  e.festejado = false;
   // El chat con el cliente de hoy arranca de cero.
   if (e.usadas) delete e.usadas.perla;
   if (e.borradorChat) delete e.borradorChat.perla;
@@ -177,64 +199,40 @@ function yaElegido(m: Motor) {
   const e = est(m);
   e.elegido = true;
   e.atendido = true;
+  e.disponible ??= true;
   if (e.trabajo !== 'terminado') e.trabajo = 'enviado';
 }
 
-// ── Inicio: disponible → buscando → pedido ───────────────────────────────
+// ── Inicio: apagado → buscando → pedido ──────────────────────────────────
 
 /** La pastilla "Disponible" es la misma en todas las pantallas del mapa: refleja el estado real. */
 function pintarDisponible(m: Motor) {
   const on = !!est(m).disponible;
-  $$(document, '.demo-pantalla[data-rol="especialista"] [data-accion="disponible"]').forEach((sw) => {
+  $$(document, '.demo-pantalla[data-rol="especialista"] [data-accion="disponible"][role="switch"]').forEach((sw) => {
     sw.setAttribute('aria-checked', String(on));
-    sw.classList.toggle('de-disponible--apagado', !on);
     poner(sw, '[data-de-disp-texto]', on ? C.disponible : C.noDisponible);
   });
   // En el inicio, apagado, es lo próximo para tocar.
-  $(m.pantalla('e-inicio'), '[data-accion="disponible"]')?.toggleAttribute('data-guia', !on);
+  $(m.pantalla('e-inicio'), '[data-accion="disponible"][role="switch"]')?.toggleAttribute('data-guia', !on);
 }
 
 function pintarInicio(m: Motor, nuevo = false) {
   const el = m.pantalla('e-inicio');
   const e = est(m);
-  const i = d.inicio;
   const on = !!e.disponible;
   const conPedido = on && e.pedido === 'visible';
-
   pintarDisponible(m);
-  const mapa = $(el, '[data-de-mapa]');
-  mapa?.classList.toggle('de-mapa--apagado', !on);
-  mapa?.classList.toggle('de-mapa--buscando', on && !conPedido);
-  mapa?.classList.toggle('de-mapa--pedido', conPedido);
-
-  const estado = $(el, '[data-de-estado]');
-  if (estado) {
-    estado.hidden = conPedido;
-    estado.classList.toggle('de-estado--buscando', on && !conPedido);
-    poner(estado, '[data-de-estado-titulo]', on ? i.buscandoTitulo : i.apagadoTitulo);
-    poner(estado, '[data-de-estado-texto]', on ? (e.rechazado ? i.rechazadoTexto : i.buscandoTexto) : i.apagadoTexto);
-  }
-  const tarjeta = $(el, '[data-de-pedido]');
-  if (tarjeta) tarjeta.hidden = !conPedido;
-  // El aviso amarillo solo se ve cuando entra un pedido nuevo (y se va solo).
-  const toast = $(el, '[data-de-toast]');
-  if (toast && (!conPedido || !nuevo)) toast.hidden = true;
-
-  if (nuevo && conPedido) {
-    animar(m, tarjeta, [{ transform: 'translateY(115%)' }, { transform: 'none' }], 520);
-    animar(m, $(el, '[data-de-pin-cliente]'), [
-      { transform: 'translateY(-36px)', opacity: 0 },
-      { transform: 'translateY(2px)', opacity: 1, offset: 0.75 },
-      { transform: 'none', opacity: 1 },
-    ], 560);
-    if (toast) {
-      const n = (e.toast = (e.toast ?? 0) + 1);
-      toast.hidden = false;
-      aparecer(m, toast);
-      m.timeout(() => {
-        if (est(m).toast === n) toast.hidden = true;
-      }, 2800);
-    }
+  const app = $(el, '[data-de-inicio]');
+  const antes = app?.dataset.estado;
+  const ahora = !on ? 'apagado' : conPedido ? 'pedido' : 'buscando';
+  if (app) app.dataset.estado = ahora;
+  poner(el, '[data-de-buscando-texto]', e.rechazado ? d.inicio.rechazadoTexto : d.inicio.buscandoTexto);
+  if (antes === ahora && !nuevo) return;
+  const panel = $(el, `[data-de-panel="${ahora}"]`);
+  if (ahora === 'pedido' && nuevo) {
+    animar(m, panel, [{ transform: 'translateY(115%)' }, { transform: 'none' }], 720, RESORTE);
+  } else if (antes && antes !== ahora) {
+    aparecer(m, panel);
   }
 }
 
@@ -247,9 +245,14 @@ function programarPedido(m: Motor) {
     e.pedido = 'visible';
     e.rechazado = false;
     pintarInicio(m, true);
-    m.anunciar(d.inicio.anuncio);
+    m.isla({
+      titulo: d.inicio.isla.titulo,
+      texto: completar(d.inicio.isla.texto, { monto: pesosJuntos(SUGERIDO) }),
+      icono: d.inicio.pedido.icono,
+      tono: 'amarillo',
+    });
     m.guia(null);
-  }, 1800);
+  }, 2400);
 }
 
 /** Al volver al inicio: el pedido entra solo si no lo atendiste ni lo rechazaste. */
@@ -272,32 +275,34 @@ function borrador(m: Motor, o: Origen): Borrador {
   return b;
 }
 
-function pintarPrecio(m: Motor, o: Origen) {
+function pintarPrecio(m: Motor, o: Origen, contar = false) {
   const el = m.pantalla(hojaPrecio(o));
   const b = borrador(m, o);
   poner(el, '[data-de-sugerido]', pesos(b.base));
-  poner(el, '[data-de-precio]', pesos(b.precio));
-  poner(el, '[data-de-recibis]', pesos(netoEspecialista(b.precio)));
+  const precio = $(el, '[data-de-precio]');
+  const recibis = $(el, '[data-de-recibis]');
+  if (contar) {
+    contarA(m, precio, b.precio, 420);
+    contarA(m, recibis, netoEspecialista(b.precio), 700);
+  } else {
+    fijar(precio, b.precio);
+    fijar(recibis, netoEspecialista(b.precio));
+  }
   poner(el, '[data-de-retiene]', completar(d.precio.retiene, { ...VARS, monto: pesosJuntos(retencionEspecialista(b.precio)) }));
-
-  const marcar = (btn: HTMLElement, activo: boolean) => {
-    btn.setAttribute('aria-pressed', String(activo));
-    btn.classList.toggle('app-chip--activo', activo);
-  };
-  $$(el, '[data-accion="precioSugerido"]').forEach((btn) => marcar(btn, b.precio === b.base));
+  $$(el, '[data-accion="precioSugerido"]').forEach((btn) => btn.setAttribute('aria-pressed', String(b.precio === b.base)));
   $$(el, '[data-accion="precioSumar"]').forEach((btn, i) => {
-    marcar(btn, b.precio === b.base + Number(btn.dataset.valor));
+    btn.setAttribute('aria-pressed', String(b.precio === b.base + Number(btn.dataset.valor)));
     // La guía propone subir el precio mientras sigas con el sugerido.
     btn.toggleAttribute('data-guia', i === 0 && b.precio === b.base);
   });
-  $$(el, '[data-accion="franja"]').forEach((btn) => marcar(btn, Number(btn.dataset.valor) === b.franja));
+  $$(el, '[data-accion="franja"]').forEach((btn) => btn.setAttribute('aria-pressed', String(Number(btn.dataset.valor) === b.franja)));
 }
 
 function cambiarPrecio(m: Motor, o: Origen, precio: number) {
   const b = borrador(m, o);
   b.precio = Math.max(d.precio.minimo, Math.round(precio));
-  pintarPrecio(m, o);
-  latido(m, $(m.pantalla(hojaPrecio(o)), '[data-de-recibis]'));
+  pintarPrecio(m, o, true);
+  latido(m, $(m.pantalla(hojaPrecio(o)), '.de-recibis'));
   m.anunciar(completar(d.precio.anuncio, { precio: pesos(b.precio), recibis: pesos(netoEspecialista(b.precio)) }));
 }
 
@@ -306,17 +311,17 @@ function cambiarPrecio(m: Motor, o: Origen, precio: number) {
 function pintarAceptado(m: Motor) {
   const el = m.pantalla('e-aceptado');
   const e = est(m);
-  const a = d.aceptado;
-  poner(el, '[data-de-precio]', pesos(precioHoy(m)));
+  const app = $(el, '[data-de-aceptado]');
+  if (app) app.dataset.estado = e.elegido ? 'elegido' : 'esperando';
+  fijar($(el, '[data-de-precio]'), precioHoy(m));
+  fijar($(el, '[data-de-retencion]'), retencionEspecialista(precioHoy(m)));
+  fijar($(el, '[data-de-recibis]'), netoEspecialista(precioHoy(m)));
   poner(el, '[data-de-franja]', franjaHoy(m).texto);
-  poner(el, '[data-de-recibis]', pesos(netoEspecialista(precioHoy(m))));
-  poner(el, '[data-de-enviado-titulo]', e.elegido ? a.elegidoTitulo : a.titulo);
-  const esperando = $(el, '[data-de-esperando]');
-  if (esperando) esperando.hidden = !!e.elegido;
-  const ir = $(el, '[data-de-ir-alla]');
-  if (ir) ir.hidden = !e.elegido;
-  const aviso = $(el, '[data-de-elegido-aviso]');
-  if (aviso) aviso.hidden = !e.elegido;
+  const ir = $<HTMLButtonElement>(el, '[data-de-ir-alla]');
+  if (ir) {
+    ir.disabled = !e.elegido;
+    poner(ir, '[data-de-ir-texto]', e.elegido ? d.aceptado.irAlla : d.aceptado.esperandoBoton);
+  }
 }
 
 function elegir(m: Motor) {
@@ -325,12 +330,9 @@ function elegir(m: Motor) {
   e.elegido = true;
   pintarAceptado(m);
   const el = m.pantalla('e-aceptado');
-  animar(m, $(el, '[data-de-elegido-aviso]'), [
-    { opacity: 0, transform: 'translateY(-1.2em)' },
-    { opacity: 1, transform: 'none' },
-  ], 460);
   aparecer(m, $(el, '[data-de-ir-alla]'));
-  m.anunciar(d.aceptado.anuncio);
+  m.isla({ titulo: d.aceptado.isla.titulo, texto: d.aceptado.isla.texto, icono: 'check', tono: 'exito' });
+  m.confeti();
   m.guia(null);
 }
 
@@ -343,11 +345,16 @@ const chatDe = (pantalla: HTMLElement): IdChat => ($(pantalla, '[data-de-chat]')
 
 function burbuja(texto: string, propia: boolean): HTMLDivElement {
   const b = document.createElement('div');
-  b.className = `app-burbuja ${propia ? 'app-burbuja--propia' : 'app-burbuja--otra'}`;
+  b.className = `de-burbuja ${propia ? 'de-burbuja--propia' : 'de-burbuja--otra'}`;
   const s = document.createElement('span');
   s.textContent = texto;
   b.append(s);
   return b;
+}
+
+function alFondo(m: Motor, cont: HTMLElement | null) {
+  if (!cont) return;
+  cont.scrollTo({ top: cont.scrollHeight, behavior: m.reducido ? 'auto' : 'smooth' });
 }
 
 function ultimoMensaje(m: Motor, id: IdChat): string {
@@ -391,7 +398,7 @@ function pintarControlesChat(m: Motor, el: HTMLElement, id: IdChat) {
       ...libres.map((i, n) => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'app-accion de-rapida';
+        b.className = 'hd-chip hd-chip--tinte';
         b.dataset.accion = 'rapida';
         b.dataset.valor = String(i);
         if (n === 0 && usadas.length === 0) b.setAttribute('data-guia', '');
@@ -402,7 +409,7 @@ function pintarControlesChat(m: Motor, el: HTMLElement, id: IdChat) {
     rapidas.hidden = libres.length === 0;
   }
 
-  // "Llegué al domicilio": solo con el cliente de hoy y antes de llegar.
+  // "Llegué": solo con el cliente de hoy y antes de llegar (la guía, después de avisarle que saliste).
   const llegue = $(el, '[data-de-llegue]');
   if (llegue) {
     const ver = id === 'perla' && !yaLlegaste(m);
@@ -422,7 +429,7 @@ function pintarControlesChat(m: Motor, el: HTMLElement, id: IdChat) {
   const campo = $<HTMLButtonElement>(el, '[data-de-campo-chat]');
   if (campo) {
     poner(campo, '[data-de-campo-texto]', escrito || d.chat.input);
-    campo.classList.toggle('de-input__campo--lleno', !!escrito);
+    campo.classList.toggle('de-chat__campo--lleno', !!escrito);
     campo.disabled = libres.length === 0;
   }
   const enviar = $<HTMLButtonElement>(el, '[data-de-enviar]');
@@ -436,11 +443,27 @@ function pintarChat(m: Motor, el: HTMLElement, id: IdChat) {
   caja.dataset.deChat = id;
   poner(el, '[data-de-chat-nombre]', ch.nombre);
   poner(el, '[data-de-chat-sub]', ch.sub);
+  const avatar = $(el, '[data-de-chat-avatar]');
+  if (avatar) {
+    avatar.style.setProperty('--tono', ch.tono);
+    poner(avatar, 'span', ch.inicial);
+  }
+  // El contexto: el pedido de hoy (con su franja) o el turno de ese cliente.
+  const t = ch.turno >= 0 ? d.turnos.items[ch.turno] : null;
+  const contexto = $(el, '[data-de-contexto]');
+  if (contexto) {
+    poner(contexto, 'strong', t ? `${t.rubro} · ${t.detalle}` : d.chat.contexto);
+    poner(contexto, '[data-de-franja]', t ? `${diaSemana(t.dia)} ${fechaCorta(t.dia)}, ${t.franja}` : franjaHoy(m).texto);
+    const ico = iconoDe(t ? t.icono : d.inicio.pedido.icono);
+    const caja = $(contexto, '.de-rubro');
+    if (ico && caja) caja.replaceChildren(ico);
+  }
   const mensajes = $(el, '[data-de-mensajes]');
   const plantilla = $<HTMLTemplateElement>(el, `template[data-de-plantilla="${id}"]`);
   if (mensajes && plantilla) {
     mensajes.replaceChildren(plantilla.content.cloneNode(true));
     usadasDe(m, id).forEach((i) => mensajes.append(burbuja(ch.rapidas[i].texto, true), burbuja(ch.rapidas[i].respuesta, false)));
+    mensajes.scrollTop = mensajes.scrollHeight;
   }
   pintarControlesChat(m, el, id);
 }
@@ -456,6 +479,7 @@ function responder(m: Motor, el: HTMLElement, id: IdChat, i: number) {
   const propia = burbuja(r.texto, true);
   mensajes?.append(propia);
   aparecer(m, propia);
+  alFondo(m, mensajes);
   pintarControlesChat(m, el, id);
   m.timeout(() => {
     const plantilla = $<HTMLTemplateElement>(el, 'template[data-de-plantilla-escribiendo]');
@@ -463,15 +487,17 @@ function responder(m: Motor, el: HTMLElement, id: IdChat, i: number) {
     if (escribiendo) {
       mensajes?.append(escribiendo);
       aparecer(m, escribiendo);
+      alFondo(m, mensajes);
     }
     m.timeout(() => {
       const respuesta = burbuja(r.respuesta, false);
       if (escribiendo) escribiendo.replaceWith(respuesta);
       else mensajes?.append(respuesta);
       aparecer(m, respuesta);
+      alFondo(m, mensajes);
       m.anunciar(completar(d.chat.anuncio, { texto: r.respuesta }));
-    }, 900);
-  }, 450);
+    }, 1100);
+  }, 500);
 }
 
 // ── Trabajo en curso ──────────────────────────────────────────────────────
@@ -482,37 +508,34 @@ function pintarCrono(m: Motor) {
   poner(m.pantalla('e-trabajo'), '[data-de-crono]', `${dos(Math.floor(s / 60))}:${dos(s % 60)}`);
 }
 
-function pintarTrabajo(m: Motor) {
+function pintarTrabajo(m: Motor, contar = false) {
   const el = m.pantalla('e-trabajo');
   const e = est(m);
   const t = d.trabajo;
-  const f = franjaHoy(m);
-  poner(el, '[data-de-franja-dia]', f.dia);
-  poner(el, '[data-de-franja-corta]', f.corto);
+  poner(el, '[data-de-franja]', franjaHoy(m).texto);
 
   const extras = e.extras ?? [];
   const siguiente = t.extras.findIndex((_, i) => !extras.includes(i));
-  poner(el, '[data-de-extra-nombre]', siguiente >= 0 ? t.extras[siguiente].nombre : t.sinMas);
-  poner(el, '[data-de-extra-monto]', siguiente >= 0 ? pesos(t.extras[siguiente].monto) : '');
-  const monto = $(el, '[data-de-extra-monto]');
-  if (monto) monto.hidden = siguiente < 0;
-  const agregar = $<HTMLButtonElement>(el, '[data-accion="agregarExtra"]');
-  if (agregar) {
-    agregar.disabled = siguiente < 0;
-    agregar.toggleAttribute('data-guia', extras.length === 0);
+  const sugerencia = $(el, '[data-de-sugerencia]');
+  if (sugerencia) sugerencia.hidden = siguiente < 0;
+  const sinMas = $(el, '[data-de-sin-mas]');
+  if (sinMas) sinMas.hidden = siguiente >= 0;
+  if (siguiente >= 0) {
+    poner(el, '[data-de-extra-nombre]', t.extras[siguiente].nombre);
+    poner(el, '[data-de-extra-monto]', pesos(t.extras[siguiente].monto));
   }
+  const agregar = $(el, '[data-accion="agregarExtra"]');
+  agregar?.toggleAttribute('data-guia', extras.length === 0);
 
   const costo = $(el, '[data-de-costo]');
   const plantilla = $<HTMLTemplateElement>(el, 'template[data-de-plantilla-quitar]');
   if (!costo) return;
+  const anterior = Number($(costo, '[data-de-total]')?.dataset.hdMonto);
   const precio = precioHoy(m);
-  const filas: HTMLElement[] = [
-    fila(C.presupuesto, pesos(precio)),
-    fila(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(precio))}`, 'de-fila--resta'),
-  ];
+  const filas: HTMLElement[] = [dato(C.presupuesto, pesos(precio)), dato(completar(C.tarifa, VARS), `− ${pesos(retencionEspecialista(precio))}`, 'de-dato--resta')];
   extras.forEach((i) => {
     const x = t.extras[i];
-    const p = fila(x.nombre, `+ ${pesos(x.monto)}`, 'de-fila--extra');
+    const p = dato(x.nombre, `+ ${pesos(x.monto)}`, 'de-dato--extra');
     const quitar = plantilla?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
     if (quitar) {
       quitar.dataset.valor = String(i);
@@ -521,7 +544,15 @@ function pintarTrabajo(m: Motor) {
     }
     filas.push(p);
   });
-  filas.push(fila(C.recibis, pesos(netoHoy(m)), 'de-fila--total'));
+  const total = dato(C.recibis, '', 'hd-dato--total');
+  const valor = document.createElement('span');
+  valor.dataset.deTotal = '';
+  if (contar && Number.isFinite(anterior)) {
+    fijar(valor, anterior);
+    m.contar(valor, netoHoy(m), { ms: 700 });
+  } else fijar(valor, netoHoy(m));
+  total.lastElementChild!.replaceWith(valor);
+  filas.push(total);
   costo.replaceChildren(...filas);
 }
 
@@ -529,7 +560,7 @@ function pintarTrabajo(m: Motor) {
 
 function pintarFin(m: Motor) {
   const el = m.pantalla('e-fin');
-  poner(el, '[data-de-ganaste]', pesos(netoHoy(m)));
+  fijar($(el, '[data-de-ganaste]'), netoHoy(m));
   const costo = $(el, '[data-de-costo]');
   if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
 }
@@ -545,18 +576,20 @@ function pintarCaja(m: Motor) {
     if (costo) desglose(costo, precioHoy(m), extrasHoy(m), C.aTuCuenta);
   }
   // Siempre hay un movimiento abierto, así se ve el desglose: el de hoy o, si no hay, el más reciente.
-  const auto = $$(el, '[data-de-auto-abierto]');
+  const visibles = $$(el, '.de-mov').filter((t) => !t.hidden);
   if (hoy && !hoy.hidden) {
-    auto.forEach((t) => {
+    visibles.forEach((t) => {
+      if (t.dataset.deAuto === undefined) return;
       abrirTarjeta(t, false);
-      t.removeAttribute('data-de-auto-abierto');
+      delete t.dataset.deAuto;
     });
   }
-  const visibles = $$(el, '.de-movimiento').filter((t) => !t.hidden);
   if (visibles.length && !visibles.some((t) => $(t, '[data-de-mov-desglose]')?.hidden === false)) {
     abrirTarjeta(visibles[0], true);
-    if (visibles[0] !== hoy) visibles[0].setAttribute('data-de-auto-abierto', '');
+    if (visibles[0] !== hoy) visibles[0].dataset.deAuto = '';
   }
+  const cbu = est(m).cbu;
+  if (cbu && cbu.length === 22) poner(el, '[data-de-cbu-mostrado]', `•••• •••• •••• •••• ${cbu.slice(-4)}`);
 }
 
 /**
@@ -585,21 +618,21 @@ function pintarTurnos(m: Motor) {
   $$(el, '[data-de-turno]').forEach((card) => {
     const i = Number(card.dataset.deTurno);
     const no = cancelado(m, i);
-    card.classList.toggle('de-tarjeta--cancelada', no);
+    card.classList.toggle('de-turno--cancelado', no);
     const tag = $(card, '[data-de-cancelado]');
     if (tag) tag.hidden = !no;
     const programado = $(card, '[data-de-programado-tag]');
     if (programado) programado.hidden = no;
     // La guía va al primer turno que sigue en pie.
-    $(card, '.app-tarjeta__franja')?.toggleAttribute('data-guia', i === libre);
+    $(card, '.de-franja')?.toggleAttribute('data-guia', i === libre);
   });
   // En el calendario, el día de un turno cancelado deja de estar marcado.
   d.turnos.items.forEach((t, i) => {
-    const dia = $(el, `.app-dia[data-dia="${t.dia}"]`);
+    const dia = $(el, `.de-cal__dia[data-dia="${t.dia}"]`);
     if (!dia) return;
     const no = cancelado(m, i);
-    dia.classList.toggle('app-dia--azul', !no);
-    dia.classList.toggle('de-dia--cancelado', no);
+    dia.classList.toggle('de-cal__dia--turno', !no);
+    dia.classList.toggle('de-cal__dia--cancelado', no);
   });
 }
 
@@ -607,28 +640,31 @@ function pintarDetalle(m: Motor) {
   const el = m.pantalla('e-turno-detalle');
   const i = turnoActual(m);
   const t = d.turnos.items[i];
+  const ch = d.chats[t.chat as IdChat];
   const x = d.detalle;
+  poner(el, '[data-de-d="dow"]', diaSemana(t.dia).slice(0, 3));
+  poner(el, '[data-de-d="num"]', String(t.dia));
   poner(el, '[data-de-d="rubro"]', t.rubro);
   poner(el, '[data-de-d="detalle"]', t.detalle);
-  poner(el, '[data-de-d="dia"]', mayuscula(diaSemana(t.dia)));
-  poner(el, '[data-de-d="fecha"]', fechaLarga(t.dia));
   poner(el, '[data-de-d="franja"]', t.franja);
   poner(el, '[data-de-d="barrio"]', t.barrio);
   poner(el, '[data-de-d="pedido"]', t.pedido);
+  poner(el, '[data-de-d="cliente"]', ch.nombre);
+  const avatar = $(el, '[data-de-d="avatar"]');
+  if (avatar) {
+    avatar.style.setProperty('--tono', ch.tono);
+    poner(avatar, 'span', ch.inicial);
+  }
   $$(el, '[data-de-icono]').forEach((s) => (s.hidden = s.dataset.deIcono !== t.icono));
   const no = cancelado(m, i);
   const costo = $(el, '[data-de-d="costo"]');
-  if (costo) {
-    desglose(costo, t.presupuesto, 0, C.recibis);
-    costo.classList.toggle('de-costo--cancelado', no);
-  }
-  $(el, '.de-pie')?.classList.toggle('de-pie--cancelado', no);
-  const estado = $(el, '[data-de-d="estado"]');
-  if (estado) {
-    estado.textContent = no ? x.cancelado : x.pendiente;
-    estado.classList.toggle('de-estado-turno--cancelado', no);
-  }
-  $$(el, '[data-de-d="acciones"] .app-boton').forEach((b) => (b.hidden = no && !b.matches('[data-de-d="chat"]')));
+  if (costo) desglose(costo, t.presupuesto, 0, C.recibis);
+  el.querySelector('.de-detalle')?.classList.toggle('de-detalle--cancelado', no);
+  poner(el, '[data-de-d="estado"] span', no ? d.turnos.cancelado : x.confirmado);
+  const linea = $(el, '[data-de-d="cancelado"]');
+  if (linea) linea.hidden = !no;
+  const acciones = $(el, '[data-de-d="acciones"]');
+  if (acciones) acciones.hidden = no;
   const chat = $(el, '[data-de-d="chat"]');
   if (chat) chat.dataset.valor = t.chat;
 }
@@ -638,24 +674,19 @@ function cambio(m: Motor): Cambio {
   const i = turnoActual(m);
   if (!e.cambio || e.cambio.turno !== i) {
     const t = d.turnos.items[i];
-    e.cambio = {
-      turno: i,
-      dia: moverDia(t.dia, 1),
-      franja: Math.max(0, d.cambio.franjas.indexOf(t.franja)),
-      motivo: null,
-      mensaje: false,
-      enviado: false,
-    };
+    let dia = t.dia + 1;
+    while (dia <= ULTIMO_DIA && !valido(dia)) dia++;
+    e.cambio = { turno: i, dia: Math.min(dia, ULTIMO_DIA), franja: Math.max(0, d.cambio.franjas.indexOf(t.franja)), motivo: null, mensaje: false, enviado: false };
   }
   return e.cambio;
 }
 
 /** Tira de la semana del día propuesto (igual que en el build). */
 function pintarSemana(cont: HTMLElement, nuevo: number, actual: number) {
-  const lunes = nuevo - ((fecha(nuevo).getDay() + 6) % 7);
+  const domingo = nuevo - fecha(nuevo).getDay();
   const celdas: HTMLElement[] = [];
-  for (let n = lunes; n < lunes + 7; n++) {
-    if (n < 1 || n > 30) {
+  for (let n = domingo; n < domingo + 7; n++) {
+    if (n < 1 || n > ULTIMO_DIA) {
       const vacio = document.createElement('span');
       vacio.className = 'de-semana__dia de-semana__dia--vacio';
       vacio.setAttribute('aria-hidden', 'true');
@@ -665,14 +696,14 @@ function pintarSemana(cont: HTMLElement, nuevo: number, actual: number) {
     const nombre = diaSemana(n);
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}${n === nuevo ? ' de-semana__dia--nueva' : ''}`;
+    b.className = `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}`;
     b.dataset.accion = 'elegirDia';
     b.dataset.valor = String(n);
     b.setAttribute('aria-label', completar(d.cambio.elegirDia, { dia: nombre, fecha: fechaCorta(n) }));
     b.setAttribute('aria-pressed', String(n === nuevo));
-    b.disabled = n <= C.hoy || esDomingo(n);
+    b.disabled = !valido(n);
     const inicial = document.createElement('small');
-    inicial.textContent = nombre.charAt(0).toUpperCase();
+    inicial.textContent = nombre.slice(0, 3);
     const numero = document.createElement('strong');
     numero.textContent = String(n);
     b.append(inicial, numero);
@@ -687,15 +718,13 @@ function pintarCambio(m: Motor) {
   const x = d.cambio;
   const t = d.turnos.items[c.turno];
   poner(el, '[data-de-cambio-actual] span', completar(x.actual, { dia: diaSemana(t.dia), fecha: fechaCorta(t.dia), franja: t.franja }));
-  poner(el, '[data-de-cambio-dia]', String(c.dia));
   const tira = $(el, '[data-de-semana]');
   if (tira) pintarSemana(tira, c.dia, t.dia);
-  poner(el, '[data-de-cambio-franja]', x.franjas[c.franja]);
-  poner(el, '[data-de-cambio-resumen]', completar(x.resumen, { dia: diaSemana(c.dia), fecha: fechaCorta(c.dia), franja: x.franjas[c.franja] }));
+  $$(el, '[data-accion="franjaElegir"]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.valor) === c.franja)));
+  const vars = { dia: diaSemana(c.dia), fecha: fechaCorta(c.dia), franja: x.franjas[c.franja] };
+  poner(el, '[data-de-cambio-resumen]', completar(x.resumen, vars));
   $$(el, '[data-accion="motivo"]').forEach((b, i) => {
-    const activo = Number(b.dataset.valor) === c.motivo;
-    b.setAttribute('aria-pressed', String(activo));
-    b.classList.toggle('de-motivo--activo', activo);
+    b.setAttribute('aria-pressed', String(Number(b.dataset.valor) === c.motivo));
     b.toggleAttribute('data-guia', i === 0 && c.motivo === null);
   });
   // El mensaje para el cliente: la app te sugiere uno según el motivo.
@@ -705,36 +734,38 @@ function pintarCambio(m: Motor) {
     poner(mensaje, '[data-de-mensaje-texto]', texto);
     mensaje.classList.toggle('de-campo--lleno', c.mensaje);
   }
-  const proponer = $<HTMLButtonElement>(el, '[data-accion="proponerFecha"]');
-  if (proponer) {
-    proponer.disabled = c.enviado;
-    proponer.toggleAttribute('data-guia', !c.enviado);
-    proponer.textContent = c.enviado ? x.enviadoBoton : x.proponer;
-  }
-  // Con la propuesta enviada, la confirmación ocupa el lugar del resumen.
+  const proponer = $(el, '[data-accion="proponerFecha"]');
+  if (proponer) proponer.hidden = c.enviado;
+  const volver = $(el, '[data-de-cambio-volver]');
+  if (volver) volver.hidden = !c.enviado;
+  const form = $(el, '[data-de-cambio-form]');
+  if (form) form.hidden = c.enviado;
   const ok = $(el, '[data-de-cambio-ok]');
   if (ok) ok.hidden = !c.enviado;
   const resumen = $(el, '[data-de-cambio-resumen]');
   if (resumen) resumen.hidden = c.enviado;
+  poner(el, '[data-de-cambio-ok-texto]', `${completar(x.resumen, vars)} ${x.enviado}`);
   // Con la propuesta enviada, el recorrido sigue por tus avisos (la campana).
   $(el, '.app-cabecera [data-ir="e-notificaciones"]')?.toggleAttribute('data-guia', c.enviado);
 }
 
-// ── Avisos, pedido programado, cuenta y mensajes ─────────────────────────
+// ── Avisos, pedido programado, cuenta, mensajes y cobro ──────────────────
 
 function pintarAvisos(m: Motor) {
   const el = m.pantalla('e-notificaciones');
   poner(el, '[data-de-neto]', pesos(netoHoy(m)));
   // El aviso de cobro de hoy, solo con el trabajo terminado.
   const cobro = $(el, '[data-de-cobro-hoy]');
-  if (cobro) cobro.hidden = !terminado(m);
+  if (cobro && cobro.dataset.deBorrado === undefined) cobro.hidden = !terminado(m);
+  $$(el, '[data-de-grupo]').forEach((g) => (g.hidden = !$$(g, '.de-notif').some((n) => !n.hidden)));
   const hay = $$(el, '.de-notif').some((n) => !n.hidden);
-  const nadaMas = $(el, '[data-de-nada-mas]');
-  if (nadaMas) nadaMas.hidden = !hay;
+  const pie = $(el, '[data-de-hay]');
+  if (pie) pie.hidden = !hay;
   const vacio = $(el, '[data-de-vacio]');
-  if (vacio) vacio.hidden = hay;
-  const borrar = $(el, '[data-accion="borrarNotifs"]');
-  if (borrar) borrar.hidden = !hay;
+  if (vacio) {
+    if (vacio.hidden && !hay) aparecer(m, vacio);
+    vacio.hidden = hay;
+  }
 }
 
 function pintarProgramado(m: Motor, nuevo = false) {
@@ -743,21 +774,23 @@ function pintarProgramado(m: Motor, nuevo = false) {
   const p = d.programado;
   const tarjeta = $(el, '[data-de-programado]');
   if (tarjeta) tarjeta.hidden = !!e.programado;
-  const aviso = $(el, '[data-de-programado-aviso]');
-  if (aviso) {
-    aviso.hidden = !e.programado;
-    aviso.classList.toggle('de-aviso--rechazo', e.programado === 'rechazado');
-    if (e.programado === 'enviado') {
-      poner(aviso, '[data-de-aviso-titulo]', p.enviadoTitulo);
-      poner(aviso, '[data-de-aviso-texto]', completar(p.enviadoTexto, { monto: pesosJuntos(e.precioProgramado ?? p.sugerido) }));
-    } else if (e.programado === 'rechazado') {
-      poner(aviso, '[data-de-aviso-titulo]', p.rechazadoTitulo);
-      poner(aviso, '[data-de-aviso-texto]', p.rechazadoTexto);
-    }
-    if (nuevo) aparecer(m, aviso);
+  const resp = $(el, '[data-de-programado-respuesta]');
+  if (resp) {
+    resp.hidden = !e.programado;
+    $$(resp, '[data-de-resp]').forEach((x) => (x.hidden = x.dataset.deResp !== e.programado));
+    poner(resp, '[data-de-resp-texto]', e.programado === 'enviado' ? completar(p.enviadoTexto, { monto: pesosJuntos(e.precioProgramado ?? p.sugerido) }) : p.rechazadoTexto);
+    if (nuevo) animar(m, resp, [{ transform: 'translateY(110%)' }, { transform: 'none' }], 640, RESORTE);
   }
-  // Después de responder el pedido, la guía sigue por tu cuenta.
-  $(el, '.app-nav [data-ir-raiz="e-cuenta"]')?.toggleAttribute('data-guia', !!e.programado);
+  // Después de responder el pedido, la guía sigue por tus mensajes.
+  $(el, '.app-nav [data-ir-raiz="e-mensajes"]')?.toggleAttribute('data-guia', !!e.programado);
+}
+
+function enviarProgramado(m: Motor, monto: number) {
+  const e = est(m);
+  e.precioProgramado = monto;
+  e.programado = 'enviado';
+  pintarProgramado(m, true);
+  m.isla({ titulo: d.programado.isla.titulo, texto: d.programado.isla.texto, icono: d.programado.icono, tono: 'exito' });
 }
 
 const rubrosActivos = (m: Motor) => est(m).rubros ?? (d.rubrosHoja.rubrosActivos as string[]);
@@ -773,11 +806,7 @@ function pintarRubros(m: Motor) {
   const activos = rubrosActivos(m);
   const zonas = zonasActivas(m);
   $$(el, '[data-accion="toggleRubro"]').forEach((b) => b.setAttribute('aria-pressed', String(activos.includes(b.dataset.valor ?? ''))));
-  $$(el, '[data-accion="toggleZona"]').forEach((b) => {
-    const activo = zonas.includes(Number(b.dataset.valor));
-    b.setAttribute('aria-pressed', String(activo));
-    b.classList.toggle('app-chip--activo', activo);
-  });
+  $$(el, '[data-accion="toggleZona"]').forEach((b) => b.setAttribute('aria-pressed', String(zonas.includes(Number(b.dataset.valor)))));
 }
 
 /** El chat con el cliente de hoy aparece cuando te eligió. */
@@ -796,13 +825,49 @@ function pintarMensajes(m: Motor) {
   pintarFilasChat(m, el);
 }
 
+const CBU_LARGO = 22;
+
+function pintarCobro(m: Motor) {
+  const el = m.pantalla('e-editar-cobro');
+  const x = d.cobro;
+  const cbu = est(m).cbu ?? '';
+  const valor = $(el, '[data-de-cbu]');
+  if (valor) {
+    valor.textContent = cbu ? cbu.replace(/(\d{4})(?=\d)/g, '$1 ') : x.cbuVacio;
+    valor.classList.toggle('de-cbu__valor--vacio', !cbu);
+  }
+  poner(el, '[data-de-cbu-contador]', completar(x.contador, { n: cbu.length }));
+  const barra = $(el, '[data-de-cbu-barra]');
+  if (barra) barra.style.transform = `scaleX(${cbu.length / CBU_LARGO})`;
+  $(el, '[data-de-cbu-caja]')?.classList.toggle('de-cbu--completo', cbu.length === CBU_LARGO);
+  const borrar = $(el, '[data-de-cbu-borrar]');
+  if (borrar) borrar.hidden = !cbu;
+}
+
+function errorCbu(m: Motor, mostrar: boolean) {
+  const el = m.pantalla('e-editar-cobro');
+  const linea = $(el, '[data-de-cbu-error]');
+  if (!linea) return;
+  if (mostrar) {
+    poner(linea, '[data-de-cbu-error-texto]', completar(d.cobro.error, { n: (est(m).cbu ?? '').length }));
+    // Que se vuelva a sacudir cada vez.
+    linea.hidden = true;
+    void linea.offsetWidth;
+    linea.hidden = false;
+    $(el, '[data-de-cbu-caja]')?.classList.add('de-cbu--error');
+  } else {
+    linea.hidden = true;
+    $(el, '[data-de-cbu-caja]')?.classList.remove('de-cbu--error');
+  }
+}
+
 // ── Registro ──────────────────────────────────────────────────────────────
 
 let originales: Map<string, string> | null = null;
 
 registrarRol('especialista', {
   acciones: {
-    // Inicio (y la misma pastilla en las otras pantallas del mapa)
+    // Inicio (y la misma pastilla en el pedido programado)
     disponible(el, m) {
       const e = est(m);
       const enInicio = pantallaDe(el)?.dataset.pantalla === 'e-inicio';
@@ -852,22 +917,13 @@ registrarRol('especialista', {
       const o = origenDe(el);
       const b = borrador(m, o);
       if (o === 'programado') {
-        e.precioProgramado = b.precio;
-        e.programado = 'enviado';
         if (e.borradores) e.borradores.programado = undefined;
         m.volver();
-        pintarProgramado(m, true);
-        m.anunciar(`${d.programado.enviadoTitulo} ${completar(d.programado.enviadoTexto, { monto: pesos(b.precio) })}`);
+        enviarProgramado(m, b.precio);
         return;
       }
       enviarPresupuesto(m, b.precio, b.franja);
       m.ir('e-aceptado');
-    },
-
-    // Avisos sueltos
-    cerrarAviso(el) {
-      const aviso = el.closest<HTMLElement>('.de-aviso');
-      if (aviso) aviso.hidden = true;
     },
 
     // Chat
@@ -915,17 +971,21 @@ registrarRol('especialista', {
       const siguiente = d.trabajo.extras.findIndex((_, i) => !extras.includes(i));
       if (siguiente < 0) return;
       e.extras = [...extras, siguiente];
-      pintarDependientes(m);
+      pintarTrabajo(m, true);
+      pintarFin(m);
+      pintarCaja(m);
       const el = m.pantalla('e-trabajo');
-      aparecer(m, $$(el, '.de-fila--extra').pop());
-      latido(m, $(el, '.de-fila--total strong'));
+      aparecer(m, $$(el, '.de-dato--extra').pop());
+      latido(m, $(el, '.hd-dato--total'));
       m.anunciar(completar(d.trabajo.anuncioExtra, { nombre: d.trabajo.extras[siguiente].nombre, monto: pesos(netoHoy(m)) }));
     },
     quitarExtra(el, m) {
       const e = est(m);
       const i = Number(el.dataset.valor);
       e.extras = (e.extras ?? []).filter((x) => x !== i);
-      pintarDependientes(m);
+      pintarTrabajo(m, true);
+      pintarFin(m);
+      pintarCaja(m);
       const x = d.trabajo.extras[i];
       if (x) m.anunciar(completar(d.trabajo.anuncioQuitar, { nombre: x.nombre, monto: pesos(netoHoy(m)) }));
     },
@@ -956,61 +1016,57 @@ registrarRol('especialista', {
     motivo(el, m) {
       const c = cambio(m);
       c.motivo = Number(el.dataset.valor);
-      c.enviado = false;
       pintarCambio(m);
     },
     mensajeCambio(_el, m) {
-      const c = cambio(m);
-      c.mensaje = true;
+      cambio(m).mensaje = true;
       pintarCambio(m);
     },
-    diaPaso(el, m) {
+    semanaPaso(el, m) {
       const c = cambio(m);
-      c.dia = moverDia(c.dia, Number(el.dataset.valor) > 0 ? 1 : -1);
-      c.enviado = false;
+      let n = c.dia + 7 * (Number(el.dataset.valor) > 0 ? 1 : -1);
+      while (n <= ULTIMO_DIA && n > C.hoy && !valido(n)) n += Number(el.dataset.valor) > 0 ? 1 : -1;
+      if (!valido(n)) return;
+      c.dia = n;
       pintarCambio(m);
+      animar(m, $(m.pantalla('e-cambiar-fecha'), '[data-de-semana]'), [{ opacity: 0, transform: `translateX(${Number(el.dataset.valor) > 0 ? 1.5 : -1.5}em)` }, { opacity: 1, transform: 'none' }], 320);
     },
     elegirDia(el, m) {
       const c = cambio(m);
       const n = Number(el.dataset.valor);
-      if (!n || n <= C.hoy || n > 30 || esDomingo(n)) return;
+      if (!valido(n)) return;
       c.dia = n;
-      c.enviado = false;
       pintarCambio(m);
     },
-    franjaPaso(el, m) {
-      const c = cambio(m);
-      c.franja = Math.min(d.cambio.franjas.length - 1, Math.max(0, c.franja + (Number(el.dataset.valor) > 0 ? 1 : -1)));
-      c.enviado = false;
+    franjaElegir(el, m) {
+      cambio(m).franja = Number(el.dataset.valor);
       pintarCambio(m);
     },
     proponerFecha(_el, m) {
       const c = cambio(m);
       c.enviado = true;
       pintarCambio(m);
-      aparecer(m, $(m.pantalla('e-cambiar-fecha'), '[data-de-cambio-ok]'));
-      m.anunciar(d.cambio.enviado);
+      const x = d.cambio;
+      m.isla({ titulo: x.isla.titulo, texto: completar(x.isla.texto, { dia: diaSemana(c.dia), fecha: fechaCorta(c.dia), franja: x.franjas[c.franja] }), icono: 'calendario', tono: 'exito' });
     },
 
     // Notificaciones
     quitarNotif(el, m) {
       const n = el.closest<HTMLElement>('.de-notif');
       if (!n) return;
-      if (m.reducido || typeof n.animate !== 'function') {
-        n.remove();
+      const fin = () => {
+        n.hidden = true;
+        n.dataset.deBorrado = '';
         pintarAvisos(m);
-        return;
-      }
-      n.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40%)' }], { duration: 240, easing: CURVA }).finished.then(
-        () => {
-          n.remove();
-          pintarAvisos(m);
-        },
-        () => undefined,
-      );
+      };
+      if (m.reducido || typeof n.animate !== 'function') return fin();
+      n.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(60%)' }], { duration: 260, easing: CURVA }).finished.then(fin, () => undefined);
     },
     borrarNotifs(_el, m) {
-      $$(m.pantalla('e-notificaciones'), '.de-notif').forEach((n) => n.remove());
+      $$(m.pantalla('e-notificaciones'), '.de-notif').forEach((n) => {
+        n.hidden = true;
+        n.dataset.deBorrado = '';
+      });
       pintarAvisos(m);
     },
     notifToggle(el) {
@@ -1023,16 +1079,12 @@ registrarRol('especialista', {
 
     // Pedido programado
     aceptarProgramado(_el, m) {
-      const e = est(m);
-      e.precioProgramado = d.programado.sugerido;
-      e.programado = 'enviado';
-      pintarProgramado(m, true);
-      m.anunciar(`${d.programado.enviadoTitulo} ${completar(d.programado.enviadoTexto, { monto: pesos(d.programado.sugerido) })}`);
+      enviarProgramado(m, d.programado.sugerido);
     },
     rechazarProgramado(_el, m) {
       est(m).programado = 'rechazado';
       pintarProgramado(m, true);
-      m.anunciar(d.programado.rechazadoTitulo);
+      m.anunciar(d.programado.rechazadoTexto);
     },
 
     // Cuenta
@@ -1046,9 +1098,7 @@ registrarRol('especialista', {
       el.setAttribute('aria-pressed', String(!activo));
     },
     toggleZona(el) {
-      const activo = el.getAttribute('aria-pressed') !== 'true';
-      el.setAttribute('aria-pressed', String(activo));
-      el.classList.toggle('app-chip--activo', activo);
+      el.setAttribute('aria-pressed', String(el.getAttribute('aria-pressed') !== 'true'));
     },
     guardarRubros(_el, m) {
       const el = m.pantalla('e-rubros');
@@ -1067,7 +1117,7 @@ registrarRol('especialista', {
 
     // Cobros y ayuda
     verMas(el) {
-      const tarjeta = el.closest<HTMLElement>('.app-tarjeta');
+      const tarjeta = el.closest<HTMLElement>('.de-mov');
       const detalle = tarjeta && $(tarjeta, '[data-de-mov-desglose]');
       if (tarjeta && detalle) abrirTarjeta(tarjeta, detalle.hidden !== false);
     },
@@ -1077,6 +1127,34 @@ registrarRol('especialista', {
       const abrir = respuesta.hidden;
       respuesta.hidden = !abrir;
       el.setAttribute('aria-expanded', String(abrir));
+    },
+    escribirCbu(_el, m) {
+      const e = est(m);
+      const actual = e.cbu ?? '';
+      if (actual.length >= CBU_LARGO) return;
+      e.cbu = d.cobro.cbuEjemplo.slice(0, Math.min(CBU_LARGO, actual.length + d.cobro.cbuTramo));
+      errorCbu(m, false);
+      pintarCobro(m);
+    },
+    borrarCbu(_el, m) {
+      est(m).cbu = '';
+      errorCbu(m, false);
+      pintarCobro(m);
+    },
+    guardarCobro(_el, m) {
+      const cbu = est(m).cbu ?? '';
+      if (cbu.length && cbu.length !== CBU_LARGO) {
+        errorCbu(m, true);
+        m.anunciar(completar(d.cobro.error, { n: cbu.length }));
+        return;
+      }
+      errorCbu(m, false);
+      pintarCaja(m);
+      m.volver();
+      m.isla({ titulo: d.cobro.listo, texto: d.cobro.listoTexto, icono: 'billetera', tono: 'exito' });
+    },
+    verErrorCobro(_el, m) {
+      m.error('cobro');
     },
   },
 
@@ -1102,16 +1180,22 @@ registrarRol('especialista', {
     'e-aceptado'(_el, m) {
       const e = est(m);
       // Mandaste un presupuesto: estabas disponible (también si se salta directo a este paso).
-      if (e.disponible === undefined) e.disponible = true;
+      e.disponible ??= true;
       e.atendido = true;
       if (!e.trabajo || e.trabajo === 'cancelado') e.trabajo = 'enviado';
       pintarDisponible(m);
       pintarAceptado(m);
-      if (!e.elegido) m.timeout(() => elegir(m), 2600);
+      if (!e.elegido) m.timeout(() => elegir(m), 2800);
     },
     'e-en-camino'(el, m) {
       yaElegido(m);
       poner(el, '[data-de-franja]', franjaHoy(m).texto);
+      const seg = $(el, '[data-de-seguimiento]');
+      if (seg) seg.dataset.etapa = '1';
+      // Cuando el viaje del mapa termina, la barra avanza al último tramo.
+      m.timeout(() => {
+        if (seg) seg.dataset.etapa = '2';
+      }, m.reducido ? 0 : 8200);
     },
     'e-chat'(el, m) {
       yaElegido(m);
@@ -1137,23 +1221,23 @@ registrarRol('especialista', {
       yaElegido(m);
       e.trabajo = 'terminado';
       pintarFin(m);
-      const gota = $(el, '[data-de-gota]');
-      if (m.reducido || !gota || typeof gota.animate !== 'function') return;
-      const a = gota.animate(
-        [
-          { opacity: 0, transform: 'translateY(-60%) scale(0.3)', offset: 0 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.32 },
-          { opacity: 1, transform: 'translateY(0) scale(0.94, 1.08)', offset: 0.42 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.52 },
-          { opacity: 0, transform: 'translateY(170%) scale(1)', offset: 0.82 },
-          { opacity: 0, transform: 'translateY(170%) scale(1)', offset: 1 },
-        ],
-        { duration: 2800, iterations: Infinity, easing: 'ease-in-out' },
-      );
-      return () => a.cancel();
+      pintarCaja(m);
+      pintarAvisos(m);
+      const ganaste = $(el, '[data-de-ganaste]');
+      if (ganaste) m.contar(ganaste, netoHoy(m), { desde: 0, ms: 1500 });
+      if (!e.festejado) {
+        e.festejado = true;
+        m.timeout(() => m.confeti(), 450);
+        m.timeout(() => m.isla({ titulo: d.fin.isla.titulo, texto: completar(d.fin.isla.texto, { monto: pesosJuntos(netoHoy(m)) }), icono: 'billetera', tono: 'exito' }), 1300);
+      }
     },
     'e-turnos'(_el, m) {
+      const e = est(m);
       pintarTurnos(m);
+      if (!e.recordatorio) {
+        e.recordatorio = true;
+        m.timeout(() => m.isla({ titulo: d.turnos.isla.titulo, texto: d.turnos.isla.texto, icono: 'calendario' }), 1100);
+      }
     },
     'e-turno-detalle'(_el, m) {
       pintarDetalle(m);
@@ -1186,6 +1270,10 @@ registrarRol('especialista', {
     },
     'e-contactos'(el, m) {
       pintarFilasChat(m, el);
+    },
+    'e-editar-cobro'(_el, m) {
+      errorCbu(m, false);
+      pintarCobro(m);
     },
   },
 

@@ -30,6 +30,8 @@ export interface PaginaRender {
   meta: Meta;
   cuerpo: string;
   header?: 'claro' | 'azul';
+  /** Etiquetas extra para el <head> (ya escapadas). */
+  headExtra?: string;
 }
 
 // Los ids de rubros del contenido tienen que ser los mismos que acepta el esquema.
@@ -421,10 +423,13 @@ export function pagina404(ctx: Ctx): PaginaRender {
   const n = sitio.noEncontrado;
   const cuerpo = `
 <section class="no-encontrado contenedor">
-  ${handy('llave', { clase: 'no-encontrado__handy', eager: true })}
+  <div class="no-encontrado__roto" aria-hidden="true">
+    <img class="no-encontrado__pieza no-encontrado__pieza--a" src="/src/img/handy-llave-rota.webp" alt="" width="600" height="565" />
+    <img class="no-encontrado__pieza no-encontrado__pieza--b" src="/src/img/handy-llave-rota.webp" alt="" width="600" height="565" />
+  </div>
   <h1>${titular(n.titulo)}</h1>
   <p>${plano(n.texto)}</p>
   ${boton(ctx, n.cta, 'azul', 'boton--grande')}
 </section>`;
-  return { meta: { titulo: `${n.titulo} · Handy`, descripcion: n.texto }, cuerpo };
+  return { meta: { titulo: `${n.titulo.replace(/==/g, '')} · Handy`, descripcion: n.texto }, cuerpo };
 }
