@@ -1,60 +1,119 @@
-// Demo · lado del especialista (v2): pantallas, hojas y recorrido.
-// Basadas en assets/fotos/especialista (mapa con "Disponible", pedido con precio sugerido, hoja de precio,
-// en camino, chat, trabajo con cronómetro, fin con el caño, agenda en mosaicos, avisos, cuenta y cobros),
-// llevadas al kit v2 (.hd-*, mapa vivo, isla, tickets, Handys) y en español, en pesos y con los rubros de Handy.
-// El comportamiento (interruptor, pedido que entra, precios que cuentan, chat, cronómetro, agenda, cobros)
-// vive en src/scripts/demo/especialista.ts. Los estilos propios, en src/styles/demo-especialista.css (.de-*).
+// Demo · lado del especialista (ronda 3): pantallas, hojas y recorrido.
+// Basadas en assets/fotos/especialista y en las capturas del dueño (IMG_0197 agenda, IMG_0198 Tu precio,
+// IMG_0199 trabajo en curso, IMG_0201 mensajes y contactos, IMG_0192(1) cambio de fecha), llevadas al kit (.hd-*)
+// y a la base común (cabeceraChat, accionesChat, agenda, pantallasComunes; cuentas con src/demo/dinero.ts).
+// El comportamiento vive en src/scripts/demo/especialista.ts y los estilos propios en src/styles/demo-especialista.css (.de-*).
 
 import d from '../../content/demo-especialista.json' with { type: 'json' };
+import demo from '../../content/demo.json' with { type: 'json' };
 import rubros from '../../content/rubros.json' with { type: 'json' };
 import tarifas from '../../content/tarifas.json' with { type: 'json' };
 import { icono } from '../iconos.ts';
-import { esc, formatoPesos, formatoPesosJunto, plano } from '../util.ts';
+import { esc, plano } from '../util.ts';
 import { estado, fotoCano, logo } from '../pantallas.ts';
 import { boton, cabeceraDemo, navDemo, salirDeLaDemo, tildeExito, tituloHoja, tituloMarcado, volverDemo, type Toque } from './piezas.ts';
+import { accionesChat, agenda, cabeceraChat, pantallasComunes, type ContactoDemo } from './comunes.ts';
 import { mapaVivo, type OpcionesMapa } from './mapa.ts';
 import type { DemoRol, PantallaDemo } from './tipos.ts';
+import { desglose, formatoPesos, type Concepto, type Presupuesto, type Tarifas } from '../../demo/dinero.ts';
+import { fechaLarga, leerHora } from '../../demo/fechas.ts';
 
 const ROL = 'especialista' as const;
 const C = d.comun;
+
+// ── Datos (tipados) ───────────────────────────────────────────────────────
+
+interface Mensaje {
+  de: string;
+  texto: string;
+  foto: boolean;
+}
+interface Chat {
+  nombre: string;
+  inicial: string;
+  tono: string;
+  sub: string;
+  dia: string;
+  noLeidos: number;
+  turno: string;
+  rubro: string;
+  icono: string;
+  barrio: string;
+  sugerido: number;
+  mensajes: Mensaje[];
+  rapidas: { chip: string; texto: string; respuesta: string; antesDeLlegar: boolean }[];
+}
+interface Trabajo {
+  id: string;
+  fecha: string;
+  hora: string;
+  rubro: string;
+  icono: string;
+  detalle: string;
+  barrio: string;
+  manoDeObra: number;
+  materiales: number;
+  chat: string;
+  pedido: string;
+  estado: string;
+}
+
+const CHATS = d.chats as Record<string, Chat>;
+const TRABAJOS = d.turnos.trabajos as Trabajo[];
+const TARIFAS: Tarifas = { cliente: tarifas.normal.cliente, especialista: tarifas.normal.especialista };
+const HOY = demo.config.hoy;
+
 /** Precio que sugiere Handy para el pedido principal. */
 const SUGERIDO = d.inicio.pedido.sugerido;
-/**
- * Presupuesto que manda el especialista en el recorrido (el sugerido más lo que suma la guía): es el de ejemplo
- * de tarifas.json, el mismo que ve el usuario del otro lado.
- */
+/** Presupuesto del recorrido: el de ejemplo de tarifas.json, el mismo que ve el usuario del otro lado. */
 const PRECIO = tarifas.ejemplo.presupuesto;
-if (SUGERIDO + d.precio.sumas[0] !== PRECIO) {
-  throw new Error(`Demo especialista: el sugerido (${SUGERIDO}) más la primera suma (${d.precio.sumas[0]}) tiene que dar el presupuesto de ejemplo de tarifas.json (${PRECIO})`);
+const MATERIALES = d.precio.materiales;
+if (Number(d.precio.tecleo) !== PRECIO) {
+  throw new Error(`Demo especialista: precio.tecleo (${d.precio.tecleo}) tiene que ser el presupuesto de ejemplo de tarifas.json (${PRECIO})`);
 }
+if (!(MATERIALES > 0 && MATERIALES < PRECIO)) throw new Error('Demo especialista: precio.materiales tiene que ser mayor que 0 y menor que el presupuesto');
 if (d.cobro.cbuEjemplo.replace(/\D/g, '').length !== 22) throw new Error('Demo especialista: cobro.cbuEjemplo tiene que tener 22 números');
+for (const t of TRABAJOS) {
+  if (!(t.chat in CHATS)) throw new Error(`Demo especialista: el trabajo ${t.id} apunta a un chat que no existe (${t.chat})`);
+}
+for (const id of d.mensajes.orden) if (!(id in CHATS)) throw new Error(`Demo especialista: mensajes.orden tiene "${id}", que no es un chat`);
+for (const c of d.contactos.lista) if (!(c.id in CHATS)) throw new Error(`Demo especialista: el contacto "${c.id}" no tiene chat`);
+if (!(d.solicitud.chat in CHATS)) throw new Error('Demo especialista: solicitud.chat no existe');
+leerHora(d.solicitud.hora);
 
-// ── Cuentas (las mismas que hace el navegador con src/scripts/demo/util.ts) ──
+// ── Cuentas (las mismas que hace el navegador, con src/demo/dinero.ts) ──
 
-const retencion = (n: number) => Math.round((n * tarifas.normal.especialista) / 100);
-const neto = (n: number) => n - retencion(n);
+/** El presupuesto del pedido de La Perla: los materiales estimados y el resto es mano de obra. */
+const presupuestoDe = (precio: number, materiales = MATERIALES): Presupuesto => {
+  const m = Math.min(materiales, precio);
+  return { manoDeObra: precio - m, materiales: m };
+};
+const presupuestoTrabajo = (t: Trabajo): Presupuesto => ({ manoDeObra: t.manoDeObra, materiales: t.materiales });
+const neto = (p: Presupuesto) => desglose(p, TARIFAS).netoEspecialista;
 const pesos = (n: number) => esc(formatoPesos(n));
-const fecha = (dia: number) => new Date(Number(C.anio), C.mesNumero - 1, dia);
-const diaSemana = (dia: number) => C.dias[fecha(dia).getDay()];
-const dos = (n: number) => String(n).padStart(2, '0');
-const fechaCorta = (dia: number) => `${dos(dia)}/${dos(C.mesNumero)}`;
 const completar = (t: string, v: Record<string, string | number>) => t.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
+const cuandoTexto = (fecha: string, hora: string) => `${fechaLarga(fecha)}, ${hora}`;
 
 // ── Piezas propias ────────────────────────────────────────────────────────
 
 /** Cabecera de la app: la campana lleva a los avisos y el pin (si va) a tus rubros y zonas. */
-const cabecera = (variante: 'blanca' | 'azul', conPin = true) =>
-  cabeceraDemo(ROL, variante, conPin ? { ir: 'e-rubros', etiqueta: C.zonas } : false);
+const cabecera = (variante: 'blanca' | 'azul', conPin = true) => cabeceraDemo(ROL, variante, conPin ? { ir: 'e-rubros', etiqueta: C.zonas } : false);
 
 /** Fila "concepto ...... monto" del kit. */
 const dato = (izq: string, der: string, clase = '') => `<p class="hd-dato ${clase}"><span>${izq}</span><span>${der}</span></p>`;
 
-/** Desglose: presupuesto − tarifa (+ repuestos, enteros) = lo que te queda. */
-function desglose(presupuesto: number, ultimo = C.aTuCuenta, extras = 0): string {
-  return `${dato(esc(C.presupuesto), pesos(presupuesto))}
-${dato(plano(C.tarifa), `− ${pesos(retencion(presupuesto))}`, 'de-dato--resta')}
-${extras ? dato(esc(C.repuestos), `+ ${pesos(extras)}`) : ''}
-${dato(esc(ultimo), `<span data-de-total>${pesos(neto(presupuesto) + extras)}</span>`, 'hd-dato--total')}`;
+/**
+ * Desglose para el especialista: mano de obra + materiales (+ adicionales aceptados) = tu presupuesto,
+ * − la tarifa de Handy del especialista = lo que te queda. La tarifa del cliente no aparece acá (no se mezcla).
+ */
+function filasDesglose(p: Presupuesto, ultimo: string = C.recibis, aprobados: Concepto[] = []): string {
+  const x = desglose(p, TARIFAS, aprobados);
+  return `${dato(esc(C.manoDeObra), pesos(p.manoDeObra))}
+${p.materiales ? dato(esc(C.materiales), pesos(p.materiales)) : ''}
+${aprobados.map((a) => dato(esc(a.descripcion), `+ ${pesos(a.monto)}`, 'de-dato--extra')).join('')}
+${dato(esc(C.presupuesto), pesos(x.subtotal), 'de-dato--sub')}
+${dato(plano(C.tarifa), `− ${pesos(x.tarifaEspecialista)}`, 'de-dato--resta')}
+${dato(esc(ultimo), `<span data-de-total>${pesos(x.netoEspecialista)}</span>`, 'hd-dato--total')}`;
 }
 
 /** Ticket troquelado (como los cupones de la app): arriba lo que es, abajo los números. */
@@ -65,8 +124,8 @@ const ticket = (arriba: string, abajo: string, clase = '', attrs = '') =>
 const rubroIco = (nombre: string, clase = '') => `<span class="de-rubro ${clase}">${icono(nombre)}</span>`;
 
 /** Avatar con iniciales fijas (los clientes de la demo no tienen nombre: se usan las del barrio). */
-const avatarDe = (inicial: string, tono: string, clase = '') =>
-  `<span class="hd-avatar ${clase}" style="--tono:${esc(tono)}" aria-hidden="true"><span>${esc(inicial)}</span></span>`;
+const avatarDe = (inicial: string, tono: string, clase = '', attrs = '') =>
+  `<span class="hd-avatar ${clase}" style="--tono:${esc(tono)}" aria-hidden="true" ${attrs}><span>${esc(inicial)}</span></span>`;
 
 const img = (nombre: string, clase: string, w: number, h: number) =>
   `<img class="${clase}" src="/src/img/${nombre}.webp" alt="" width="${w}" height="${h}" loading="lazy" decoding="async" />`;
@@ -81,11 +140,8 @@ function disponible(prendido: boolean, guia = false): string {
 }
 
 interface OpcionesMapaEsp extends OpcionesMapa {
-  /** Dónde estás vos (punto azul). */
   yo?: [number, number];
-  /** Radar alrededor tuyo (mientras buscás pedidos). */
   radarYo?: boolean;
-  /** Línea punteada de vos al cliente. */
   linea?: boolean;
 }
 
@@ -106,19 +162,74 @@ function mapa(o: OpcionesMapaEsp): string {
   return svg;
 }
 
-/** Recorrido "de dónde a dónde" con los dos puntos unidos. */
-const trayecto = (desde: string, hasta: string) =>
-  `<div class="de-trayecto"><span><i></i>${esc(desde)}</span><span><i></i>${esc(hasta)}</span></div>`;
+const trayecto = (desde: string, hasta: string) => `<div class="de-trayecto"><span><i></i>${esc(desde)}</span><span><i></i>${esc(hasta)}</span></div>`;
 
 /** Contenedor con scroll (sin barra) para el cuerpo de las pantallas largas. */
 const cuerpo = (html: string, clase = '') => `<div class="hd-scroll de-cuerpo ${clase}">${html}</div>`;
+
+/** Selector discreto para la presentación: qué responde el cliente (mock). */
+function simulador(): string {
+  const s = d.simular;
+  return `<div class="de-sim" role="group" aria-label="${esc(s.titulo)}">
+  <p class="de-sim__titulo">${icono('engranaje')}<span>${esc(s.titulo)}</span></p>
+  <div class="de-sim__ops">${boton({ accion: 'simular', valor: 'acepta', extra: 'aria-pressed="true"' }, esc(s.acepta), 'de-sim__op')}${boton({ accion: 'simular', valor: 'rechaza', extra: 'aria-pressed="false"' }, esc(s.rechaza), 'de-sim__op')}</div>
+</div>`;
+}
+
+/** Teclado numérico (botones): escribir un monto sin el teclado del celular, que taparía la hoja. */
+function teclado(): string {
+  const p = d.precio;
+  const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'];
+  return `<div class="de-teclado" data-de-teclado role="group" aria-label="${esc(p.teclado)}">
+  ${teclas.map((n) => boton({ accion: 'tecla', valor: n, etiqueta: completar(p.tecla, { n }) }, esc(n), 'de-tecla')).join('')}
+  ${boton({ accion: 'tecla', valor: 'borrar', etiqueta: p.borrar }, icono('atras'), 'de-tecla de-tecla--borrar')}
+</div>`;
+}
+
+/**
+ * Bloque de precio (IMG_0198): sugerido, stepper, chips, "Escribir otro monto" con teclado, el aviso del mínimo
+ * pegado al importe y lo que te queda después de la tarifa del especialista.
+ */
+function bloquePrecio(sugerido: number, materiales = 0): string {
+  const p = d.precio;
+  const paso = formatoPesos(p.paso);
+  const chips = [
+    boton({ accion: 'precioSugerido', extra: 'aria-pressed="true"' }, esc(p.dejar), 'hd-chip de-chip'),
+    ...p.sumas.map((s) => boton({ accion: 'precioSumar', valor: String(s), extra: 'aria-pressed="false"' }, `+ ${pesos(s)}`, 'hd-chip de-chip')),
+  ].join('');
+  return `<div class="de-precio__caja" data-entra>
+    <p class="de-precio__sugerido">${img('handy-lamparita', 'de-precio__handy', 202, 346)}<span>${esc(p.sugeridoLabel)} <strong data-de-sugerido>${pesos(sugerido)}</strong></span><span class="hd-chip hd-chip--amarillo de-chip-nota">${esc(p.sugeridoNota)}</span></p>
+    <div class="de-precio__monto">
+      ${boton({ accion: 'precioPaso', valor: String(-p.paso), etiqueta: completar(p.bajar, { monto: paso }) }, `<span aria-hidden="true">−</span>`, 'hd-circulo de-paso')}
+      <span class="de-precio__valor" aria-live="polite"><span class="sr">${esc(p.campoLabel)}</span><strong class="hd-precio hd-precio--grande" data-de-precio>${pesos(sugerido)}</strong></span>
+      ${boton({ accion: 'precioPaso', valor: String(p.paso), etiqueta: completar(p.subir, { monto: paso }) }, `<span aria-hidden="true">+</span>`, 'hd-circulo de-paso')}
+    </div>
+    <p class="de-minimo" data-de-minimo role="alert" hidden>${icono('alerta')}<span>${esc(p.minimoTexto)}</span></p>
+    ${materiales ? `<p class="de-precio__materiales" data-de-materiales>${icono('info')}<span>${esc(completar(p.materialesNota, { monto: formatoPesos(materiales) }))}</span></p>` : ''}
+    <div class="hd-chips de-precio__chips">${chips}</div>
+    ${boton({ accion: 'teclado', extra: 'aria-expanded="false" data-de-teclado-btn' }, `${icono('editar')}<span data-de-teclado-texto>${esc(p.escribir)}</span>`, 'de-escribir')}
+    <div class="de-teclado-caja" data-de-teclado-caja hidden>${teclado()}</div>
+  </div>
+  <div class="de-recibis" data-entra>
+    <span class="de-recibis__icono">${icono('billetera')}</span>
+    <span class="de-recibis__texto"><small>${esc(p.recibis)}</small><strong class="hd-precio" data-de-recibis>${pesos(neto(presupuestoDe(sugerido, materiales)))}</strong></span>
+    <small class="de-recibis__retiene" data-de-retiene>${esc(completar(p.retiene, { tarifaEspecialista: `${tarifas.normal.especialista}%`, monto: formatoPesos(desglose(presupuestoDe(sugerido, materiales), TARIFAS).tarifaEspecialista) }))}</small>
+  </div>`;
+}
+
+/** "Prefiero elegir la fecha" / "Prefiero elegir el horario" (abren las hojas comunes). */
+function elegirCuando(fecha: string, hora: string): string {
+  return `<div class="de-elegir">
+  ${boton({ accion: 'cuandoFecha', extra: 'aria-pressed="false" data-de-elegir="fecha"' }, `${icono('calendario')}<span>${esc(fecha)}</span>`, 'hd-chip de-chip de-elegir__op')}
+  ${boton({ accion: 'cuandoHora', extra: 'aria-pressed="false" data-de-elegir="hora"' }, `${icono('reloj')}<span>${esc(hora)}</span>`, 'hd-chip de-chip de-elegir__op')}
+</div>`;
+}
 
 // ── Inicio: mapa, "Disponible" y el pedido que entra ─────────────────────
 
 const YO: [number, number] = [96, 266];
 const CLIENTE: [number, number] = [206, 186];
 
-/** Tarjeta de un pedido (urgencia o programado) con el precio sugerido y los dos botones. */
 function tarjetaPedido(o: {
   sobre: string;
   rubro: string;
@@ -219,52 +330,38 @@ ${navDemo(ROL, 0)}
 // ── Hoja: tu precio ───────────────────────────────────────────────────────
 
 /**
- * Hoja "Tu precio". Hay dos: la del pedido de urgencia (con las franjas para declarar cuándo podés ir)
- * y la del pedido programado (sin franjas: el día y la franja los eligió el cliente).
+ * Hoja "Tu precio" (IMG_0198). Dos: la del pedido de urgencia (con las franjas sugeridas para declarar cuándo
+ * podés ir) y la del pedido programado (con el día y el horario que pidió el cliente). En las dos se puede
+ * elegir otra fecha u otro horario: es una propuesta que el cliente acepta o rechaza.
  */
 function precio(id: 'e-precio' | 'e-precio-programado'): PantallaDemo {
   const p = d.precio;
-  const conFranjas = id === 'e-precio';
-  const sugerido = conFranjas ? SUGERIDO : d.programado.sugerido;
+  const urgencia = id === 'e-precio';
+  const sugerido = urgencia ? SUGERIDO : d.programado.sugerido;
   const franjas = p.franjas
     .map((f, i) => boton({ accion: 'franja', valor: String(i), extra: `aria-pressed="${i === 0}"` }, `${icono('reloj')}${esc(f.texto)}`, 'hd-chip de-chip'))
     .join('');
-  const chips = [
-    boton({ accion: 'precioSugerido', extra: 'aria-pressed="true"' }, esc(p.dejar), 'hd-chip de-chip'),
-    ...p.sumas.map((s, i) => boton({ accion: 'precioSumar', valor: String(s), guia: i === 0, extra: 'aria-pressed="false"' }, `+ ${pesos(s)}`, 'hd-chip de-chip')),
-  ].join('');
-  const paso = formatoPesos(p.paso);
+  const pidio = `<p class="de-pidio">${icono('calendario')}<span>${esc(`${d.programado.dia}, ${d.programado.franja}`)}</span></p>`;
   return {
     id,
-    titulo: conFranjas ? d.pantallas.precio : d.pantallas.precioProgramado,
+    titulo: urgencia ? d.pantallas.precio : d.pantallas.precioProgramado,
     tipo: 'hoja',
     html: `${tituloHoja(p.titulo)}
-<div class="de-hoja de-precio">
-  ${
-    conFranjas
-      ? `<div data-entra><p class="de-etiqueta">${esc(p.cuandoLabel)}</p><div class="hd-chips de-franjas">${franjas}</div></div>`
-      : ''
-  }
-  <div class="de-precio__caja" data-entra>
-    <p class="de-precio__sugerido">${img('handy-lamparita', 'de-precio__handy', 202, 346)}<span>${esc(p.sugeridoLabel)} <strong data-de-sugerido>${pesos(sugerido)}</strong></span><span class="hd-chip hd-chip--amarillo de-chip-nota">${esc(p.sugeridoNota)}</span></p>
-    <div class="de-precio__monto">
-      ${boton({ accion: 'precioPaso', valor: String(-p.paso), etiqueta: completar(p.bajar, { monto: paso }) }, `<span aria-hidden="true">−</span>`, 'hd-circulo de-paso')}
-      <span class="de-precio__valor"><span class="sr">${esc(p.campoLabel)}</span><strong class="hd-precio hd-precio--grande" data-de-precio>${pesos(sugerido)}</strong></span>
-      ${boton({ accion: 'precioPaso', valor: String(p.paso), etiqueta: completar(p.subir, { monto: paso }) }, `<span aria-hidden="true">+</span>`, 'hd-circulo de-paso')}
-    </div>
-    <div class="hd-chips de-precio__chips">${chips}</div>
+<div class="de-hoja de-precio" data-de-precio-hoja>
+  <div class="de-cuando" data-entra>
+    <p class="de-etiqueta">${esc(urgencia ? p.cuandoLabel : p.pidioLabel)}</p>
+    ${urgencia ? `<div class="hd-chips de-franjas">${franjas}</div>` : pidio}
+    ${elegirCuando(p.elegirFecha, p.elegirHora)}
+    <p class="de-propones" data-de-propones hidden>${icono('info')}<span data-de-propones-texto></span></p>
   </div>
-  <div class="de-recibis" data-entra>
-    <span class="de-recibis__icono">${icono('billetera')}</span>
-    <span class="de-recibis__texto"><small>${esc(p.recibis)}</small><strong class="hd-precio" data-de-recibis>${pesos(neto(sugerido))}</strong></span>
-    <small class="de-recibis__retiene" data-de-retiene>${plano(p.retiene, { monto: formatoPesosJunto(retencion(sugerido)) })}</small>
-  </div>
-  ${boton({ accion: 'ponerPrecio', guia: true }, `${esc(p.boton)}${icono('enviar')}`, 'hd-boton')}
+  ${bloquePrecio(sugerido, urgencia ? MATERIALES : 0)}
+  ${simulador()}
+  ${boton({ accion: 'ponerPrecio', extra: 'data-de-enviar' }, `${esc(p.boton)}${icono('enviar')}`, 'hd-boton')}
 </div>`,
   };
 }
 
-// ── Presupuesto enviado → el cliente te elige ────────────────────────────
+// ── Presupuesto enviado → el cliente te elige (o elige otra propuesta) ───
 
 function aceptado(): PantallaDemo {
   const a = d.aceptado;
@@ -274,7 +371,8 @@ function aceptado(): PantallaDemo {
     titulo: d.pantallas.aceptado,
     html: `<div class="app de-aceptado" data-de-aceptado data-estado="esperando">
 ${cabecera('azul')}
-${cuerpo(`
+${cuerpo(
+  `
   <div class="de-estado de-estado--esperando" data-entra="pop">
     <div class="de-espera">
       <span class="de-espera__ondas" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -291,28 +389,47 @@ ${cuerpo(`
     ${tituloMarcado(a.elegidoTitulo, 'hd-titulo')}
     <p class="hd-texto hd-texto--suave">${esc(a.elegidoTexto)}</p>
   </div>
+  <div class="de-estado de-estado--rechazado">
+    ${img('handy-cano-roto', 'hd-handy de-rechazo__handy', 354, 405)}
+    <p class="hd-sobre">${esc(a.rechazadoSobre)}</p>
+    ${tituloMarcado(a.rechazadoTitulo, 'hd-titulo')}
+    <p class="hd-texto hd-texto--suave">${esc(a.rechazadoTexto)}</p>
+  </div>
   ${ticket(
     `${rubroIco('canilla')}<span class="de-ticket__titulo"><strong>${esc(a.trabajo)}</strong><small data-de-franja>${esc(f.texto)}</small></span><span class="hd-chip hd-chip--amarillo hd-chip--mini">${icono('alerta')}${esc(C.urgencia)}</span>`,
-    `${dato(esc(a.tuPrecio), `<span data-de-precio>${pesos(PRECIO)}</span>`)}
-     ${dato(plano(C.tarifa), `− <span data-de-retencion>${pesos(retencion(PRECIO))}</span>`, 'de-dato--resta')}
-     ${dato(esc(C.recibis), `<span data-de-recibis>${pesos(neto(PRECIO))}</span>`, 'hd-dato--total')}`,
+    `<div data-de-costo>${filasDesglose(presupuestoDe(PRECIO))}</div>`,
     '',
     'data-entra',
   )}
-`, 'de-cuerpo--centro')}
-<div class="de-pie">
-  ${boton({ ir: 'e-en-camino', guia: true, extra: 'data-de-ir-alla disabled' }, `<span data-de-ir-texto>${esc(a.esperandoBoton)}</span>${icono('flecha')}`, 'hd-boton')}
+`,
+  'de-cuerpo--centro',
+)}
+<div class="de-pie de-pie--fila">
+  ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat', etiqueta: a.chatear, extra: 'data-de-aceptado-chat hidden' }, icono('chat'), 'de-cuadro')}
+  ${boton({ ir: 'e-en-camino', extra: 'data-de-ir-alla disabled' }, `<span data-de-ir-texto>${esc(a.esperandoBoton)}</span>${icono('flecha')}`, 'hd-boton')}
+  ${boton({ raiz: 'e-inicio', extra: 'data-de-aceptado-inicio hidden' }, esc(a.volverInicio), 'hd-boton hd-boton--claro')}
 </div>
 </div>`,
   };
 }
 
-// ── En camino ─────────────────────────────────────────────────────────────
+// ── En camino: llegada automática con la geocerca simulada ───────────────
 
 const CASA_CAMINO: [number, number] = [188, 300];
 
 function enCamino(): PantallaDemo {
   const c = d.camino;
+  const u = c.ubicacion;
+  const iconosEstado: Record<string, string> = {
+    'en-camino': 'caminar',
+    'senal-imprecisa': 'alerta',
+    'sin-senal': 'prohibido',
+    'sin-permiso': 'pin',
+    llego: 'checkCirculo',
+  };
+  const opciones = u.opciones
+    .map((o) => boton({ accion: 'simularUbicacion', valor: o.valor, extra: `aria-pressed="${o.valor === 'normal'}"` }, esc(o.texto), 'de-sim__op'))
+    .join('');
   return {
     id: 'e-en-camino',
     titulo: d.pantallas.camino,
@@ -323,7 +440,7 @@ ${cabecera('azul', false)}
   ${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'de-flotante')}
   <span class="hd-chip de-camino__km">${icono('pin')}${esc(c.distancia)}</span>
 </div>
-<div class="hd-hoja-azul de-camino__hoja">
+<div class="hd-hoja-azul hd-scroll de-camino__hoja">
   <span class="de-manija" aria-hidden="true"></span>
   <div class="de-camino__destino" data-entra>
     <p class="hd-sobre">${esc(c.sobre)}</p>
@@ -331,84 +448,131 @@ ${cabecera('azul', false)}
     <p class="de-camino__franja">${icono('reloj')}<span data-de-franja>${esc(d.precio.franjas[0].texto)}</span></p>
   </div>
   <div data-entra>
-    <div class="hd-seguimiento de-seguimiento" data-etapa="1" data-de-seguimiento aria-hidden="true">
+    <div class="hd-seguimiento de-seguimiento" data-etapa="0" data-de-seguimiento aria-hidden="true">
       <span class="hd-seguimiento__tramo"></span><span class="hd-seguimiento__tramo"></span><span class="hd-seguimiento__tramo"></span>
       <span class="hd-seguimiento__quien">${icono('caminar')}</span>
     </div>
     <div class="de-etapas">${c.etapas.map((e) => `<span>${esc(e)}</span>`).join('')}</div>
   </div>
-  <div class="de-cliente" data-entra>
-    ${avatarDe(c.inicial, d.chats.perla.tono, 'de-cliente__avatar')}
-    <span class="de-cliente__texto"><strong>${esc(c.cliente)}</strong><small>${esc(c.sinTelefono)}</small></span>
-    ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat', guia: true, etiqueta: c.chatear }, icono('chat'), 'hd-circulo hd-circulo--azul de-cliente__chat')}
+  <div class="de-llegada" data-de-llegada data-estado="pidiendo-permiso" data-entra>
+    <div class="de-llegada__pedir" data-de-llegada-pedir>
+      <p class="de-llegada__fila"><span class="de-llegada__ico">${icono('pin')}</span><span class="de-llegada__texto"><strong>${esc(u.titulo)}</strong><small>${esc(u.texto)}</small></span></p>
+      <div class="hd-botones hd-botones--fila">
+        ${boton({ accion: 'ubicacion', valor: 'no' }, esc(u.ahoraNo), 'hd-boton hd-boton--chico hd-boton--claro')}
+        ${boton({ accion: 'ubicacion', valor: 'si', guia: true }, esc(u.permitir), 'hd-boton hd-boton--chico hd-boton--amarillo')}
+      </div>
+    </div>
+    <div class="de-llegada__estado" data-de-llegada-estado aria-live="polite" hidden>
+      <p class="de-llegada__fila"><span class="de-llegada__ico">${Object.entries(iconosEstado)
+        .map(([e, n]) => `<span data-de-llegada-ico="${e}" hidden>${icono(n)}</span>`)
+        .join('')}</span><span class="de-llegada__texto"><strong data-de-llegada-titulo></strong><small data-de-llegada-texto></small></span></p>
+      ${boton({ accion: 'ubicacion', valor: 'si', extra: 'data-de-llegada-activar hidden' }, esc(u.activar), 'hd-boton hd-boton--chico hd-boton--amarillo')}
+    </div>
   </div>
-  ${boton({ ir: 'e-trabajo' }, `${esc(c.llegue)}${icono('check')}`, 'hd-boton hd-boton--amarillo')}
+  <div class="de-cliente" data-entra>
+    ${avatarDe(CHATS.perla.inicial, CHATS.perla.tono, 'de-cliente__avatar')}
+    <span class="de-cliente__texto"><strong>${esc(c.cliente)}</strong><small>${esc(c.sinTelefono)}</small></span>
+    ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-chat', etiqueta: c.chatear }, icono('chat'), 'hd-circulo hd-circulo--azul de-cliente__chat')}
+  </div>
+  <div class="de-sim de-sim--azul" role="group" aria-label="${esc(u.simular)}">
+    <p class="de-sim__titulo">${icono('engranaje')}<span>${esc(u.simular)}</span></p>
+    <div class="de-sim__ops">${opciones}</div>
+  </div>
 </div>
 </div>`,
   };
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────
+// ── Chats ─────────────────────────────────────────────────────────────────
 
-type IdChat = keyof typeof d.chats;
-const CHATS = Object.keys(d.chats) as IdChat[];
-
-function burbuja(m: { de: string; texto: string; foto?: boolean }): string {
+function burbuja(m: Mensaje): string {
   const propia = m.de === 'esp';
   return `<div class="de-burbuja de-burbuja--${propia ? 'propia' : 'otra'}${m.foto ? ' de-burbuja--foto' : ''}">${m.foto ? fotoCano : ''}<span>${esc(m.texto)}</span></div>`;
 }
 
-const mensajesChat = (id: IdChat) => `<p class="de-chat__dia">${esc(d.chats[id].dia)}</p>${d.chats[id].mensajes.map(burbuja).join('')}`;
+const mensajesChat = (id: string) => {
+  const ch = CHATS[id];
+  return `<p class="de-chat__dia">${esc(ch.dia)}</p>${ch.mensajes.map(burbuja).join('')}`;
+};
 
 /**
- * Chat con un cliente. Hay dos pantallas iguales: "e-chat" es la del recorrido (se llega desde "Vas para allá")
- * y "e-conversacion" es la que se abre desde Mensajes, el trabajo o un turno (así el panel no retrocede de paso).
+ * Chat con un cliente (cabeceraChat: sin logo ni campana). Tres pantallas con el mismo molde:
+ * "e-chat" (la del recorrido, con el cliente de hoy), "e-conversacion" (desde Mensajes, Contactos, el trabajo o un
+ * turno) y "e-chat-nuevo" (un cliente que todavía no es contacto y te manda una solicitud de turno).
  */
-function chat(id: 'e-chat' | 'e-conversacion'): PantallaDemo {
+function chat(id: 'e-chat' | 'e-conversacion' | 'e-chat-nuevo', inicial: string): PantallaDemo {
   const c = d.chat;
-  const inicial: IdChat = 'perla';
-  const ch = d.chats[inicial];
-  const plantillas = CHATS.map((idChat) => `<template data-de-plantilla="${idChat}">${mensajesChat(idChat)}</template>`).join('');
+  const ch = CHATS[inicial];
+  const plantillas =
+    id === 'e-conversacion'
+      ? Object.keys(CHATS)
+          .filter((x) => x !== d.solicitud.chat)
+          .map((x) => `<template data-de-plantilla="${x}">${mensajesChat(x)}</template>`)
+          .join('')
+      : `<template data-de-plantilla="${inicial}">${mensajesChat(inicial)}</template>`;
+  const verTurno = boton({ accion: 'verTurno', ir: 'e-turno-detalle', etiqueta: c.verTurno, extra: 'data-de-ver-turno hidden' }, icono('calendario'), 'hd-circulo de-chat__turno');
+  const titulo = id === 'e-chat' ? d.pantallas.chat : id === 'e-chat-nuevo' ? d.pantallas.chatNuevo : d.pantallas.conversacion;
   return {
     id,
-    titulo: id === 'e-chat' ? d.pantallas.chat : d.pantallas.conversacion,
+    titulo,
     html: `<div class="app de-chat" data-de-chat="${inicial}">
-<div class="app-cabecera de-chat__arriba">
-  ${estado()}
-  <div class="de-chat__cabeza">
-    ${boton({ volver: true, etiqueta: C.volver }, icono('atras'), 'hd-circulo de-chat__volver')}
-    <span class="hd-avatar de-chat__avatar" style="--tono:${esc(ch.tono)}" data-de-chat-avatar aria-hidden="true"><span>${esc(ch.inicial)}</span></span>
-    <span class="de-chat__nombre"><strong data-de-chat-nombre>${esc(ch.nombre)}</strong><small data-de-chat-sub>${esc(ch.sub)}</small></span>
-  </div>
-  <div class="de-chat__contexto" data-de-contexto>
-    ${rubroIco('canilla', 'de-rubro--chico')}
-    <span class="de-chat__contexto-texto"><strong>${esc(c.contexto)}</strong><small data-de-franja>${esc(d.precio.franjas[0].texto)}</small></span>
-    ${boton({ ir: 'e-trabajo', extra: 'data-de-llegue' }, `${esc(c.llegue)}${icono('check')}`, 'hd-boton hd-boton--chico hd-boton--amarillo')}
-    ${boton({ accion: 'verTurno', valor: '0', ir: 'e-turno-detalle', extra: 'data-de-ver-turno hidden' }, `${esc(c.verTurno)}${icono('calendario')}`, 'hd-boton hd-boton--chico')}
-  </div>
-</div>
+${cabeceraChat({ nombre: ch.nombre, detalle: ch.sub, avatar: avatarDe(ch.inicial, ch.tono, 'hd-avatar--chico', 'data-de-chat-avatar') }, { volver: true }, verTurno)}
 <div class="hd-scroll de-chat__mensajes" data-de-mensajes>${mensajesChat(inicial)}</div>
 <div class="de-chat__abajo">
-  <div class="hd-chips hd-chips--carril de-chat__rapidas" data-de-rapidas role="group" aria-label="${esc(c.rapidasLabel)}">${ch.rapidas
-    .map((r, i) => boton({ accion: 'rapida', valor: String(i), guia: i === 0 }, esc(r.chip), 'hd-chip hd-chip--tinte'))
-    .join('')}</div>
+  ${accionesChat(id === 'e-chat-nuevo' ? { contacto: inicial } : {})}
+  <div class="hd-chips hd-chips--carril de-chat__rapidas" data-de-rapidas role="group" aria-label="${esc(c.rapidasLabel)}"></div>
   <div class="de-chat__barra">
-    ${boton({ accion: 'escribirChat', extra: 'data-de-campo-chat' }, `<span data-de-campo-texto>${esc(c.input)}</span>${icono('imagen')}`, 'de-chat__campo')}
-    ${boton({ accion: 'enviarChat', etiqueta: c.enviar, extra: 'data-de-enviar' }, icono('enviar'), 'hd-circulo hd-circulo--azul de-chat__enviar')}
+    ${boton({ accion: 'adjuntar', etiqueta: c.adjuntar }, icono('imagen'), 'hd-circulo de-chat__adjuntar')}
+    ${boton({ accion: 'escribirChat', extra: 'data-de-campo-chat' }, `<span data-de-campo-texto>${esc(c.input)}</span>`, 'de-chat__campo')}
+    ${boton({ accion: 'enviarChat', etiqueta: c.enviar, extra: 'data-de-enviar-chat' }, icono('enviar'), 'hd-circulo hd-circulo--azul de-chat__enviar')}
   </div>
 </div>
 ${plantillas}
-<template data-de-plantilla-escribiendo><div class="de-burbuja de-burbuja--otra de-burbuja--escribiendo" aria-label="${esc(c.escribiendo)}"><span class="hd-escribiendo"><i></i><i></i><i></i></span></div></template>
+<template data-de-plantilla-escribiendo><div class="de-burbuja de-burbuja--otra de-burbuja--escribiendo" role="status" aria-label="${esc(c.escribiendo)}"><span class="hd-escribiendo"><i></i><i></i><i></i></span></div></template>
+<template data-de-plantilla-foto><div class="de-burbuja de-burbuja--propia de-burbuja--foto">${fotoCano}<span>${esc(c.fotoTexto)}</span></div></template>
+<template data-de-plantilla-responder><div class="de-solicitud-acciones">${boton({ accion: 'cotizar' }, `${icono('etiqueta')}${esc(c.responder)}`, 'hd-boton hd-boton--chico')}</div></template>
 </div>`,
   };
 }
 
-// ── Trabajo en curso ──────────────────────────────────────────────────────
+// ── Hoja: propuesta desde el chat (programar, ahora o responder una solicitud) ──
+
+function propuestaHoja(): PantallaDemo {
+  const p = d.propuesta;
+  const franjas = d.precio.franjas
+    .map((f, i) => boton({ accion: 'franja', valor: String(i), extra: `aria-pressed="${i === 0}"` }, `${icono('reloj')}${esc(f.texto)}`, 'hd-chip de-chip'))
+    .join('');
+  const campo = (accion: string, ico: string, etiqueta: string, slot: string) =>
+    boton({ accion, extra: `data-de-prop-campo="${slot}"` }, `${icono(ico)}<span class="de-campo__texto"><small>${esc(etiqueta)}</small><strong data-de-prop-valor="${slot}"></strong></span>${icono('editar')}`, 'de-campo de-campo--elegir');
+  return {
+    id: 'e-propuesta',
+    titulo: d.pantallas.propuesta,
+    tipo: 'hoja',
+    html: `${tituloHoja(p.titulo)}
+<div class="de-hoja de-precio de-prop" data-de-precio-hoja data-de-prop>
+  <p class="de-prop__para" data-entra><strong data-de-prop-modo></strong><small data-de-prop-para></small></p>
+  <p class="de-pidio de-prop__pidio" data-de-prop-pidio hidden>${icono('calendario')}<span data-de-prop-pidio-texto></span></p>
+  ${bloquePrecio(SUGERIDO)}
+  <div class="de-cuando" data-entra>
+    <p class="de-etiqueta" data-de-prop-cuando-label>${esc(p.cuandoLabel)}</p>
+    <div class="de-prop__campos" data-de-prop-programar>
+      ${campo('cuandoFecha', 'calendario', p.fechaLabel, 'fecha')}
+      ${campo('cuandoHora', 'reloj', p.horaLabel, 'hora')}
+    </div>
+    <div class="hd-chips de-franjas" data-de-prop-ahora hidden>${franjas}</div>
+  </div>
+  ${simulador()}
+  ${boton({ accion: 'mandarPropuesta', extra: 'data-de-enviar' }, `${esc(p.boton)}${icono('enviar')}`, 'hd-boton')}
+  <p class="de-nota">${icono('info')}<span>${esc(d.precio.pendienteNota)}</span></p>
+</div>`,
+  };
+}
+
+// ── Trabajo en curso (IMG_0199) ──────────────────────────────────────────
 
 function trabajo(): PantallaDemo {
   const t = d.trabajo;
   const f = d.precio.franjas[0];
-  const primero = t.extras[0];
   return {
     id: 'e-trabajo',
     titulo: d.pantallas.trabajo,
@@ -427,18 +591,18 @@ ${cuerpo(`
     ${fotoCano}
     <p><small>${esc(t.pedidoLabel)}</small><span>${esc(d.inicio.pedido.detalle)}</span></p>
   </div>
-  <div data-entra>
-    <p class="de-etiqueta">${esc(t.repuestosLabel)}</p>
-    <div class="de-sugerencia" data-de-sugerencia>
-      <span class="de-sugerencia__ico">${icono('mas')}</span>
-      <span class="de-sugerencia__texto"><strong data-de-extra-nombre>${esc(primero.nombre)}</strong><small class="hd-precio" data-de-extra-monto>${pesos(primero.monto)}</small></span>
-      ${boton({ accion: 'agregarExtra', guia: true }, esc(t.agregar), 'hd-boton hd-boton--chico')}
+  <div class="de-adicionales" data-entra>
+    <p class="de-etiqueta">${esc(t.adicionalesLabel)}</p>
+    ${boton({ ir: 'e-adicional', accion: 'abrirAdicional', extra: 'data-de-agregar' }, `<span class="de-agregar__ico">${icono('mas')}</span><span>${esc(t.agregarAdicional)}</span>`, 'de-agregar')}
+    <div class="de-pendiente" data-de-pendiente role="status" hidden>
+      <span class="hd-escribiendo de-pendiente__puntos" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="de-pendiente__texto"><strong>${esc(t.pendiente)}</strong><small data-de-pendiente-texto></small></span>
     </div>
-    <p class="de-nota" data-de-sin-mas hidden>${icono('checkCirculo')}${esc(t.sinMas)}</p>
+    <p class="de-nota de-adicional__rechazo" data-de-adicional-rechazo role="status" hidden>${icono('info')}<span data-de-adicional-rechazo-texto></span></p>
   </div>
   ${ticket(
     `${rubroIco('billetera')}<span class="de-ticket__titulo"><strong>${esc(t.costoLabel)}</strong><small>${plano(C.tarifa)}</small></span>`,
-    `<div data-de-costo>${desglose(PRECIO, C.recibis)}</div>`,
+    `<div data-de-costo>${filasDesglose(presupuestoDe(PRECIO))}</div>`,
     '',
     'data-entra',
   )}
@@ -446,12 +610,54 @@ ${cuerpo(`
     ${boton({ ir: 'e-ayuda' }, `${icono('pregunta')}${esc(t.ayuda)}`, 'hd-boton hd-boton--fantasma')}
     ${boton({ ir: 'e-cancelar' }, `${icono('prohibido')}${esc(t.cancelar)}`, 'hd-boton hd-boton--fantasma de-peligro')}
   </div>
-  <template data-de-plantilla-quitar>${boton({ accion: 'quitarExtra', valor: '0' }, icono('cerrar'), 'de-quitar')}</template>
 `)}
 <div class="de-pie de-pie--fila">
   ${boton({ accion: 'abrirChat', valor: 'perla', ir: 'e-conversacion', etiqueta: t.chatear }, icono('chat'), 'de-cuadro')}
-  ${boton({ ir: 'e-fin', guia: true }, `${esc(t.terminar)}${icono('check')}`, 'hd-boton')}
+  ${boton({ ir: 'e-fin', extra: 'data-de-terminar' }, `${esc(t.terminar)}${icono('check')}`, 'hd-boton')}
 </div>
+</div>`,
+  };
+}
+
+/** Hoja "Agregar al trabajo": opción personalizada primero, después las de la lista. */
+function adicional(): PantallaDemo {
+  const a = d.adicional;
+  const op = (valor: string, ico: string, titulo: string, sub: string, monto = '') =>
+    boton(
+      { accion: 'adicionalOp', valor, extra: 'aria-pressed="false"' },
+      `<span class="de-opcion__ico">${icono(ico)}</span><span class="de-opcion__texto"><strong>${esc(titulo)}</strong><small>${esc(sub)}</small></span>${monto ? `<strong class="hd-precio de-opcion__monto">${monto}</strong>` : ''}`,
+      'de-opcion',
+    );
+  const opciones = [
+    op('personalizada', 'editar', a.personalizada, a.personalizadaTexto),
+    ...a.opciones.map((o) => op(o.id, o.tipo === 'mano' ? 'maletin' : 'llave', o.descripcion, a.tipos[o.tipo as 'mano' | 'material'], pesos(o.monto))),
+  ].join('');
+  return {
+    id: 'e-adicional',
+    titulo: d.pantallas.adicional,
+    tipo: 'hoja',
+    html: `${tituloHoja(a.titulo)}
+<div class="de-hoja de-adicional" data-de-adicional>
+  <p class="hd-texto hd-texto--suave">${esc(a.bajada)}</p>
+  <div class="de-opciones" role="group" aria-label="${esc(a.titulo)}" data-entra>${opciones}</div>
+  <div class="de-personalizada" data-de-personalizada hidden>
+    <p class="de-etiqueta">${esc(a.tipoLabel)}</p>
+    <div class="hd-chips">${boton({ accion: 'adicionalTipo', valor: 'material', extra: 'aria-pressed="true"' }, `${icono('llave')}${esc(a.tipos.material)}`, 'hd-chip de-chip')}${boton({ accion: 'adicionalTipo', valor: 'mano', extra: 'aria-pressed="false"' }, `${icono('maletin')}${esc(a.tipos.mano)}`, 'hd-chip de-chip')}</div>
+    <label class="de-etiqueta" for="de-adicional-desc">${esc(a.descripcionLabel)}</label>
+    <input id="de-adicional-desc" class="de-input" type="text" maxlength="40" autocomplete="off" placeholder="${esc(a.descripcionEjemplo)}" data-de-adicional-desc />
+    <p class="de-etiqueta">${esc(a.precioLabel)}</p>
+    <p class="de-adicional__monto"><strong class="hd-precio hd-precio--grande" data-de-adicional-monto>${pesos(0)}</strong></p>
+    ${teclado()}
+  </div>
+  <div class="de-adicional__resumen" data-de-adicional-resumen hidden>
+    <p class="de-etiqueta">${esc(a.clienteVe)}</p>
+    <dl class="de-dl" data-de-adicional-cliente></dl>
+    <p class="de-recibis de-recibis--mini"><span class="de-recibis__icono">${icono('billetera')}</span><span class="de-recibis__texto"><small>${esc(a.recibirias)}</small><strong class="hd-precio" data-de-adicional-neto></strong></span></p>
+  </div>
+  <p class="de-minimo" data-de-adicional-falta role="alert" hidden>${icono('alerta')}<span></span></p>
+  ${simulador()}
+  ${boton({ accion: 'mandarAdicional', extra: 'data-de-enviar disabled' }, `${esc(a.boton)}${icono('enviar')}`, 'hd-boton')}
+  <p class="de-nota">${icono('info')}<span>${esc(a.nota)}</span></p>
 </div>`,
   };
 }
@@ -465,7 +671,8 @@ function fin(): PantallaDemo {
     titulo: d.pantallas.fin,
     html: `<div class="app de-fin">
 ${cabecera('blanca')}
-${cuerpo(`
+${cuerpo(
+  `
   <div class="de-fin__escena" data-entra="pop">
     <span class="de-fin__mosaico" aria-hidden="true"></span>
     ${img('handy-cano', 'de-fin__cano', 354, 405)}
@@ -476,15 +683,17 @@ ${cuerpo(`
     <p class="hd-sobre">${esc(f.sobre)}</p>
     ${tituloMarcado(f.titulo, 'hd-titulo')}
   </div>
-  <p class="de-fin__ganaste" data-entra><small>${esc(f.ganaste)}</small><strong class="hd-precio hd-precio--grande hd-positivo" data-de-ganaste>${pesos(neto(PRECIO))}</strong></p>
+  <p class="de-fin__ganaste" data-entra><small>${esc(f.ganaste)}</small><strong class="hd-precio hd-precio--grande hd-positivo" data-de-ganaste>${pesos(neto(presupuestoDe(PRECIO)))}</strong></p>
   ${ticket(
     `${rubroIco('canilla')}<span class="de-ticket__titulo"><strong>${esc(d.aceptado.trabajo)}</strong><small>${esc(d.caja.hoy)}</small></span><span class="hd-chip hd-chip--exito hd-chip--mini">${icono('check')}${esc(C.aTuCuenta)}</span>`,
-    `<div data-de-costo>${desglose(PRECIO)}</div>`,
+    `<div data-de-costo>${filasDesglose(presupuestoDe(PRECIO), C.aTuCuenta)}</div>`,
     '',
     'data-entra',
   )}
   <p class="de-nota de-nota--centro" data-entra>${icono('billetera')}<span>${plano(f.texto)}</span></p>
-`, 'de-cuerpo--centro')}
+`,
+  'de-cuerpo--centro',
+)}
 <div class="de-pie">
   <div class="hd-botones">
     ${boton({ raiz: 'e-turnos', guia: true }, `${icono('calendario')}${esc(f.agenda)}`, 'hd-boton')}
@@ -495,63 +704,46 @@ ${cuerpo(`
   };
 }
 
-// ── Agenda ────────────────────────────────────────────────────────────────
+// ── Agenda (IMG_0197, sin la barra tapando nada) ─────────────────────────
 
 /** "Ver más información" + el contexto que solo escuchan los lectores de pantalla. */
 const verMas = (contexto: string, abierto = false) =>
-  `<span data-de-ver-mas-texto>${esc(abierto ? C.verMenos : C.verMas)}</span><span class="sr">: ${esc(contexto)}</span>`;
+  `<span data-de-ver-mas-texto>${esc(abierto ? C.verMenos : C.verMas)}</span><span class="sr" data-de-t="contexto">: ${esc(contexto)}</span>`;
 
-function calendario(): string {
-  const t = d.turnos;
-  const primero = fecha(1).getDay();
-  const ultimo = new Date(Number(C.anio), C.mesNumero, 0).getDate();
-  const celdas: string[] = [];
-  for (let i = 0; i < primero; i++) celdas.push('<span class="de-cal__dia de-cal__dia--vacio" aria-hidden="true"></span>');
-  for (let n = 1; n <= ultimo; n++) {
-    const turno = t.items.find((x) => x.dia === n);
-    const pasado = t.pasados.find((x) => x.dia === n);
-    const clase = turno ? ' de-cal__dia--turno' : pasado ? ' de-cal__dia--hecho' : n === C.hoy ? ' de-cal__dia--hoy' : n < C.hoy ? ' de-cal__dia--pasado' : '';
-    const ic = turno ? icono(turno.icono) : pasado ? icono(pasado.icono) : '';
-    celdas.push(`<span class="de-cal__dia${clase}" data-dia="${n}"><b>${n}</b>${ic}</span>`);
-  }
-  return `<div class="de-cal" data-entra aria-hidden="true">
-  <div class="de-cal__cabeza"><span>${icono('izquierda')}</span><strong>${esc(C.mesTitulo)} ${esc(C.anio)}</strong><span>${icono('derecha')}</span></div>
-  <div class="de-cal__semana">${t.semana.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
-  <div class="de-cal__dias">${celdas.join('')}</div>
-</div>`;
-}
-
-const corto = (dia: number) => diaSemana(dia).slice(0, 3);
-
-function tarjetaTurno(t: (typeof d.turnos.items)[number], i: number): string {
-  const contexto = completar(C.verMasDe, { rubro: t.rubro, fecha: `${diaSemana(t.dia)} ${fechaCorta(t.dia)}` });
-  return `<div class="de-turno" data-de-turno="${i}" data-entra>
+/** Tarjeta de un trabajo en la agenda (blanca con franja gris). El navegador usa la misma como molde. */
+function tarjetaTrabajo(t: Trabajo): string {
+  const est = d.turnos.estados as Record<string, string>;
+  return `<div class="de-turno de-turno--${esc(t.estado)}" data-de-turno="${esc(t.id)}">
   <div class="de-turno__cuerpo">
-    <span class="de-turno__fecha"><small>${esc(corto(t.dia))}</small><strong>${t.dia}</strong></span>
-    <span class="de-turno__datos"><strong>${icono(t.icono)}${esc(t.detalle)}</strong><small>${esc(t.rubro)} · ${esc(t.barrio)}</small><small>${esc(t.franja)}</small></span>
-    <span class="de-turno__monto"><strong class="hd-precio">+ ${pesos(neto(t.presupuesto))}</strong><small data-de-programado-tag>${esc(C.programado)}</small><small class="de-turno__cancelado" data-de-cancelado hidden>${esc(d.turnos.cancelado)}</small></span>
+    <span class="de-rubro" data-de-t="icono">${icono(t.icono)}</span>
+    <span class="de-turno__datos"><strong data-de-t="detalle">${esc(t.detalle)}</strong><small data-de-t="lugar">${esc(`${t.rubro} · ${t.barrio}`)}</small><small data-de-t="hora">${icono('reloj')}<span>${esc(t.hora)}</span></small></span>
+    <span class="de-turno__monto"><strong class="hd-precio" data-de-t="neto">+ ${pesos(neto(presupuestoTrabajo(t)))}</strong><small data-de-t="estado">${esc(est[t.estado] ?? '')}</small></span>
   </div>
-  ${boton({ accion: 'verTurno', valor: String(i), ir: 'e-turno-detalle', guia: i === 0 }, verMas(contexto), 'de-franja')}
+  ${boton({ accion: 'verTurno', valor: t.id, ir: 'e-turno-detalle' }, verMas(`${t.detalle}, ${cuandoTexto(t.fecha, t.hora)}`), 'de-franja')}
 </div>`;
 }
 
 function turnos(): PantallaDemo {
   const t = d.turnos;
+  const molde: Trabajo = { ...TRABAJOS[0], id: '', estado: 'confirmado' };
   return {
     id: 'e-turnos',
     titulo: d.pantallas.turnos,
     html: `<div class="app de-turnos">
 ${cabecera('blanca')}
-<div class="de-turnos__arriba">
+${cuerpo(
+  `
   ${tituloMarcado(t.titulo, 'hd-titulo de-turnos__titulo')}
-  ${calendario()}
-</div>
-<div class="hd-hoja-azul de-hoja-azul">
-  <span class="de-manija" aria-hidden="true"></span>
-  <p class="de-hoja-azul__titulo">${esc(t.panel)}</p>
-  <div class="hd-scroll de-hoja-azul__lista">${t.items.map(tarjetaTurno).join('')}</div>
-</div>
+  <div class="de-agenda__cal" data-entra>${agenda(
+    ROL,
+    TRABAJOS.map((x) => ({ id: x.id, fecha: x.fecha, html: tarjetaTrabajo(x) })),
+    HOY,
+  )}</div>
+`,
+  'de-agenda',
+)}
 ${navDemo(ROL, 1)}
+<template data-de-molde-trabajo>${tarjetaTrabajo(molde)}</template>
 </div>`,
   };
 }
@@ -560,9 +752,9 @@ ${navDemo(ROL, 1)}
 
 function detalle(): PantallaDemo {
   const x = d.detalle;
-  const t = d.turnos.items[0];
-  const ch = d.chats[t.chat as IdChat];
-  const iconos = [...new Set(d.turnos.items.map((it) => it.icono))]
+  const t = TRABAJOS.find((w) => w.estado === 'confirmado')!;
+  const ch = CHATS[t.chat];
+  const iconos = [...new Set([...TRABAJOS.map((it) => it.icono), d.inicio.pedido.icono])]
     .map((n) => `<span data-de-icono="${n}"${n === t.icono ? '' : ' hidden'}>${icono(n)}</span>`)
     .join('');
   return {
@@ -573,14 +765,15 @@ ${cabecera('blanca', false)}
 ${cuerpo(`
   ${volverDemo(x.titulo)}
   <div class="de-detalle__hero" data-entra>
-    <span class="de-detalle__fecha"><small data-de-d="dow">${esc(corto(t.dia))}</small><strong data-de-d="num">${t.dia}</strong><small>${esc(C.meses[C.mesNumero - 1])}</small></span>
+    <span class="de-detalle__fecha"><small data-de-d="dow"></small><strong data-de-d="num"></strong><small data-de-d="mes"></small></span>
     <span class="de-detalle__que">
       <span class="hd-chip hd-chip--claro hd-chip--mini" data-de-d="estado">${icono('checkCirculo')}<span>${esc(x.confirmado)}</span></span>
       <strong><span data-de-d="rubro">${esc(t.rubro)}</span> · <span data-de-d="detalle">${esc(t.detalle)}</span></strong>
-      <small>${icono('reloj')}<span data-de-d="franja">${esc(t.franja)}</span></small>
+      <small>${icono('reloj')}<span data-de-d="franja">${esc(t.hora)}</span></small>
     </span>
     <span class="de-detalle__ico">${iconos}</span>
   </div>
+  <p class="de-nota de-detalle__aviso" data-de-d="pendiente" hidden>${icono('reloj')}<span></span></p>
   <div class="hd-tarjeta de-detalle__datos" data-entra>
     <div class="hd-lista">
       <div class="hd-fila"><span class="hd-fila__ico">${icono('pin')}</span><span class="hd-fila__texto"><small>${esc(x.dondeLabel)}</small><strong data-de-d="barrio">${esc(t.barrio)}</strong></span></div>
@@ -589,16 +782,17 @@ ${cuerpo(`
   </div>
   ${ticket(
     `${rubroIco('billetera')}<span class="de-ticket__titulo"><strong>${esc(x.costoLabel)}</strong><small>${plano(C.tarifa)}</small></span>`,
-    `<div data-de-d="costo">${desglose(t.presupuesto, C.recibis)}</div>`,
+    `<div data-de-d="costo">${filasDesglose(presupuestoTrabajo(t))}</div>`,
     'de-ticket--detalle',
     'data-entra',
   )}
   <div class="de-cliente de-cliente--claro" data-entra>
-    <span class="hd-avatar" style="--tono:${esc(ch.tono)}" data-de-d="avatar" aria-hidden="true"><span>${esc(ch.inicial)}</span></span>
+    ${avatarDe(ch.inicial, ch.tono, '', 'data-de-d="avatar"')}
     <span class="de-cliente__texto"><strong data-de-d="cliente">${esc(ch.nombre)}</strong><small>${esc(d.camino.sinTelefono)}</small></span>
     ${boton({ accion: 'abrirChat', valor: t.chat, ir: 'e-conversacion', etiqueta: x.chatear, extra: 'data-de-d="chat"' }, icono('chat'), 'hd-circulo hd-circulo--azul')}
   </div>
   <p class="hd-error-linea de-cancelado" data-de-d="cancelado" hidden>${img('handy-cano-roto', '', 354, 405)}<span>${esc(x.cancelado)}</span></p>
+  <p class="de-nota de-nota--centro" data-de-d="hecho" hidden>${icono('checkCirculo')}<span>${esc(x.hecho)}</span></p>
 `)}
 <div class="de-pie de-pie--fila" data-de-d="acciones">
   ${boton({ ir: 'e-cancelar' }, esc(x.cancelar), 'hd-boton hd-boton--claro de-peligro')}
@@ -608,51 +802,14 @@ ${cuerpo(`
   };
 }
 
-// ── Cambiar la fecha ──────────────────────────────────────────────────────
-
-/** Tira de la semana (domingo a sábado) del día propuesto: el día del turno, el nuevo y los que no se pueden elegir. */
-function semana(nuevo: number, actual: number): string {
-  const domingo = nuevo - fecha(nuevo).getDay();
-  let html = '';
-  for (let n = domingo; n < domingo + 7; n++) {
-    if (n < 1 || n > 30) {
-      html += '<span class="de-semana__dia de-semana__dia--vacio" aria-hidden="true"></span>';
-      continue;
-    }
-    const nombre = diaSemana(n);
-    const deshabilitado = n <= C.hoy || fecha(n).getDay() === 0;
-    html += boton(
-      {
-        accion: 'elegirDia',
-        valor: String(n),
-        etiqueta: completar(d.cambio.elegirDia, { dia: nombre, fecha: fechaCorta(n) }),
-        extra: `aria-pressed="${n === nuevo}"${deshabilitado ? ' disabled' : ''}`,
-      },
-      `<small>${esc(nombre.slice(0, 3))}</small><strong>${n}</strong>`,
-      `de-semana__dia${n === actual ? ' de-semana__dia--actual' : ''}`,
-    );
-  }
-  return html;
-}
-
-/** Primer día hábil (lunes a sábado) después de `dia`. */
-function diaSiguiente(dia: number): number {
-  let n = dia + 1;
-  while (n <= 30 && fecha(n).getDay() === 0) n++;
-  return Math.min(n, 30);
-}
+// ── Cambiar la fecha (propuesta pendiente hasta que el cliente responda) ──
 
 function cambiarFecha(): PantallaDemo {
   const c = d.cambio;
-  const t = d.turnos.items[0];
-  const dia = diaSiguiente(t.dia);
-  const franja = Math.max(0, c.franjas.indexOf(t.franja));
   const motivos = c.motivos
     .map((m, i) => boton({ accion: 'motivo', valor: String(i), guia: i === 0, extra: 'aria-pressed="false"' }, esc(m), 'hd-chip de-chip'))
     .join('');
-  const franjas = c.franjas
-    .map((f, i) => boton({ accion: 'franjaElegir', valor: String(i), extra: `aria-pressed="${i === franja}"` }, esc(f), 'hd-chip de-chip'))
-    .join('');
+  const franjas = c.franjas.map((f, i) => boton({ accion: 'franjaElegir', valor: String(i), extra: 'aria-pressed="false"' }, esc(f), 'hd-chip de-chip')).join('');
   return {
     id: 'e-cambiar-fecha',
     titulo: d.pantallas.cambio,
@@ -660,24 +817,30 @@ function cambiarFecha(): PantallaDemo {
 ${cabecera('blanca', false)}
 ${cuerpo(`
   ${volverDemo(c.titulo)}
-  <p class="de-actual" data-de-cambio-actual data-entra>${icono('calendario')}<span>${esc(completar(c.actual, { dia: diaSemana(t.dia), fecha: fechaCorta(t.dia), franja: t.franja }))}</span></p>
+  <p class="de-actual" data-de-cambio-actual data-entra>${icono('calendario')}<span></span></p>
   <div class="de-cambio__form" data-de-cambio-form>
     <div data-entra><p class="de-etiqueta">${esc(c.motivoTitulo)}</p><div class="hd-chips">${motivos}</div></div>
     <div data-entra>
       <div class="de-etiqueta-fila"><p class="de-etiqueta">${esc(c.nuevaTitulo)}</p><span class="de-flechas">${boton({ accion: 'semanaPaso', valor: '-1', etiqueta: c.semanaAnterior }, icono('izquierda'), 'hd-circulo de-circulo-chico')}${boton({ accion: 'semanaPaso', valor: '1', etiqueta: c.semanaSiguiente }, icono('derecha'), 'hd-circulo de-circulo-chico')}</span></div>
-      <div class="de-semana" data-de-semana role="group" aria-label="${esc(c.semanaLabel)}">${semana(dia, t.dia)}</div>
+      <div class="de-semana" data-de-semana role="group" aria-label="${esc(c.semanaLabel)}"></div>
     </div>
     <div data-entra><p class="de-etiqueta">${esc(c.franjaTitulo)}</p><div class="hd-chips hd-chips--carril de-carril" data-de-franjas>${franjas}</div></div>
+    <div data-entra>${elegirCuando(c.elegirFecha, c.elegirHora)}</div>
     <div data-entra><p class="de-etiqueta">${esc(c.mensajeLabel)}</p>${boton({ accion: 'mensajeCambio' }, `<span data-de-mensaje-texto>${esc(c.mensaje)}</span>${icono('editar')}`, 'de-campo de-campo--mensaje')}</div>
+    <div data-entra>${simulador()}</div>
   </div>
-  <div class="de-estado de-cambio__ok" data-de-cambio-ok hidden>
-    ${tildeExito}
-    ${tituloMarcado(c.enviadoTitulo, 'hd-titulo hd-titulo--chico')}
-    <p class="hd-texto hd-texto--suave" data-de-cambio-ok-texto>${esc(c.enviado)}</p>
+  <div class="de-estado de-cambio__ok" data-de-cambio-ok data-estado="pendiente" role="status" hidden>
+    <span class="de-cambio__ico" data-de-cambio-ico="pendiente"><span class="hd-escribiendo de-espera__puntos" aria-hidden="true"><i></i><i></i><i></i></span></span>
+    <span class="de-cambio__ico" data-de-cambio-ico="aceptada">${tildeExito}</span>
+    <span class="de-cambio__ico" data-de-cambio-ico="rechazada">${img('handy-engranaje', 'hd-handy de-respuesta__handy', 338, 339)}</span>
+    <span data-de-cambio-titulo="pendiente">${tituloMarcado(c.enviadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+    <span data-de-cambio-titulo="aceptada">${tituloMarcado(c.aceptadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+    <span data-de-cambio-titulo="rechazada">${tituloMarcado(c.rechazadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+    <p class="hd-texto hd-texto--suave" data-de-cambio-ok-texto></p>
   </div>
 `)}
 <div class="de-pie">
-  <p class="de-resumen" data-de-cambio-resumen aria-live="polite">${esc(completar(c.resumen, { dia: diaSemana(dia), fecha: fechaCorta(dia), franja: c.franjas[franja] }))}</p>
+  <p class="de-resumen" data-de-cambio-resumen aria-live="polite"></p>
   ${boton({ accion: 'proponerFecha', guia: true }, `${esc(c.proponer)}${icono('enviar')}`, 'hd-boton')}
   ${boton({ volver: true, extra: 'data-de-cambio-volver hidden' }, esc(c.volverAgenda), 'hd-boton hd-boton--claro')}
 </div>
@@ -692,7 +855,7 @@ function notificaciones(): PantallaDemo {
   const item = (it: (typeof a.items)[number]) => {
     const t: Toque = 'raiz' in it && it.raiz ? { raiz: it.raiz } : { ir: it.destino, guia: !!it.guia };
     if ('turno' in it && it.turno !== undefined) Object.assign(t, { accion: 'verTurno', valor: String(it.turno) });
-    const titulo = it.neto ? esc(it.titulo).replace('{neto}', `<span data-de-neto>${pesos(neto(PRECIO))}</span>`) : esc(it.titulo);
+    const titulo = it.neto ? esc(it.titulo).replace('{neto}', `<span data-de-neto>${pesos(neto(presupuestoDe(PRECIO)))}</span>`) : esc(it.titulo);
     const tono = 'tono' in it ? ` de-notif--${it.tono}` : '';
     return `<div class="de-notif${tono}"${it.neto ? ' data-de-cobro-hoy' : ''} data-entra="lado">
   ${boton(t, `<span class="de-notif__ico">${icono(it.icono)}</span><span class="de-notif__texto"><strong>${titulo}</strong><small>${esc(it.texto)}</small></span>`, 'de-notif__cuerpo')}
@@ -765,6 +928,12 @@ function pedidoProgramado(): PantallaDemo {
     <span><small>${esc(p.franjaLabel)}</small><strong>${icono('reloj')}${esc(p.franja)}</strong></span>
   </div>
   <p class="de-pedido__lugar">${icono('pin')}${esc(p.ubicacion)}</p>`;
+  const titulos: [string, string][] = [
+    ['enviado', p.enviadoTitulo],
+    ['rechazado', p.rechazadoTitulo],
+    ['aceptado', p.aceptadoTitulo],
+    ['rechazadoCliente', p.rechazadoClienteTitulo],
+  ];
   return {
     id: 'e-pedido-programado',
     titulo: d.pantallas.programado,
@@ -794,12 +963,12 @@ ${cabecera('azul')}
         pie: p.pie,
       })}
     </div>
-    <div class="hd-tarjeta de-panel de-respuesta" data-de-programado-respuesta hidden>
-      <span data-de-resp="enviado">${tildeExito}</span>
-      <span data-de-resp="rechazado">${img('handy-engranaje', 'hd-handy de-respuesta__handy', 338, 339)}</span>
+    <div class="hd-tarjeta de-panel de-respuesta" data-de-programado-respuesta role="status" hidden>
+      <span data-de-resp-ico="ok">${tildeExito}</span>
+      <span data-de-resp-ico="espera"><span class="hd-escribiendo de-espera__puntos" aria-hidden="true"><i></i><i></i><i></i></span></span>
+      <span data-de-resp-ico="no">${img('handy-engranaje', 'hd-handy de-respuesta__handy', 338, 339)}</span>
       <span class="de-respuesta__texto">
-        <span data-de-resp="enviado">${tituloMarcado(p.enviadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
-        <span data-de-resp="rechazado">${tituloMarcado(p.rechazadoTitulo, 'hd-titulo hd-titulo--chico')}</span>
+        ${titulos.map(([k, t]) => `<span data-de-resp="${k}">${tituloMarcado(t, 'hd-titulo hd-titulo--chico')}</span>`).join('')}
         <small class="hd-texto hd-texto--suave" data-de-resp-texto>${esc(p.rechazadoTexto)}</small>
       </span>
     </div>
@@ -812,10 +981,10 @@ ${navDemo(ROL, 0)}
 
 // ── Cuenta ────────────────────────────────────────────────────────────────
 
-function filaCuenta(t: Toque, nombreIcono: string, texto: string, detalle = ''): string {
+function filaCuenta(t: Toque, nombreIcono: string, texto: string, detalleTexto = ''): string {
   return boton(
     t,
-    `<span class="hd-fila__ico">${icono(nombreIcono)}</span><span class="hd-fila__texto"><strong>${esc(texto)}</strong>${detalle ? `<small>${esc(detalle)}</small>` : ''}</span><span class="hd-fila__fin">${icono('derecha')}</span>`,
+    `<span class="hd-fila__ico">${icono(nombreIcono)}</span><span class="hd-fila__texto"><strong>${esc(texto)}</strong>${detalleTexto ? `<small>${esc(detalleTexto)}</small>` : ''}</span><span class="hd-fila__fin">${icono('derecha')}</span>`,
     'hd-fila',
   );
 }
@@ -834,7 +1003,13 @@ ${cabecera('blanca')}
 ${cuerpo(`
   <div class="de-perfil" data-entra="pop">
     <span class="de-perfil__foto">
-      <span class="hd-avatar hd-avatar--grande hd-avatar--verificado" aria-hidden="true"><span>${esc(c.nombre.split(' ').map((x) => x[0]).join('').toUpperCase())}</span></span>
+      <span class="hd-avatar hd-avatar--grande hd-avatar--verificado" aria-hidden="true"><span>${esc(
+        c.nombre
+          .split(' ')
+          .map((x) => x[0])
+          .join('')
+          .toUpperCase(),
+      )}</span></span>
       <span class="de-perfil__camara" aria-hidden="true" title="${esc(c.cambiarFoto)}">${icono('camara')}</span>
     </span>
     <p class="hd-titulo hd-titulo--chico hd-titulo--azul">${esc(c.nombre)}</p>
@@ -868,21 +1043,27 @@ ${navDemo(ROL, 3)}
 
 // ── Cobros ────────────────────────────────────────────────────────────────
 
-function movimiento(titulo: string, nombreIcono: string, fechaTexto: string, presupuesto: number, abierto: boolean, hoy = false): string {
+function movimiento(titulo: string, nombreIcono: string, fechaTexto: string, p: Presupuesto, abierto: boolean, hoy = false): string {
   return `<div class="de-turno de-mov"${hoy ? ' data-de-mov-hoy' : ''} data-entra>
   <div class="de-turno__cuerpo">
     ${rubroIco(nombreIcono)}
     <span class="de-turno__datos"><strong>${esc(titulo)}</strong><small>${esc(fechaTexto)}</small></span>
-    <span class="de-turno__monto"><strong class="hd-precio" data-de-mov-neto>+ ${pesos(neto(presupuesto))}</strong><small>${esc(C.aTuCuenta)}</small></span>
+    <span class="de-turno__monto"><strong class="hd-precio" data-de-mov-neto>+ ${pesos(neto(p))}</strong><small>${esc(C.aTuCuenta)}</small></span>
   </div>
-  <div class="de-mov__desglose" data-de-mov-desglose${abierto ? '' : ' hidden'}>${desglose(presupuesto)}</div>
+  <div class="de-mov__desglose" data-de-mov-desglose${abierto ? '' : ' hidden'}>${filasDesglose(p, C.aTuCuenta)}</div>
   ${boton({ accion: 'verMas', extra: `aria-expanded="${abierto}"` }, verMas(completar(C.verMasDe, { rubro: titulo, fecha: fechaTexto }), abierto), 'de-franja')}
 </div>`;
 }
 
 function caja(): PantallaDemo {
   const c = d.caja;
-  const lista = [movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, PRECIO, true, true), ...c.movimientos.map((m) => movimiento(m.rubro, m.icono, m.fecha, m.presupuesto, false))].join('');
+  const lista = [
+    movimiento(c.trabajoHoy, c.iconoHoy, c.hoy, presupuestoDe(PRECIO), true, true),
+    ...c.movimientos.map((mv) => {
+      const t = TRABAJOS.find((x) => x.id === mv.trabajo)!;
+      return movimiento(t.rubro, t.icono, mv.fecha, presupuestoTrabajo(t), false);
+    }),
+  ].join('');
   return {
     id: 'e-caja',
     titulo: d.pantallas.caja,
@@ -906,21 +1087,20 @@ ${cabecera('blanca')}
   };
 }
 
-// ── Mensajes ──────────────────────────────────────────────────────────────
+// ── Mensajes (IMG_0201) y Contactos (pantalla completa común) ────────────
 
 function mensajes(): PantallaDemo {
   const m = d.mensajes;
-  const filas = (m.orden as IdChat[])
+  const filas = m.orden
     .map((id) => {
-      const ch = d.chats[id];
+      const ch = CHATS[id];
       const ultimo = ch.mensajes[ch.mensajes.length - 1];
-      const badge = ch.noLeidos
-        ? `<span class="de-badge" data-de-badge="${id}" aria-label="${esc(completar(m.noLeidos, { n: ch.noLeidos }))}">${ch.noLeidos}</span>`
-        : '';
+      const nuevo = id === d.solicitud.chat;
+      const badge = ch.noLeidos ? `<span class="de-badge" data-de-badge="${id}" aria-label="${esc(completar(m.noLeidos, { n: ch.noLeidos }))}">${ch.noLeidos}</span>` : '';
       return boton(
-        { accion: 'abrirChat', valor: id, ir: 'e-conversacion', extra: `data-de-chat-fila="${id}"` },
-        `${avatarDe(ch.inicial, ch.tono)}<span class="hd-fila__texto"><strong>${esc(ch.nombre)}</strong><small class="de-chats__sub">${esc(ch.sub)}</small><small class="de-chats__ultimo" data-de-ultimo="${id}">${esc(ultimo.texto)}</small></span><span class="de-chats__fin"><small>${esc(ch.dia)}</small>${badge}</span>`,
-        'hd-fila de-chats__fila',
+        nuevo ? { ir: 'e-chat-nuevo', extra: `data-de-chat-fila="${id}"` } : { accion: 'abrirChat', valor: id, ir: 'e-conversacion', extra: `data-de-chat-fila="${id}"` },
+        `${avatarDe(ch.inicial, ch.tono)}<span class="hd-fila__texto"><strong>${esc(ch.nombre)}</strong><small class="de-chats__sub">${esc(ch.sub)}</small><small class="de-chats__ultimo" data-de-ultimo="${id}">${esc(ultimo.texto)}</small></span><span class="de-chats__fin"><small>${esc(nuevo ? m.nuevo : ch.dia)}</small>${badge}</span>`,
+        `hd-fila de-chats__fila${nuevo ? ' de-chats__fila--nuevo' : ''}`,
       );
     })
     .join('');
@@ -935,32 +1115,39 @@ function mensajes(): PantallaDemo {
     html: `<div class="app de-mensajes">
 ${cabecera('azul')}
 ${cuerpo(`
-  <div class="de-titulo-fila" data-entra><p class="hd-titulo">${esc(m.titulo)}</p>${boton({ ir: 'e-contactos' }, `${icono('contactos')}${esc(m.contactos)}`, 'hd-chip hd-chip--tinte de-chip')}</div>
+  <div class="de-titulo-fila" data-entra><p class="hd-titulo">${esc(m.titulo)}</p>${boton({ ir: 'e-contactos', extra: 'data-de-contactos-btn' }, `${icono('contactos')}${esc(m.contactos)}`, 'hd-chip hd-chip--tinte de-chip')}</div>
   <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista de-chats">${filas}</div></div>
   <div class="hd-tarjeta de-grupo" data-entra><div class="hd-lista">${ayuda}</div></div>
   <p class="de-nota de-nota--centro" data-entra>${icono('reloj')}<span>${esc(m.nota)}</span></p>
 `)}
-${navDemo(ROL, 2).replace('data-ir-raiz="e-cuenta"', 'data-ir-raiz="e-cuenta" data-guia')}
+${navDemo(ROL, 2)}
 </div>`,
   };
 }
 
-// ── Hojas chicas ──────────────────────────────────────────────────────────
-
-function contactos(): PantallaDemo {
-  const c = d.contactos;
-  const filas = (d.mensajes.orden as IdChat[])
-    .map((id) => {
-      const ch = d.chats[id];
-      return `<div class="hd-fila" data-de-chat-fila="${id}">${avatarDe(ch.inicial, ch.tono)}<span class="hd-fila__texto"><strong>${esc(ch.nombre)}</strong><small>${esc(ch.sub)}</small></span>${boton(
-        { accion: 'abrirChat', valor: id, ir: 'e-conversacion', etiqueta: completar(c.escribir, { nombre: ch.nombre }) },
-        icono('enviar'),
-        'hd-circulo hd-circulo--azul',
-      )}</div>`;
-    })
-    .join('');
-  return { id: 'e-contactos', titulo: d.pantallas.contactos, tipo: 'hoja', html: `${tituloHoja(c.titulo)}<div class="de-hoja"><div class="hd-lista" data-entra>${filas}</div></div>` };
+/** Contactos guardados (pantalla común): cada fila abre su chat (el nuevo, en e-chat-nuevo). */
+function comunes(): PantallaDemo[] {
+  const lista: ContactoDemo[] = d.contactos.lista.map((c) => ({
+    id: c.id,
+    nombre: CHATS[c.id].nombre,
+    detalle: c.detalle,
+    chat: c.id === d.solicitud.chat ? 'e-chat-nuevo' : 'e-conversacion',
+    guardado: c.guardado,
+    tono: CHATS[c.id].tono,
+  }));
+  return pantallasComunes(ROL, lista).map((p) => {
+    if (p.id !== 'e-contactos') return p;
+    // El botón de cada fila dice a qué chat va (la conversación es una sola pantalla para todos los clientes).
+    let html = p.html;
+    for (const c of lista) {
+      if (c.chat !== 'e-conversacion') continue;
+      html = html.replace(new RegExp(`(data-hd-contacto="${c.id}"[\\s\\S]*?<button type="button" class="[^"]*" )`), `$1data-accion="abrirChat" data-valor="${c.id}" `);
+    }
+    return { ...p, html };
+  });
 }
+
+// ── Hojas chicas ──────────────────────────────────────────────────────────
 
 function ayuda(): PantallaDemo {
   const a = d.ayuda;
@@ -1094,9 +1281,12 @@ export function demoEspecialista(): DemoRol {
       precio('e-precio-programado'),
       aceptado(),
       enCamino(),
-      chat('e-chat'),
-      chat('e-conversacion'),
+      chat('e-chat', 'perla'),
+      chat('e-conversacion', 'mogotes'),
+      chat('e-chat-nuevo', d.solicitud.chat),
+      propuestaHoja(),
       trabajo(),
+      adicional(),
       fin(),
       turnos(),
       detalle(),
@@ -1107,7 +1297,7 @@ export function demoEspecialista(): DemoRol {
       cuenta(),
       caja(),
       mensajes(),
-      contactos(),
+      ...comunes(),
       ayuda(),
       rubrosHoja(),
       datos(),
