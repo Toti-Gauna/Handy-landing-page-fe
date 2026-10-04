@@ -162,5 +162,108 @@
       "irReintentar": "e-editar-cobro",
       "listo": "Datos de cobro guardados"
     }
+  },
+  "config": {
+    "_nota": "Configuración de la demo (no de producción). hoy: el día en que transcurre la demo (zona horaria de Argentina); no se pueden elegir fechas anteriores. precioMinimo: piso para mandar un presupuesto en la demo; PENDIENTE de LEG-14 (Legal y Business): no aplicarlo en producción.",
+    "hoy": "2026-11-17",
+    "precioMinimo": 5000,
+    "precioMinimoEstado": "PENDIENTE"
+  },
+  "nav": [
+    {
+      "texto": "Inicio",
+      "icono": "casa"
+    },
+    {
+      "texto": "Agenda",
+      "icono": "calendario"
+    },
+    {
+      "texto": "Mensajes",
+      "icono": "chat"
+    },
+    {
+      "texto": "Cuenta",
+      "icono": "usuario"
+    }
+  ],
+  "selectorFecha": {
+    "titulo": "Elegí la fecha",
+    "anterior": "Mes anterior",
+    "siguiente": "Mes siguiente",
+    "semana": [
+      "D",
+      "L",
+      "M",
+      "M",
+      "J",
+      "V",
+      "S"
+    ],
+    "semanaAria": [
+      "Domingo",
+      "Lunes",
+      "Martes",
+      "Miércoles",
+      "Jueves",
+      "Viernes",
+      "Sábado"
+    ],
+    "pasadaAria": "{fecha}: ya pasó",
+    "hoy": "Hoy",
+    "listo": "Elegir {fecha}",
+    "sinElegir": "Tocá un día",
+    "nota": "Es una solicitud: el especialista te confirma si puede ese día."
+  },
+  "selectorHora": {
+    "titulo": "Elegí el horario",
+    "horas": "Hora",
+    "minutos": "Minutos",
+    "listo": "Elegir las {hora} h",
+    "nota": "Podés pedir cualquier hora del día. Es una solicitud: la otra persona la acepta, la rechaza o te propone otra."
+  },
+  "agenda": {
+    "titulo": "Tu agenda",
+    "anterior": "Mes anterior",
+    "siguiente": "Mes siguiente",
+    "diaAria": "{fecha}, {cantidad}",
+    "uno": "1 trabajo",
+    "varios": "{n} trabajos",
+    "ninguno": "sin trabajos",
+    "vacioTitulo": "Nada para este día",
+    "vacioTexto": "Tocá otro día para ver sus trabajos.",
+    "abrir": "Ver detalle"
+  },
+  "contactos": {
+    "titulo": "Contactos",
+    "abrir": "Contactos",
+    "bajada": "Las personas que agregaste desde un chat. Handy no lee la agenda de tu teléfono ni muestra números.",
+    "agregar": "Agregar a contactos",
+    "agregado": "Agregado a contactos",
+    "agregadoIsla": "{nombre} está en tus contactos",
+    "vacio": "Todavía no agregaste a nadie. Lo hacés desde un chat.",
+    "escribir": "Escribirle a {nombre}"
+  },
+  "chatTurnos": {
+    "programar": "Programar turno",
+    "ahora": "Quiero un turno ahora",
+    "solicitud": "Solicitud de turno",
+    "solicitudAhora": "Solicitud: lo antes posible",
+    "propuesta": "Propuesta",
+    "cambio": "Propuesta de cambio",
+    "adicional": "Adicional",
+    "aceptar": "Aceptar",
+    "rechazar": "Rechazar",
+    "estados": {
+      "pendiente": "Esperando respuesta",
+      "aceptada": "Aceptada",
+      "rechazada": "Rechazada",
+      "reemplazada": "Reemplazada por otra propuesta"
+    },
+    "precio": "Precio",
+    "cuando": "Cuándo",
+    "problema": "Qué pasó",
+    "ahoraTexto": "Lo antes posible (hoy)",
+    "noEsTurno": "No es un turno confirmado hasta que se acepte."
   }
 }

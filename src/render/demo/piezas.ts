@@ -2,7 +2,6 @@
 // (las reutilizan), pero lo que se toca es un <button> con los atributos del contrato (ver tipos.ts).
 
 import demo from '../../content/demo.json' with { type: 'json' };
-import p from '../../content/pantallas.json' with { type: 'json' };
 import { icono, NOMBRES_ICONOS } from '../iconos.ts';
 import { esc } from '../util.ts';
 import { estado, logo } from '../pantallas.ts';
@@ -71,11 +70,11 @@ export function cabeceraDemo(rol: RolDemo, variante: 'blanca' | 'azul', conPin: 
 </div>`;
 }
 
-/** Barra inferior: Inicio, Turnos, Mensajes, Cuenta. `activo` = índice 0..3 (o -1 para ninguno). */
+/** Barra inferior: Inicio, Agenda, Mensajes, Cuenta (textos de demo.json → nav). `activo` = índice 0..3 (o -1). */
 export function navDemo(rol: RolDemo, activo: number): string {
   const pre = prefijo(rol);
   const destinos = [`${pre}-inicio`, `${pre}-turnos`, `${pre}-mensajes`, `${pre}-cuenta`];
-  return `<nav class="app-nav" aria-label="${esc(demo.ui.navegacion)}">${p.nav
+  return `<nav class="app-nav" aria-label="${esc(demo.ui.navegacion)}">${demo.nav
     .map((n, i) =>
       boton(
         { raiz: destinos[i], extra: i === activo ? 'aria-current="page"' : '' },

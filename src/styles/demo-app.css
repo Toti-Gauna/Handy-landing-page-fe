@@ -1475,6 +1475,564 @@ button.hd-chip:active {
   animation: hd-saltito 1.4s var(--hd-resorte) infinite;
 }
 
+/* ── Cabecera de los chats (sin logo ni campana) ─────────────────────── */
+
+.hd-chat-cabecera {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  background: #fff;
+  box-shadow: 0 0.5em 1.2em -1em rgb(14 29 54 / 0.45);
+}
+
+.hd-chat-cabecera__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  min-height: 3.6em;
+  padding: 0.35em 1.1em 0.75em;
+}
+
+.hd-chat-cabecera__volver {
+  display: grid;
+  place-items: center;
+  width: 2.75em;
+  height: 2.75em;
+  border-radius: 0.9em;
+  background: var(--hd-mosaico);
+  color: var(--hd-tinta);
+  box-shadow: 0 0.22em 0 var(--hd-mosaico-hondo);
+  flex: none;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+:where(.demo-pantalla) .hd-chat-cabecera__volver:active {
+  transform: translateY(0.22em);
+  box-shadow: 0 0 0 var(--hd-mosaico-hondo);
+  filter: none;
+}
+
+.hd-chat-cabecera__quien {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12em;
+  flex: 1;
+  min-width: 0;
+}
+
+.hd-chat-cabecera__quien strong {
+  font-size: 0.9em;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hd-chat-cabecera__quien small {
+  font-size: 0.68em;
+  color: var(--hd-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hd-chat-cabecera__quien small:empty {
+  display: none;
+}
+
+/* ── Acciones del chat (programar, ahora, agregar a contactos) ───────── */
+
+.hd-chat-acciones {
+  display: flex;
+  gap: 0.45em;
+  overflow-x: auto;
+  padding: 0.1em 1.1em 0.35em;
+  scrollbar-width: none;
+}
+
+.hd-chat-acciones::-webkit-scrollbar {
+  display: none;
+}
+
+.hd-chat-acciones > .hd-chip {
+  flex: none;
+  min-height: 2.6em;
+  padding-inline: 0.9em;
+}
+
+.hd-contacto-btn__listo {
+  display: none;
+}
+
+.hd-contacto-btn[aria-pressed='true'] {
+  background: var(--hd-exito-tinte);
+  color: #137140;
+  opacity: 1;
+}
+
+.hd-contacto-btn[aria-pressed='true'] .hd-contacto-btn__agregar {
+  display: none;
+}
+
+.hd-contacto-btn[aria-pressed='true'] .hd-contacto-btn__listo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.hd-contacto-btn__agregar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+/* ── Calendario (agenda y elegir fecha) ──────────────────────────────── */
+
+.hd-agenda__mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+}
+
+.hd-agenda__titulo {
+  font-family: var(--hd-titulos);
+  font-weight: 900;
+  font-stretch: 115%;
+  font-size: 1.05em;
+  color: var(--hd-azul);
+  text-align: center;
+}
+
+.hd-agenda__mes .hd-circulo:disabled {
+  opacity: 0.35;
+}
+
+.hd-cal__semana,
+.hd-cal__grilla {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35em;
+}
+
+.hd-cal__semana {
+  margin-top: 0.7em;
+  font-size: 0.62em;
+  font-weight: 800;
+  color: var(--hd-suave);
+  text-align: center;
+}
+
+.hd-cal__grilla {
+  margin-top: 0.4em;
+}
+
+.hd-cal__dia {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15em;
+  aspect-ratio: 1;
+  min-height: 2.5em;
+  border-radius: 0.75em;
+  background: var(--hd-mosaico);
+  color: var(--hd-tinta);
+  font-size: 0.78em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0.16em 0 var(--hd-mosaico-hondo);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.2s ease;
+}
+
+:where(.demo-pantalla) .hd-cal__dia:active:not(:disabled) {
+  transform: translateY(0.16em);
+  box-shadow: none;
+  filter: none;
+}
+
+.hd-cal__dia--pasado {
+  color: var(--hd-suave);
+}
+
+.hd-cal__dia:disabled {
+  background: transparent;
+  box-shadow: none;
+  color: #b3b9c6;
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.hd-cal__dia--hoy {
+  background: var(--hd-amarillo);
+  box-shadow: 0 0.16em 0 var(--hd-amarillo-hondo);
+}
+
+.hd-cal__dia--con {
+  background: var(--hd-azul-tinte);
+  color: var(--hd-azul);
+}
+
+.hd-cal__dia[aria-pressed='true'] {
+  background: var(--hd-azul);
+  color: #fff;
+  box-shadow: 0 0.16em 0 var(--hd-azul-hondo);
+  animation: hd-salto 0.45s var(--hd-resorte);
+}
+
+.hd-cal__puntos {
+  display: flex;
+  gap: 0.18em;
+}
+
+.hd-cal__puntos b {
+  width: 0.36em;
+  height: 0.36em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Agenda: el día elegido y sus trabajos */
+.hd-agenda__dia {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.hd-agenda__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-agenda__trabajo[hidden],
+.hd-agenda__vacio[hidden] {
+  display: none;
+}
+
+.hd-agenda__vacio {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.9em 1em;
+  border-radius: 1.2em;
+  background: var(--hd-fondo-2);
+}
+
+.hd-agenda__vacio img {
+  width: 2.6em;
+  height: 4.2em;
+  flex: none;
+}
+
+.hd-agenda__vacio p {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.hd-agenda__vacio strong {
+  font-size: 0.86em;
+}
+
+.hd-agenda__vacio small {
+  font-size: 0.72em;
+  color: var(--hd-suave);
+}
+
+/* ── Hojas para elegir fecha y hora ──────────────────────────────────── */
+
+.hd-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  margin-top: 0.6em;
+}
+
+.hd-selector__nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  padding: 0.65em 0.8em;
+  border-radius: 0.9em;
+  background: var(--hd-fondo-2);
+  color: var(--hd-suave);
+  font-size: 0.7em;
+  line-height: 1.35;
+}
+
+.hd-selector__nota .icono {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+  color: var(--hd-azul);
+}
+
+/* Ruedas de hora y minutos (como el selector nativo del celular). */
+.hd-ruedas {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  height: 11.5em;
+  padding: 0 1.5em;
+  border-radius: 1.3em;
+  background: var(--hd-fondo-2);
+}
+
+.hd-ruedas__banda {
+  position: absolute;
+  left: 0.8em;
+  right: 0.8em;
+  top: 50%;
+  height: 2.6em;
+  margin-top: -1.3em;
+  border-radius: 0.8em;
+  background: #fff;
+  box-shadow: var(--hd-sombra-1);
+  pointer-events: none;
+}
+
+.hd-ruedas__dos {
+  position: relative;
+  font-family: var(--hd-titulos);
+  font-size: 1.5em;
+  font-weight: 900;
+  color: var(--hd-azul);
+}
+
+.hd-rueda {
+  position: relative;
+  height: 100%;
+  width: 4.2em;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent);
+  outline: none;
+}
+
+.hd-rueda::-webkit-scrollbar {
+  display: none;
+}
+
+.hd-rueda:focus-visible {
+  box-shadow: inset 0 0 0 0.16em var(--hd-azul-vivo);
+  border-radius: 0.8em;
+}
+
+.hd-rueda__relleno {
+  display: block;
+  height: calc(50% - 1.3em);
+}
+
+.hd-rueda__op {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 2.6em;
+  scroll-snap-align: center;
+  font-family: var(--hd-titulos);
+  font-size: 1.15em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #9aa3b5;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.hd-rueda__op[aria-selected='true'] {
+  color: var(--hd-azul);
+  transform: scale(1.12);
+}
+
+/* ── Tarjetas de solicitud / propuesta en el chat ─────────────────────── */
+
+.hd-propuesta {
+  align-self: flex-start;
+  width: min(100%, 17.5em);
+  padding: 0.85em 0.95em;
+  border-radius: 1.2em 1.2em 1.2em 0.4em;
+  background: #fff;
+  color: var(--hd-tinta);
+  box-shadow: var(--hd-sombra-1);
+}
+
+.hd-propuesta--propia {
+  align-self: flex-end;
+  border-radius: 1.2em 1.2em 0.4em 1.2em;
+  background: var(--hd-azul-tinte);
+}
+
+.hd-propuesta__tipo {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font-size: 0.7em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hd-azul);
+}
+
+.hd-propuesta__tipo .icono {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.hd-propuesta__datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  margin: 0.55em 0 0;
+}
+
+.hd-propuesta__datos > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8em;
+  font-size: 0.74em;
+}
+
+.hd-propuesta__datos dt {
+  color: var(--hd-suave);
+}
+
+.hd-propuesta__datos dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.hd-propuesta__destacado {
+  margin-top: 0.25em;
+  padding-top: 0.45em;
+  border-top: 0.08em dashed rgb(14 29 54 / 0.18);
+}
+
+.hd-propuesta__destacado dt,
+.hd-propuesta__destacado dd {
+  color: var(--hd-tinta);
+  font-size: 1.12em;
+  font-weight: 900;
+}
+
+.hd-propuesta__nota {
+  margin-top: 0.5em;
+  font-size: 0.64em;
+  color: var(--hd-suave);
+}
+
+.hd-propuesta__acciones {
+  display: flex;
+  gap: 0.5em;
+  margin-top: 0.7em;
+}
+
+.hd-propuesta__acciones > * {
+  flex: 1;
+}
+
+.hd-propuesta__acciones[hidden] {
+  display: none;
+}
+
+.hd-propuesta__estado {
+  display: inline-flex;
+  margin-top: 0.6em;
+  padding: 0.2em 0.6em;
+  border-radius: 999px;
+  background: var(--hd-mosaico);
+  font-size: 0.64em;
+  font-weight: 800;
+}
+
+.hd-propuesta[data-estado='aceptada'] .hd-propuesta__estado {
+  background: var(--hd-exito-tinte);
+  color: #137140;
+}
+
+.hd-propuesta[data-estado='rechazada'] .hd-propuesta__estado {
+  background: #fdecea;
+  color: #8f1d16;
+}
+
+.hd-propuesta[data-estado='reemplazada'] {
+  opacity: 0.6;
+}
+
+/* ── Contactos (pantalla completa) ───────────────────────────────────── */
+
+.hd-contactos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding: 1em 1.2em 1.4em;
+}
+
+.hd-contactos__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-contacto {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  min-height: 3.6em;
+  padding: 0.5em 0;
+  border-bottom: 0.07em solid var(--hd-linea);
+}
+
+.hd-contacto[hidden] {
+  display: none;
+}
+
+.hd-contacto__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  flex: 1;
+  min-width: 0;
+}
+
+.hd-contacto__texto strong {
+  font-size: 0.84em;
+  overflow-wrap: anywhere;
+}
+
+.hd-contacto__texto small {
+  font-size: 0.68em;
+  color: var(--hd-suave);
+}
+
+.hd-contactos__vacio {
+  padding: 1em;
+  border-radius: 1em;
+  background: var(--hd-fondo-2);
+  font-size: 0.76em;
+  color: var(--hd-suave);
+  text-align: center;
+}
+
+.hd-contactos__vacio[hidden] {
+  display: none;
+}
+
 /* ── Animaciones ─────────────────────────────────────────────────────── */
 
 @keyframes hd-girar {
