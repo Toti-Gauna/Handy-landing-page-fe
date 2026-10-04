@@ -1917,13 +1917,16 @@ button.hd-chip:active {
 }
 
 .hd-propuesta__datos dt {
+  flex: none;
   color: var(--hd-suave);
 }
 
 .hd-propuesta__datos dd {
+  min-width: 0;
   margin: 0;
   font-weight: 700;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .hd-propuesta__destacado {

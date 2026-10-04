@@ -46,6 +46,11 @@ pastillas azules del Centro de ayuda (preguntas), cupones (camada fundadora) y e
 - Pantallas en `src/render/demo/{usuario,especialista}.ts`, comportamiento en `src/scripts/demo/`, motor en `motor.ts` (contrato en `tipos.ts`).
 - Kit visual de la app: `src/styles/demo-app.css` (clases `.hd-*`), piezas en `src/render/demo/piezas.ts` y el mapa vivo de Mar del Plata en `mapa.ts`.
   Lo propio de cada rol va con prefijo `.du-` / `.de-`. Avisos por la isla (`m.isla`), confeti (`m.confeti`), montos (`m.contar`), entradas con `data-entra`.
+- Lógica pura de la demo en `src/demo/` (plata, fechas, agenda, contactos, propuestas, llegada) con tests (`npm test`).
+  Toda cuenta de plata pasa por `src/demo/dinero.ts`: tarifa del cliente y del especialista separadas, mismo total en todas las pantallas.
+- Piezas comunes a los dos roles en `src/render/demo/comunes.ts` + `src/scripts/demo/comunes.ts` (cabecera de chat, fecha/hora, agenda, contactos, propuestas).
+- Fechas y horas pedidas son solicitudes; nada es turno confirmado sin la aceptación de la otra parte. Sin confirmación manual de llegada.
+- Documentación del módulo: `docs/modulos/demo-interactiva.md`.
 - Errores con los Handys rotos (`m.error(tipo)`, textos en `demo.json → errores`); las imágenes salen de `scripts/handys-rotos.sh`.
 - Modo app (`?app=1`, botón "Usar como app" o el ícono instalado con `public/demo.webmanifest`): pantalla completa sin marco.
   Toda pantalla tiene que funcionar de 320 a 480 px de ancho y de 568 a 932 px de alto (flex + `.hd-scroll`).

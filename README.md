@@ -16,6 +16,19 @@ npm run build     # typecheck + build estático en dist/
 
 Todo el texto vive en `src/content/*.json`. Las reglas de lenguaje y la estructura están en [CLAUDE.md](CLAUDE.md).
 
+## Demo interactiva (`/demo/`)
+
+Referencia visual de la app (usuario y especialista) con datos ficticios: sin backend, sin cobros y sin guardar nada.
+
+```sh
+npm run dev       # http://localhost:5173/Handy-landing-page-fe/demo/?rol=usuario (o ?rol=especialista)
+npm test          # lógica de la demo: plata, fechas, agenda, contactos, propuestas y llegada
+```
+
+- Modo app (pantalla completa, sin marco): agregá `?app=1` o tocá "Usar como app" en el celular.
+- Para presentar: `?ritmo=lento` (modo automático más lento) y `?stand=1` (en bucle).
+- Cómo funciona, estados, datos, permisos y fallos: [docs/modulos/demo-interactiva.md](docs/modulos/demo-interactiva.md).
+
 ## Deploy
 
 GitHub Actions publica en GitHub Pages en cada push a `main` (`.github/workflows/deploy.yml`).

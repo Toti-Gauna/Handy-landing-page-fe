@@ -61,12 +61,20 @@ export function grillaMes(anio: number, mes: number): (FechaISO | null)[] {
 }
 
 /** "Hoy" en Argentina para un instante dado (fuera de la demo, con el reloj real). */
+let formatoIso: Intl.DateTimeFormat | null = null;
 export function hoyEnArgentina(ahora: Date): FechaISO {
-  const p = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_ARGENTINA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
-  return p;
+  formatoIso ??= new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_ARGENTINA, year: 'numeric', month: '2-digit', day: '2-digit' });
+  return formatoIso.format(ahora);
 }
 
-const fmt = (opciones: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('es-AR', { timeZone: ZONA_ARGENTINA, ...opciones });
+// Crear un Intl.DateTimeFormat es caro (en un celular de gama baja, decenas de ms): se arma uno por formato y se reusa.
+const formatos = new Map<string, Intl.DateTimeFormat>();
+const fmt = (opciones: Intl.DateTimeFormatOptions) => {
+  const clave = JSON.stringify(opciones);
+  let f = formatos.get(clave);
+  if (!f) formatos.set(clave, (f = new Intl.DateTimeFormat('es-AR', { timeZone: ZONA_ARGENTINA, ...opciones })));
+  return f;
+};
 /** Mediodía de esa fecha en Argentina (UTC−3): así el formato nunca cambia de día. */
 const instante = (f: FechaISO) => {
   const { anio, mes, dia } = partes(f);
