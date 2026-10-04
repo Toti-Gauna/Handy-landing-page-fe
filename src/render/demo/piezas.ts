@@ -113,12 +113,15 @@ export function iniciales(nombre: string): string {
 }
 
 /** Avatar redondo con iniciales (y el tilde de verificado). `tono`: color de fondo (CSS). */
-export function avatar(nombre: string, opciones: { tamano?: 'chico' | 'grande'; verificado?: boolean; tono?: string; clase?: string } = {}): string {
+export function avatar(
+  nombre: string,
+  opciones: { tamano?: 'chico' | 'grande'; verificado?: boolean; tono?: string; clase?: string; iniciales?: string } = {},
+): string {
   const c = ['hd-avatar'];
   if (opciones.tamano) c.push(`hd-avatar--${opciones.tamano}`);
   if (opciones.verificado) c.push('hd-avatar--verificado');
   if (opciones.clase) c.push(opciones.clase);
-  return `<span class="${c.join(' ')}"${opciones.tono ? ` style="--tono:${esc(opciones.tono)}"` : ''} aria-hidden="true"><span>${esc(iniciales(nombre))}</span></span>`;
+  return `<span class="${c.join(' ')}"${opciones.tono ? ` style="--tono:${esc(opciones.tono)}"` : ''} aria-hidden="true"><span>${esc(opciones.iniciales ?? iniciales(nombre))}</span></span>`;
 }
 
 /** Tilde de éxito que se dibuja sola (ver .hd-tilde). */

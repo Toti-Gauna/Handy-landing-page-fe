@@ -142,6 +142,7 @@ function pintarHora(hoja: HTMLElement, m: Motor) {
   });
   const listo = hoja.querySelector<HTMLButtonElement>('[data-hd-sel-listo]');
   if (listo) listo.textContent = completar(demo.selectorHora.listo, { hora: horaTexto(st.valor) });
+  m.guia(listo);
 }
 
 function montarRuedas(hoja: HTMLElement, m: Motor) {

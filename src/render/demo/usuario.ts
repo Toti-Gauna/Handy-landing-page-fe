@@ -203,6 +203,7 @@ function valoresTrabajo(): Record<string, string> {
     tResta: formatoPesos(0),
     tEstado: d.agenda.estados.confirmado,
     tCambio: '',
+    tPropuesta: '',
     cambioTexto: '',
     pagado: formatoPesos(0),
     tarjetaUltimos: '',
@@ -239,7 +240,8 @@ function tpl(texto: string, tag = 'span', clase = '', extra = ''): string {
 /** Monto que cuenta en el navegador (data-du-monto): sale con el valor final. */
 const monto = (clave: string, clase = 'hd-precio') => `<span class="${clase}" data-du-monto="${clave}">${esc(V[clave])}</span>`;
 
-const iconoRubro = (clave = 'rubro', id = ini.rubro, clase = 'du-ico') => `<span class="${clase}" data-du-icono="${clave}">${icono(rubro(id).icono)}</span>`;
+const iconoRubro = (clave = 'rubro', id = ini.rubro, clase = 'du-ico') =>
+  `<span class="${clase}" data-du-icono="${clave}" data-du-actual="${id}">${icono(rubro(id).icono)}</span>`;
 
 /** Atributo de visibilidad + hidden si arranca oculto. */
 const ver = (cond: string, visible: boolean) => `data-du-ver="${cond}"${visible ? '' : ' hidden'}`;
@@ -458,11 +460,11 @@ function sinEspecialistas(): PantallaDemo {
   const s = d.sinEspecialistas;
   return pantalla(
     'u-sin-especialistas',
-    `${tituloHoja(T['u-sin-especialistas'])}
+    `${tituloHoja(d.inicio.masTitulo)}
 <div class="du-sin">
   ${img('handy-engranaje-roto', 300, 300, 'hd-handy du-sin__handy')}
   <p class="hd-titulo hd-titulo--chico du-centro" ${E}>${esc(s.titulo)}</p>
-  ${tpl(s.texto, 'p', 'hd-texto du-centro', E)}
+  <p class="hd-texto du-centro" data-du-sin="${esc(s.texto)}" ${E}>${esc(completar(s.texto, { tarea: d.inicio.mas.find((t) => !t.rubro)?.texto ?? '' }))}</p>
   <p class="du-hoja-nota" ${E}>${icono('info')}<span>${esc(s.nota)}</span></p>
   ${boton({ volver: true, extra: E }, esc(s.volver), 'hd-boton')}
 </div>`,
@@ -1039,10 +1041,18 @@ function turnoDetalle(): PantallaDemo {
   </div>
   ${tpl(x.cambioPendiente, 'p', 'du-aviso du-aviso--pendiente', ver('tCambioPend', false))}
   ${tpl(x.cambioAceptado, 'p', 'du-aviso du-aviso--ok', ver('tCambioOk', false))}
+  <div class="du-aviso du-aviso--pendiente du-cambio-prop" ${ver('tCambioProp', false)}>
+    ${tpl(x.cambioPropuesta, 'p')}
+    <div class="hd-botones hd-botones--fila">${boton({ accion: 'cambio-responder', valor: 'rechazar' }, esc(x.rechazarPropuesta), 'hd-boton hd-boton--chico hd-boton--claro')}${boton(
+      { accion: 'cambio-responder', valor: 'aceptar' },
+      `${icono('check')}${esc(x.aceptarPropuesta)}`,
+      'hd-boton hd-boton--chico hd-boton--exito',
+    )}</div>
+  </div>
   ${tpl(x.cancelado, 'p', 'du-aviso du-aviso--rojo', ver('tCancelado', false))}
 </div>
 ${pie(`${boton({ ir: 'u-seguimiento', extra: ver('tEnCurso', false) }, `${icono('caminar')}${esc(x.seguir)}`, 'hd-boton')}
-  <div class="hd-botones hd-botones--fila" ${ver('tActivo', true)}>${chats}${boton({ ir: 'u-cambiar', extra: 'data-du-guia="tGuiaCambiar" data-du-habilitar="!tCambioPend"' }, `${icono('calendario')}${esc(x.cambiar)}`, 'hd-boton hd-boton--claro du-boton-chico')}</div>
+  <div class="hd-botones hd-botones--fila" ${ver('tActivo', true)}>${chats}${boton({ ir: 'u-cambiar', extra: 'data-du-guia="tGuiaCambiar" data-du-habilitar="!tCambioAbierto"' }, `${icono('calendario')}${esc(x.cambiar)}`, 'hd-boton hd-boton--claro du-boton-chico')}</div>
   ${boton({ accion: 'desde', valor: 'detalle', ir: 'u-cancelar', extra: ver('tActivo', true) }, esc(x.cancelar), 'hd-boton hd-boton--fantasma du-rojo')}
   ${boton({ accion: 'pagar', extra: ver('tPorPagar', false) }, tpl(x.pagar), 'hd-boton hd-boton--exito')}
   ${boton({ accion: 'ver-pago', ir: 'u-pagos', extra: ver('tVerPago', false) }, `${icono('billetera')}${esc(x.verPago)}`, 'hd-boton')}`, 'du-pie--detalle')}`),
@@ -1215,8 +1225,8 @@ function pagos(): PantallaDemo {
 <div class="du-cuerpo du-cuerpo--ajustado du-pagos-pantalla">
   ${barra(T['u-pagos'], { extra: boton({ ir: 'u-agregar-tarjeta', etiqueta: g.agregar, extra: 'data-du-guia="!tarjetaNueva"' }, icono('mas'), 'hd-circulo du-pagos__mas') })}
   <div class="du-tarjetas hd-scroll" role="group" aria-label="${esc(g.tarjetasAria)}" ${POP}>
-    ${plastico({ tipo: esc(tj.tipo), numero: esc(tj.numero), titular: esc(tj.titular), vence: esc(tj.vence) })}
     ${plastico({ tipo: esc(g.nueva.tipo), numero: tpl(g.nueva.numero.replace('{ultimos}', '{tarjetaUltimos}')), titular: tpl('{tarjetaNombre}'), vence: tpl('{tarjetaVence}'), clase: 'du-banco--nueva', extra: `${ver('tarjetaNueva', false)} data-du-tarjeta-nueva` })}
+    ${plastico({ tipo: esc(tj.tipo), numero: esc(tj.numero), titular: esc(tj.titular), vence: esc(tj.vence) })}
   </div>
   <p class="du-demo-aviso">${icono('info')}<span>${esc(g.demo)}</span></p>
 </div>

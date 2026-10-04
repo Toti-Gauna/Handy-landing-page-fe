@@ -166,7 +166,7 @@
 }
 
 .de-chip {
-  min-height: 2.35em;
+  min-height: 3.6em;
   padding-inline: 0.95em;
   font-size: 0.72em;
 }
@@ -177,8 +177,8 @@
 }
 
 .de-circulo-chico {
-  width: 2.1em;
-  height: 2.1em;
+  width: 2.6em;
+  height: 2.6em;
 }
 
 .de-circulo-chico .icono {
@@ -366,28 +366,6 @@
 
 .de-dato--resta > :last-child {
   color: var(--hd-error);
-}
-
-.de-dato--extra > :first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-}
-
-.de-quitar {
-  display: grid;
-  place-items: center;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 50%;
-  background: var(--hd-mosaico);
-  color: var(--hd-suave);
-  flex: none;
-}
-
-.de-quitar .icono {
-  width: 0.85em !important;
-  height: 0.85em !important;
 }
 
 /* ── Mapa y pastilla "Disponible" ────────────────────────────────────── */
@@ -670,8 +648,8 @@
 }
 
 .de-cerrar {
-  width: 2.1em;
-  height: 2.1em;
+  width: 2.6em;
+  height: 2.6em;
 }
 
 .de-cerrar .icono {
@@ -722,7 +700,7 @@
 }
 
 .de-pedido__botones .hd-boton {
-  min-height: 3em;
+  min-height: 3.3em;
   padding-inline: 0.6em;
   font-size: 0.8em;
 }
@@ -822,6 +800,7 @@
 }
 
 .de-franjas .de-chip {
+  min-height: 3.8em;
   font-size: 0.68em;
 }
 
@@ -1208,85 +1187,6 @@
   background: var(--hd-fondo-2);
 }
 
-.de-chat__arriba {
-  background: #fff;
-  border-radius: 0 0 1.5em 1.5em;
-  box-shadow: 0 0.5em 1.4em -1em rgb(14 29 54 / 0.4);
-}
-
-.de-chat__cabeza {
-  display: flex;
-  align-items: center;
-  gap: 0.7em;
-  padding: 0.35em 1.1em 0.7em;
-}
-
-.de-chat__volver {
-  width: 2.3em;
-  height: 2.3em;
-}
-
-.de-chat__nombre {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12em;
-  min-width: 0;
-}
-
-.de-chat__nombre strong {
-  font-family: var(--hd-titulos);
-  font-weight: 900;
-  font-stretch: 112%;
-  font-size: 0.98em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.de-chat__nombre small {
-  font-size: 0.68em;
-  font-weight: 600;
-  color: var(--hd-suave);
-}
-
-.de-chat__contexto {
-  display: flex;
-  align-items: center;
-  gap: 0.65em;
-  margin: 0 0.9em 0.9em;
-  padding: 0.55em 0.6em 0.55em 0.6em;
-  border-radius: 1.1em;
-  background: var(--hd-azul-tinte);
-}
-
-.de-chat__contexto-texto {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12em;
-  flex: 1;
-  min-width: 0;
-}
-
-.de-chat__contexto-texto strong {
-  font-size: 0.74em;
-  font-weight: 800;
-  color: var(--hd-azul);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.de-chat__contexto-texto small {
-  font-size: 0.64em;
-  font-weight: 600;
-  color: var(--hd-texto);
-}
-
-.de-chat__contexto .hd-boton--chico {
-  flex: none;
-  font-size: 0.7em;
-}
-
 .de-chat__mensajes {
   display: flex;
   flex-direction: column;
@@ -1384,7 +1284,7 @@
 }
 
 .de-chat__rapidas .hd-chip {
-  min-height: 2.3em;
+  min-height: 3.5em;
   font-size: 0.74em;
 }
 
@@ -1485,44 +1385,6 @@
   font-style: italic;
 }
 
-.de-sugerencia {
-  display: flex;
-  align-items: center;
-  gap: 0.7em;
-  padding: 0.6em 0.6em 0.6em 0.7em;
-  border: 0.12em dashed var(--hd-mosaico-hondo);
-  border-radius: 1.1em;
-}
-
-.de-sugerencia__ico {
-  display: grid;
-  place-items: center;
-  width: 2.3em;
-  height: 2.3em;
-  border-radius: 0.8em;
-  background: var(--hd-azul-tinte);
-  color: var(--hd-azul);
-  flex: none;
-}
-
-.de-sugerencia__texto {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1em;
-  flex: 1;
-  min-width: 0;
-}
-
-.de-sugerencia__texto strong {
-  font-size: 0.8em;
-  font-weight: 700;
-}
-
-.de-sugerencia__texto small {
-  font-size: 0.74em;
-  color: var(--hd-suave);
-}
-
 .de-enlaces {
   display: flex;
   justify-content: center;
@@ -1531,6 +1393,7 @@
 
 .de-enlaces .hd-boton {
   width: auto;
+  min-height: 3.4em;
   font-size: 0.76em;
 }
 
@@ -1630,131 +1493,10 @@
 .de-fin .de-cuerpo {
   gap: 0.95em;
 }
-
 /* ── Agenda ──────────────────────────────────────────────────────────── */
-
-.de-turnos__arriba {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6em;
-  flex: none;
-  padding: 0.2em 1.2em 0.9em;
-}
 
 .de-turnos__titulo {
   font-size: 1.35em;
-}
-
-.de-cal {
-  padding: 0.6em 0.6em 0.7em;
-  border-radius: 1.4em;
-  background: var(--hd-fondo-2);
-}
-
-.de-cal__cabeza {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0.3em 0.5em;
-  color: var(--hd-azul);
-}
-
-.de-cal__cabeza strong {
-  font-family: var(--hd-titulos);
-  font-weight: 900;
-  font-stretch: 115%;
-  font-size: 0.86em;
-}
-
-.de-cal__cabeza .icono {
-  width: 1em;
-  height: 1em;
-  stroke-width: 2.6;
-}
-
-.de-cal__semana,
-.de-cal__dias {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.28em;
-}
-
-.de-cal__semana span {
-  font-size: 0.6em;
-  font-weight: 800;
-  text-align: center;
-  color: var(--hd-suave);
-}
-
-.de-cal__dias {
-  margin-top: 0.35em;
-}
-
-.de-cal__dia {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.05em;
-  height: 2.15em;
-  border-radius: 0.6em;
-  background: #fff;
-  color: var(--hd-tinta);
-  box-shadow: 0 0.12em 0 var(--hd-mosaico-hondo);
-}
-
-.de-cal__dia b {
-  font-size: 0.66em;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.de-cal__dia .icono {
-  width: 0.85em;
-  height: 0.85em;
-  stroke-width: 2.4;
-}
-
-.de-cal__dia--vacio {
-  background: none;
-  box-shadow: none;
-}
-
-.de-cal__dia--pasado {
-  background: var(--hd-mosaico);
-  box-shadow: none;
-  color: #9aa1ad;
-}
-
-.de-cal__dia--hecho {
-  background: var(--hd-noche);
-  color: #fff;
-  box-shadow: 0 0.12em 0 #0b1426;
-}
-
-.de-cal__dia--hoy {
-  background: var(--hd-amarillo);
-  box-shadow: 0 0.12em 0 var(--hd-amarillo-hondo);
-}
-
-.de-cal__dia--turno {
-  background: var(--hd-azul);
-  color: #fff;
-  box-shadow: 0 0.12em 0 var(--hd-azul-hondo);
-}
-
-.de-cal__dia--cancelado b {
-  text-decoration: line-through;
-}
-
-.de-cal__dia--cancelado .icono {
-  opacity: 0.35;
-}
-
-.hd-entrando .de-cal__dia--turno {
-  animation: hd-aparecer-pop 0.5s var(--hd-resorte) both;
-  animation-delay: 0.45s;
 }
 
 /* Hoja azul con la lista ("Próximos trabajos", "Tus movimientos"). */
@@ -2846,4 +2588,901 @@
   min-height: 1.8em;
   padding: 0.2em 0.65em;
   font-size: 0.8em;
+}
+
+/* ══ Ronda 3 ═══════════════════════════════════════════════════════════ */
+
+/* ── Selector "Simular … (demo)": discreto, para la presentación ─────── */
+
+.de-sim {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  padding: 0.55em 0.7em 0.65em;
+  border: 0.1em dashed var(--hd-mosaico-hondo);
+  border-radius: 1em;
+}
+
+.de-sim__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.62em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hd-suave);
+}
+
+.de-sim__titulo .icono {
+  width: 1.2em !important;
+  height: 1.2em !important;
+}
+
+.de-sim__ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+}
+
+.de-sim__op {
+  flex: 1 1 auto;
+  min-height: 3.8em;
+  padding: 0.3em 0.7em;
+  border-radius: 0.75em;
+  background: var(--hd-fondo-2);
+  color: var(--hd-texto);
+  font-size: 0.68em;
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.de-sim__op[aria-pressed='true'] {
+  background: var(--hd-noche);
+  color: #fff;
+}
+
+.de-sim--azul {
+  border-color: rgb(255 255 255 / 0.35);
+}
+
+.de-sim--azul .de-sim__titulo {
+  color: rgb(255 255 255 / 0.75);
+}
+
+.de-sim--azul .de-sim__op {
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+}
+
+.de-sim--azul .de-sim__op[aria-pressed='true'] {
+  background: #fff;
+  color: var(--hd-azul);
+}
+
+/* ── Tu precio: teclado, mínimo, fecha y horario ─────────────────────── */
+
+.de-cuando {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+}
+
+.de-cuando .de-etiqueta {
+  margin: 0;
+}
+
+.de-elegir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+}
+
+.de-elegir__op {
+  flex: 1 1 auto;
+  justify-content: center;
+  border: 0.12em dashed var(--hd-mosaico-hondo);
+  background: #fff;
+}
+
+.de-elegir__op[aria-pressed='true'] {
+  border-style: solid;
+  border-color: var(--hd-azul);
+  background: var(--hd-azul);
+  color: #fff;
+}
+
+.de-elegir__op span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.de-propones,
+.de-pidio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45em;
+  padding: 0.55em 0.75em;
+  border-radius: 0.85em;
+  background: var(--hd-azul-tinte);
+  color: var(--hd-azul);
+  font-size: 0.7em;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.de-pidio {
+  background: var(--hd-fondo-2);
+  color: var(--hd-tinta);
+}
+
+.de-propones .icono,
+.de-pidio .icono {
+  width: 1.3em !important;
+  height: 1.3em !important;
+  flex: none;
+}
+
+.de-precio__valor--tecleando .hd-precio::after {
+  content: '';
+  display: inline-block;
+  width: 0.08em;
+  height: 0.9em;
+  margin-left: 0.06em;
+  vertical-align: -0.05em;
+  background: currentColor;
+  animation: de-cursor 1s steps(1) infinite;
+}
+
+.de-precio__caja--bajo .de-precio__valor {
+  color: var(--hd-error);
+}
+
+.de-minimo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45em;
+  width: 100%;
+  padding: 0.55em 0.75em;
+  border-radius: 0.85em;
+  background: #fdecea;
+  color: #8f1d16;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.de-minimo .icono {
+  width: 1.3em !important;
+  height: 1.3em !important;
+  flex: none;
+}
+
+.de-precio__materiales {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.66em;
+  color: var(--hd-suave);
+}
+
+.de-precio__materiales .icono {
+  width: 1.2em !important;
+  height: 1.2em !important;
+  color: var(--hd-azul);
+}
+
+.de-escribir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 3.4em;
+  padding: 0.3em 1em;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--hd-azul);
+  font-size: 0.76em;
+  font-weight: 800;
+  box-shadow: 0 0.16em 0 var(--hd-mosaico-hondo);
+}
+
+.de-escribir[aria-expanded='true'] {
+  background: var(--hd-azul);
+  color: #fff;
+  box-shadow: 0 0.16em 0 var(--hd-azul-hondo);
+}
+
+.de-teclado-caja {
+  width: 100%;
+}
+
+.de-teclado {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4em;
+  width: 100%;
+}
+
+.de-tecla {
+  display: grid;
+  place-items: center;
+  min-height: 2.75em;
+  border-radius: 0.85em;
+  background: #fff;
+  color: var(--hd-tinta);
+  font-family: var(--hd-titulos);
+  font-size: 1em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0.18em 0 var(--hd-mosaico-hondo);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+:where(.demo-pantalla) .de-tecla:active {
+  transform: translateY(0.18em);
+  box-shadow: none;
+  filter: none;
+}
+
+.de-tecla--borrar {
+  background: var(--hd-mosaico);
+  color: var(--hd-suave);
+}
+
+.de-hoja .de-tecla .icono {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.de-precio .hd-boton:disabled,
+.de-adicional .hd-boton:disabled {
+  opacity: 1;
+  --b-fondo: var(--hd-mosaico);
+  --b-base: var(--hd-mosaico-hondo);
+  --b-texto: var(--hd-suave);
+}
+
+/* ── Propuesta desde el chat ─────────────────────────────────────────── */
+
+.de-prop__para {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+
+.de-prop__para strong {
+  font-size: 0.92em;
+  font-weight: 800;
+}
+
+.de-prop__para small {
+  font-size: 0.7em;
+  color: var(--hd-suave);
+}
+
+.de-prop__campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45em;
+}
+
+.de-campo--elegir {
+  min-height: 3.6em;
+  padding: 0.45em 0.7em;
+  border-style: dashed;
+}
+
+.de-campo__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  flex: 1;
+  min-width: 0;
+}
+
+.de-campo__texto small {
+  font-size: 0.82em;
+  color: var(--hd-suave);
+}
+
+.de-campo__texto strong {
+  color: var(--hd-tinta);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+/* ── Chat (cabecera común, acciones, sistema, solicitud) ─────────────── */
+
+.de-chat .hd-chat-cabecera {
+  border-radius: 0 0 1.4em 1.4em;
+}
+
+.de-chat__turno {
+  width: 2.75em;
+  height: 2.75em;
+  flex: none;
+}
+
+.de-chat .hd-chat-acciones {
+  margin-inline: -1em;
+  padding-inline: 1em;
+}
+
+/* Las acciones de la base miden 2.6em de su propio texto (≈ 31 px): acá llegan a los 44 px. */
+.de-chat .hd-chat-acciones > .hd-chip {
+  min-height: 3.75em;
+}
+
+.de-chat__adjuntar {
+  width: 2.75em;
+  height: 2.75em;
+  flex: none;
+  background: var(--hd-fondo-2);
+  color: var(--hd-azul);
+}
+
+.de-chat__sistema {
+  align-self: center;
+  max-width: 88%;
+  padding: 0.4em 0.8em;
+  border-radius: 0.9em;
+  background: rgb(14 29 54 / 0.06);
+  color: var(--hd-texto);
+  font-size: 0.66em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  flex: none;
+}
+
+.de-chat .hd-propuesta {
+  flex: none;
+}
+
+.de-solicitud-acciones {
+  display: flex;
+  align-self: flex-start;
+  width: min(100%, 17.5em);
+  flex: none;
+}
+
+.de-solicitud-acciones .hd-boton {
+  min-height: 3.6em;
+}
+
+.de-burbuja span {
+  overflow-wrap: anywhere;
+}
+
+.de-chats__fila--nuevo {
+  background: var(--hd-azul-tinte);
+}
+
+/* ── En camino: la llegada automática ────────────────────────────────── */
+
+.de-camino__hoja {
+  max-height: 68%;
+  overflow-y: auto;
+}
+
+.de-llegada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  padding: 0.75em 0.8em;
+  border-radius: 1.2em;
+  background: #fff;
+  color: var(--hd-tinta);
+}
+
+.de-llegada__pedir,
+.de-llegada__estado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+}
+
+.de-llegada__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65em;
+}
+
+.de-llegada__ico {
+  display: grid;
+  place-items: center;
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 0.8em;
+  background: var(--hd-azul-tinte);
+  color: var(--hd-azul);
+  flex: none;
+}
+
+.de-llegada__ico .icono {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.de-llegada__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  min-width: 0;
+}
+
+.de-llegada__texto strong {
+  font-size: 0.82em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.de-llegada__texto small {
+  font-size: 0.68em;
+  line-height: 1.35;
+  color: var(--hd-texto);
+}
+
+.de-llegada .hd-boton--chico {
+  min-height: 3.6em;
+}
+
+.de-llegada[data-estado='senal-imprecisa'] .de-llegada__ico,
+.de-llegada[data-estado='sin-senal'] .de-llegada__ico {
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.de-llegada[data-estado='sin-permiso'] .de-llegada__ico {
+  background: var(--hd-mosaico);
+  color: var(--hd-suave);
+}
+
+.de-llegada[data-estado='llego'] .de-llegada__ico {
+  background: var(--hd-exito);
+  color: #fff;
+}
+
+.de-llegada[data-estado='en-camino'] .de-llegada__ico .icono {
+  animation: de-pasito 0.9s ease-in-out infinite alternate;
+}
+
+/* ── Presupuesto no aceptado ─────────────────────────────────────────── */
+
+.de-aceptado[data-estado='esperando'] .de-estado--rechazado,
+.de-aceptado[data-estado='elegido'] .de-estado--rechazado,
+.de-aceptado[data-estado='rechazado'] .de-estado--esperando,
+.de-aceptado[data-estado='rechazado'] .de-estado--elegido {
+  display: none;
+}
+
+.de-rechazo__handy {
+  width: 5.5em;
+  height: 6.3em;
+  object-fit: contain;
+}
+
+/* ── Desglose ────────────────────────────────────────────────────────── */
+
+.de-dato--sub {
+  margin-top: 0.2em;
+  padding-top: 0.35em;
+  border-top: 0.07em dashed var(--hd-linea);
+  font-weight: 800;
+}
+
+.de-dato--extra > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.de-dato--extra > :last-child {
+  color: var(--hd-azul);
+}
+
+/* ── Trabajo en curso: adicionales ───────────────────────────────────── */
+
+.de-adicionales {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+}
+
+.de-adicionales .de-etiqueta {
+  margin: 0;
+}
+
+.de-agregar {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  width: 100%;
+  min-height: 3.3em;
+  padding: 0.55em 0.7em;
+  border: 0.12em dashed var(--hd-mosaico-hondo);
+  border-radius: 1.1em;
+  color: var(--hd-azul);
+  font-size: 0.82em;
+  font-weight: 800;
+  text-align: left;
+}
+
+.de-agregar__ico {
+  display: grid;
+  place-items: center;
+  width: 2.3em;
+  height: 2.3em;
+  border-radius: 0.8em;
+  background: var(--hd-azul-tinte);
+  flex: none;
+}
+
+.de-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.65em 0.75em;
+  border-radius: 1.1em;
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.de-pendiente__puntos {
+  flex: none;
+  background: #fff;
+}
+
+.de-pendiente__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  min-width: 0;
+}
+
+.de-pendiente__texto strong {
+  font-size: 0.8em;
+  font-weight: 800;
+}
+
+.de-pendiente__texto small {
+  font-size: 0.68em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Hoja "Agregar al trabajo" */
+.de-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+.de-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  width: 100%;
+  min-height: 3.4em;
+  padding: 0.5em 0.7em;
+  border-radius: 1em;
+  background: var(--hd-fondo-2);
+  color: var(--hd-tinta);
+  text-align: left;
+  box-shadow: 0 0.16em 0 var(--hd-mosaico-hondo);
+  transition:
+    background-color 0.2s ease,
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+:where(.demo-pantalla) .de-opcion:active {
+  transform: translateY(0.16em);
+  box-shadow: none;
+  filter: none;
+}
+
+.de-opcion:first-child {
+  border: 0.12em dashed var(--hd-azul);
+  background: #fff;
+}
+
+.de-opcion[aria-pressed='true'] {
+  background: var(--hd-azul);
+  color: #fff;
+  box-shadow: 0 0.16em 0 var(--hd-azul-hondo);
+}
+
+.de-opcion__ico {
+  display: grid;
+  place-items: center;
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: 0.75em;
+  background: #fff;
+  color: var(--hd-azul);
+  flex: none;
+}
+
+.de-opcion[aria-pressed='true'] .de-opcion__ico {
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+
+.de-opcion__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12em;
+  flex: 1;
+  min-width: 0;
+}
+
+.de-opcion__texto strong {
+  font-size: 0.78em;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.de-opcion__texto small {
+  font-size: 0.64em;
+  opacity: 0.75;
+}
+
+.de-opcion__monto {
+  font-size: 0.82em;
+  flex: none;
+}
+
+.de-personalizada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.8em;
+  border-radius: 1.2em;
+  background: var(--hd-fondo-2);
+}
+
+.de-personalizada .de-etiqueta {
+  margin: 0.2em 0 0;
+}
+
+.de-input {
+  width: 100%;
+  min-height: 2.75em;
+  padding: 0.5em 0.8em;
+  border: 0.1em solid var(--hd-linea);
+  border-radius: 0.85em;
+  background: #fff;
+  color: var(--hd-tinta);
+  font: inherit;
+  font-size: max(16px, 0.84em);
+}
+
+.de-input:focus-visible {
+  outline: none;
+  border-color: var(--hd-azul);
+  box-shadow: 0 0 0 0.16em rgb(47 107 255 / 0.25);
+}
+
+.de-adicional__monto {
+  text-align: center;
+  color: var(--hd-azul);
+}
+
+.de-adicional__resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  padding: 0.8em 0.9em;
+  border-radius: 1.2em;
+  background: #fff;
+  box-shadow: var(--hd-sombra-1);
+}
+
+.de-adicional__resumen .de-etiqueta {
+  margin: 0;
+}
+
+.de-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  margin: 0;
+}
+
+.de-dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8em;
+  font-size: 0.74em;
+}
+
+.de-dl dt {
+  color: var(--hd-suave);
+}
+
+.de-dl dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.de-dl__destacado {
+  margin-top: 0.2em;
+  padding-top: 0.4em;
+  border-top: 0.08em dashed rgb(14 29 54 / 0.18);
+}
+
+.de-dl__destacado dt,
+.de-dl__destacado dd {
+  color: var(--hd-tinta);
+  font-size: 1.1em;
+  font-weight: 900;
+}
+
+.de-recibis--mini {
+  padding: 0.55em 0.75em;
+}
+
+.de-recibis--mini .de-recibis__icono {
+  grid-row: auto;
+  width: 2em;
+  height: 2em;
+}
+
+/* ── Agenda ──────────────────────────────────────────────────────────── */
+
+/* El cuerpo scrollea solo y deja aire arriba de la barra (IMG_0197: la barra ya no tapa nada). */
+.de-agenda {
+  gap: 0.9em;
+  padding-bottom: 2.6em;
+}
+
+.de-agenda__cal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+}
+
+.de-agenda__cal .hd-agenda {
+  padding: 0.75em 0.7em 0.8em;
+  border-radius: 1.4em;
+  background: var(--hd-fondo-2);
+}
+
+.de-agenda__cal .hd-agenda__fecha {
+  margin: 0;
+}
+
+.de-agenda .de-turno {
+  box-shadow:
+    0 0.22em 0 rgb(14 29 54 / 0.08),
+    var(--hd-sombra-1);
+}
+
+.de-turno__datos small .icono {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-right: 0.2em;
+}
+
+.de-turno--hecho .de-turno__monto strong {
+  color: var(--hd-suave);
+}
+
+.de-turno--hoy .de-turno__monto small {
+  color: #8a6d00;
+}
+
+.de-franja {
+  min-height: 3.9em;
+}
+
+.de-detalle__aviso {
+  padding: 0.6em 0.75em;
+  border-radius: 0.9em;
+  background: var(--hd-amarillo);
+  color: var(--hd-tinta);
+}
+
+.de-detalle--hecho .de-detalle__hero {
+  background: var(--hd-noche);
+  box-shadow: 0 0.3em 0 #0b1426;
+}
+
+/* ── Cambiar la fecha: propuesta pendiente ───────────────────────────── */
+
+.de-cambio__ok {
+  gap: 0.5em;
+}
+
+.de-cambio__ico .de-espera__puntos {
+  margin: 0.4em 0 0.6em;
+}
+
+.de-cambio__ico .de-respuesta__handy {
+  width: 4.5em;
+  height: 4.5em;
+}
+
+/* ── Animaciones (ronda 3) ───────────────────────────────────────────── */
+
+@keyframes de-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes de-pasito {
+  to {
+    transform: translateX(0.12em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .de-precio__valor--tecleando .hd-precio::after,
+  .de-llegada[data-estado='en-camino'] .de-llegada__ico .icono {
+    animation: none;
+  }
+}
+
+.de-precio__caja--teclado .de-precio__chips,
+.de-precio__caja--teclado .de-precio__materiales {
+  display: none;
+}
+
+.de-turno__datos [data-de-t='hora'] {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.de-turno__datos [data-de-t='hora'] .icono {
+  margin: 0;
+  flex: none;
+}
+
+/* Toques de 2.6em (≈ 44 px) también en piezas del kit que acá quedaban chicas. */
+.de-disponible {
+  min-height: 3.3em;
+}
+
+.demo-pantalla[data-rol='especialista'] .app-volver__flecha {
+  min-width: 2.6em;
+  min-height: 2.6em;
+}
+
+.de-banco__fila .hd-boton--chico {
+  min-height: 3.5em;
+}
+
+.de-campo--mensaje {
+  min-height: 3.4em;
+}
+
+.de-chat__campo {
+  min-height: 3.3em;
+}
+
+.de-agenda__cal .hd-agenda {
+  padding-inline: 0.3em;
+}
+
+.de-agenda__cal .hd-cal__semana,
+.de-agenda__cal .hd-cal__grilla {
+  gap: 0.25em;
+}
+
+/* Círculos del kit (mes, escribir a un contacto) y la X de las hojas: a 2.6em en las pantallas del especialista. */
+.demo-pantalla[data-rol='especialista'] .hd-circulo,
+.demo-pantalla[data-rol='especialista'] .app-x {
+  min-width: 2.6em;
+  min-height: 2.6em;
 }

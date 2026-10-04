@@ -541,6 +541,9 @@
     "cambioPendiente": "Pediste cambiarlo a {tCambio}. Hasta que {tEsp} responda, sigue el turno de {tCuando}.",
     "cambioPendienteChip": "Cambio pendiente",
     "cambioAceptado": "{tEsp} aceptó el cambio: el turno pasó a {tCuando}.",
+    "cambioPropuesta": "{tEsp} no puede a esa hora y te propone {tPropuesta}. Hasta que respondas, sigue el turno de {tCuando}.",
+    "aceptarPropuesta": "Aceptar",
+    "rechazarPropuesta": "Rechazar",
     "cancelado": "Cancelaste este turno. Ya le avisamos a {tEsp}.",
     "chatear": "Chatear",
     "cambiar": "Cambiar fecha",
@@ -551,6 +554,14 @@
     "islaCambio": {
       "titulo": "{tEsp} aceptó el cambio",
       "texto": "Tu turno ahora es {tCuando}."
+    },
+    "islaPropuesta": {
+      "titulo": "{tEsp} te propone otro horario",
+      "texto": "{tPropuesta}: aceptalo o rechazalo."
+    },
+    "islaRechazo": {
+      "titulo": "Rechazaste el horario propuesto",
+      "texto": "Sigue tu turno de {tCuando}."
     }
   },
   "cambiar": {

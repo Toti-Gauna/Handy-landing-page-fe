@@ -299,8 +299,8 @@
 .hd-circulo {
   display: grid;
   place-items: center;
-  width: 2.5em;
-  height: 2.5em;
+  width: 2.6em;
+  height: 2.6em;
   border-radius: 50%;
   background: var(--hd-mosaico);
   color: var(--hd-tinta);
@@ -788,6 +788,14 @@ button.hd-chip:active {
   border-radius: 1.9em 1.9em 0 0;
   background: #fff;
   box-shadow: 0 -0.8em 2.4em -1em rgb(14 29 54 / 0.35);
+}
+
+/* La X de las hojas: área táctil más grande que el círculo que se ve. */
+[data-demo-pantallas] .app-x::after {
+  content: '';
+  position: absolute;
+  inset: -0.35em;
+  border-radius: 50%;
 }
 
 /* La manija de las hojas de la app. */
@@ -1558,8 +1566,9 @@ button.hd-chip:active {
 
 .hd-chat-acciones > .hd-chip {
   flex: none;
-  min-height: 2.6em;
-  padding-inline: 0.9em;
+  /* ≥ 44 px a 390 de ancho (el chip usa 0.7em de letra). */
+  min-height: 3.7em;
+  padding-inline: 1.1em;
 }
 
 .hd-contacto-btn__listo {

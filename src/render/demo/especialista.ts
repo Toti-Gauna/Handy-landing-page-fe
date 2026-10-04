@@ -1127,24 +1127,22 @@ ${navDemo(ROL, 2)}
 
 /** Contactos guardados (pantalla común): cada fila abre su chat (el nuevo, en e-chat-nuevo). */
 function comunes(): PantallaDemo[] {
-  const lista: ContactoDemo[] = d.contactos.lista.map((c) => ({
-    id: c.id,
-    nombre: CHATS[c.id].nombre,
-    detalle: c.detalle,
-    chat: c.id === d.solicitud.chat ? 'e-chat-nuevo' : 'e-conversacion',
-    guardado: c.guardado,
-    tono: CHATS[c.id].tono,
-  }));
-  return pantallasComunes(ROL, lista).map((p) => {
-    if (p.id !== 'e-contactos') return p;
-    // El botón de cada fila dice a qué chat va (la conversación es una sola pantalla para todos los clientes).
-    let html = p.html;
-    for (const c of lista) {
-      if (c.chat !== 'e-conversacion') continue;
-      html = html.replace(new RegExp(`(data-hd-contacto="${c.id}"[\\s\\S]*?<button type="button" class="[^"]*" )`), `$1data-accion="abrirChat" data-valor="${c.id}" `);
-    }
-    return { ...p, html };
+  const lista: ContactoDemo[] = d.contactos.lista.map((c) => {
+    const chat = c.id === d.solicitud.chat ? 'e-chat-nuevo' : 'e-conversacion';
+    return {
+      id: c.id,
+      nombre: CHATS[c.id].nombre,
+      detalle: c.detalle,
+      chat,
+      guardado: c.guardado,
+      tono: CHATS[c.id].tono,
+      // Las mismas iniciales que en el chat y en Mensajes.
+      iniciales: CHATS[c.id].inicial,
+      // La conversación es una sola pantalla para todos los clientes: la fila dice cuál abrir.
+      toque: chat === 'e-conversacion' ? { accion: 'abrirChat', valor: c.id } : undefined,
+    };
   });
+  return pantallasComunes(ROL, lista);
 }
 
 // ── Hojas chicas ──────────────────────────────────────────────────────────

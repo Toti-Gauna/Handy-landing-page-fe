@@ -114,6 +114,10 @@ export interface ContactoDemo {
   /** Ya estaba guardado al empezar la demo (si no, aparece cuando se lo agrega desde un chat). */
   guardado: boolean;
   tono?: string;
+  /** Iniciales del avatar, si no se quieren las que salen del nombre. */
+  iniciales?: string;
+  /** Acción extra del botón de la fila (p. ej., elegir qué conversación abrir). */
+  toque?: Toque;
 }
 
 function pantallaContactos(rol: RolDemo, contactos: ContactoDemo[]): PantallaDemo {
@@ -122,9 +126,9 @@ function pantallaContactos(rol: RolDemo, contactos: ContactoDemo[]): PantallaDem
   const filas = contactos
     .map(
       (c) => `<li class="hd-contacto" data-hd-contacto="${esc(c.id)}" data-guardado="${c.guardado}"${c.guardado ? '' : ' hidden'}>
-  ${avatar(c.nombre, { tono: c.tono })}
+  ${avatar(c.nombre, { tono: c.tono, iniciales: c.iniciales })}
   <p class="hd-contacto__texto"><strong>${esc(c.nombre)}</strong><small>${esc(c.detalle)}</small></p>
-  ${boton({ ir: c.chat, etiqueta: completar(k.escribir, { nombre: c.nombre }) }, icono('enviar'), 'hd-circulo hd-circulo--azul')}
+  ${boton({ ...c.toque, ir: c.chat, etiqueta: completar(k.escribir, { nombre: c.nombre }) }, icono('enviar'), 'hd-circulo hd-circulo--azul')}
 </li>`,
     )
     .join('');

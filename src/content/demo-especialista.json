@@ -31,7 +31,7 @@
       "pantalla": "e-en-camino",
       "base": "e-aceptado",
       "titulo": "Vas para allá",
-      "texto": "Antes de salir te explicamos para qué usamos tu ubicación: solo la de este trabajo y solo durante el viaje. Al llegar, el trabajo empieza solo: nadie toca «Llegué».",
+      "texto": "Antes de salir te explicamos para qué usamos tu ubicación: solo la de este trabajo y solo durante el viaje. Al llegar, el trabajo empieza solo, sin confirmar nada a mano.",
       "pausa": 8600
     },
     {
@@ -140,7 +140,21 @@
     "manoDeObra": "Mano de obra",
     "materiales": "Materiales",
     "tarifaCliente": "Tarifa de Handy · cliente ({tarifaCliente})",
-    "horaA": "{fecha} · {hora} h"
+    "horaA": "{fecha} · {hora} h",
+    "meses": [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sep",
+      "oct",
+      "nov",
+      "dic"
+    ]
   },
   "inicio": {
     "apagadoSobre": "Fuera de servicio",
@@ -720,7 +734,8 @@
       "confirmado": "Confirmado",
       "hecho": "Terminado",
       "hoy": "Hoy",
-      "pendiente": "Cambio pendiente"
+      "pendiente": "Cambio pendiente",
+      "cancelado": "Cancelado"
     },
     "trabajos": [
       {
@@ -911,7 +926,9 @@
       "titulo": "El cliente mantiene el turno",
       "texto": "Sigue el del {cuando}."
     },
-    "tituloCard": "Propuesta de cambio"
+    "tituloCard": "Propuesta de cambio",
+    "antes": "Turno actual",
+    "propone": "Le proponés"
   },
   "avisos": {
     "titulo": "Notificaciones",
@@ -1010,7 +1027,7 @@
     "sobre": "Nuevo pedido",
     "rubro": "Gas",
     "icono": "llama",
-    "detalle": "Instalación de anafe",
+    "detalle": "«Quiero instalar un anafe nuevo en la cocina.»",
     "sugeridoLabel": "Handy sugiere",
     "decidis": "El precio lo ponés vos",
     "sugerido": 36000,
@@ -1044,7 +1061,8 @@
     "islaRechazo": {
       "titulo": "El cliente eligió otra propuesta",
       "texto": "Gas en Los Troncos."
-    }
+    },
+    "trabajo": "Instalación de anafe"
   },
   "cuenta": {
     "nombre": "Tu nombre",
@@ -1335,7 +1353,9 @@
     "precioLabel": "Precio",
     "tituloCard": "Tu propuesta",
     "notaCard": "Esperando respuesta del cliente. No es un turno confirmado hasta que acepte.",
-    "anuncio": "Mandaste la propuesta: {precio}, {cuando}."
+    "anuncio": "Mandaste la propuesta: {precio}, {cuando}.",
+    "detalleTurno": "Turno coordinado por chat",
+    "sinPedido": "Lo coordinaron por el chat de Handy."
   },
   "adicional": {
     "titulo": "Agregar al trabajo",
