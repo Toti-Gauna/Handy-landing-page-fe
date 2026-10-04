@@ -3217,7 +3217,33 @@ main {
 
 .footer__grilla {
   display: grid;
-  gap: 16px;
+  gap: 22px;
+  padding-bottom: 32px;
+}
+
+.footer__marca {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.footer__wordmark {
+  width: 132px;
+  height: auto;
+  filter: brightness(0) invert(1);
+}
+
+.footer__bajada {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--color-amarillo);
+}
+
+.footer__info {
+  display: grid;
+  gap: 10px;
 }
 
 .footer__producto {
@@ -3228,7 +3254,7 @@ main {
 .footer__links {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 26px;
+  gap: 8px 24px;
 }
 
 .footer a {
@@ -3240,33 +3266,25 @@ main {
   color: var(--color-amarillo);
 }
 
-.footer__marca {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding-block: 44px 28px;
-  overflow: hidden;
-}
-
-.footer__wordmark {
-  width: 100%;
-  max-width: 1136px;
-  filter: brightness(0) invert(1);
-  opacity: 0.96;
-}
-
-.footer__bajada {
-  font-size: clamp(0.85rem, 2.6vw, 1.6rem);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--color-amarillo);
-}
-
 @media (min-width: 760px) {
   .footer__grilla {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr;
     align-items: center;
+    gap: 48px;
+    padding-bottom: 40px;
+  }
+
+  .footer__wordmark {
+    width: 160px;
+  }
+
+  .footer__info {
+    justify-items: end;
+    text-align: right;
+  }
+
+  .footer__links {
+    justify-content: flex-end;
   }
 
   .footer__engranaje {

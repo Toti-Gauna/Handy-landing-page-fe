@@ -6,10 +6,16 @@
   },
   "hero": {
     "etiqueta": "Mar del Plata · sale el 28/10",
-    "titulo": "¿Se rompió algo ==en\u00a0casa?==",
+    "titulo": "¿Se rompió algo ==en casa?==",
     "bajada": "Especialistas verificados de Mar del Plata. Ves el precio antes de confirmar.",
-    "ctaPrimario": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" },
-    "ctaSecundario": { "texto": "Soy especialista", "href": "/especialistas/" }
+    "ctaPrimario": {
+      "texto": "Quiero usar Handy",
+      "href": "/registro/?tipo=usuario"
+    },
+    "ctaSecundario": {
+      "texto": "Soy especialista",
+      "href": "/especialistas/"
+    }
   },
   "comoFunciona": {
     "id": "como-funciona",
@@ -17,24 +23,36 @@
     "bajada": "Tres pasos. Sin llamar a nadie, sin vueltas.",
     "pasos": [
       {
-        "pantalla": "opciones",
+        "pantalla": "u-opciones",
         "titulo": "Pedís",
-        "texto": "Elegís el rubro, contás qué pasó y el tipo de pedido.",
+        "texto": "Elegís el rubro, contás qué pasó y para cuándo: lo antes posible, el día y la hora que quieras, o una obra con visita.",
         "tipos": [
-          { "nombre": "Urgencia", "texto": "Para lo que no puede esperar", "icono": "alerta" },
-          { "nombre": "Programado", "texto": "Elegís el día y la franja", "icono": "calendario" },
-          { "nombre": "Obra", "texto": "Trabajos grandes, con visita", "icono": "ladrillos" }
+          {
+            "nombre": "Urgencia",
+            "texto": "Para lo que no puede esperar",
+            "icono": "alerta"
+          },
+          {
+            "nombre": "Programado",
+            "texto": "Elegís el día y la franja",
+            "icono": "calendario"
+          },
+          {
+            "nombre": "Obra",
+            "texto": "Trabajos grandes, con visita",
+            "icono": "ladrillos"
+          }
         ]
       },
       {
-        "pantalla": "presupuestos",
-        "titulo": "Recibís presupuestos y elegís",
-        "texto": "Cada especialista te manda su precio. Comparás, mirás sus datos y elegís con quién seguir."
+        "pantalla": "u-presupuestos",
+        "titulo": "Recibís propuestas claras y elegís",
+        "texto": "Cada especialista pone su precio, con la mano de obra, los materiales y la tarifa de Handy a la vista. El total que ves es el que pagás. Vos elegís con quién seguir."
       },
       {
-        "pantalla": "seguimiento",
-        "titulo": "Seguís la llegada y confirmás",
-        "texto": "Ves cuándo sale para tu casa, dentro del horario que declaró, y confirmás cuando termina el trabajo."
+        "pantalla": "u-seguimiento",
+        "titulo": "Seguís el trabajo en curso",
+        "texto": "Ves cuándo sale para tu casa, dentro del horario que declaró, y hablás por el chat. Si hace falta algo más, te lo propone y vos decidís."
       }
     ]
   },
@@ -64,12 +82,17 @@
     "titulo": "Todo el arreglo, ==en un lugar.==",
     "items": [
       {
-        "pantalla": "turnos",
-        "titulo": "Turnos",
-        "texto": "Tus turnos en un calendario: qué rubro, qué día y cuánto pagaste."
+        "pantalla": "u-turnos",
+        "titulo": "Tu agenda",
+        "texto": "Tocás cualquier día y ves todos tus trabajos: rubro, especialista, horario y total."
       },
       {
-        "pantalla": "pagos",
+        "pantalla": "u-chat",
+        "titulo": "Turnos desde el chat",
+        "texto": "Programás un turno o lo pedís para ahora desde el chat con el especialista. Te propone precio y horario, y vos aceptás o no."
+      },
+      {
+        "pantalla": "u-pagos",
         "titulo": "Pagos",
         "texto": "Tus tarjetas y cada pago, con el detalle de lo que fue al especialista y la tarifa de Handy."
       }
@@ -92,6 +115,21 @@
         "icono": "billetera",
         "titulo": "La plata va directo al especialista",
         "texto": "Lo que pagás va a la cuenta del especialista. Handy solo cobra su tarifa, que ves antes de confirmar."
+      },
+      {
+        "icono": "etiqueta",
+        "titulo": "El total, desde el principio",
+        "texto": "Cada propuesta muestra la mano de obra, los materiales y la tarifa de Handy ({tarifaCliente}). El total que ves es el que pagás."
+      },
+      {
+        "icono": "checkCirculo",
+        "titulo": "Nada extra sin tu OK",
+        "texto": "Si hace falta un repuesto o más trabajo, el especialista te lo propone en la app. Hasta que aceptes, no se suma nada."
+      },
+      {
+        "icono": "calendario",
+        "titulo": "Pedís el día y la hora",
+        "texto": "Elegís cualquier día y horario. El especialista te confirma o te propone otro."
       }
     ]
   },
@@ -108,6 +146,9 @@
   "bandaFinal": {
     "titulo": "Anotate y te avisamos ==el 28/10.==",
     "texto": "Dejá tus datos y sé de los primeros en usar Handy en Mar del Plata.",
-    "cta": { "texto": "Quiero usar Handy", "href": "/registro/?tipo=usuario" }
+    "cta": {
+      "texto": "Quiero usar Handy",
+      "href": "/registro/?tipo=usuario"
+    }
   }
 }

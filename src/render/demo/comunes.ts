@@ -14,6 +14,7 @@ import { esc } from '../util.ts';
 import { estado } from '../pantallas.ts';
 import { avatar, boton, prefijo, tituloHoja, type Toque } from './piezas.ts';
 import type { PantallaDemo, RolDemo } from './tipos.ts';
+import { fechaLarga, grillaMes, nombreMes as nombreMesTexto, partes } from '../../demo/fechas.ts';
 
 const completar = (t: string, v: Record<string, string>) => t.replace(/\{(\w+)\}/g, (m, k: string) => v[k] ?? m);
 
@@ -78,25 +79,68 @@ export interface TrabajoAgendaHtml {
  * Agenda: mes con flechas, días que se pueden tocar todos (con un punto por trabajo) y la lista del día elegido.
  * `inicial`: día elegido al entrar ("hoy" de la demo si no se dice).
  */
-export function agenda(rol: RolDemo, trabajos: TrabajoAgendaHtml[], inicial = demo.config.hoy): string {
+/** Celdas del calendario (las mismas que arma el navegador en src/scripts/demo/comunes.ts → pintarGrilla). */
+function celdasAgenda(anio: number, mes: number, elegido: string, cantidad: Record<string, number>): string {
+  const a = demo.agenda;
+  const hoy = demo.config.hoy;
+  return grillaMes(anio, mes)
+    .map((f) => {
+      if (!f) return '<span class="hd-cal__hueco"></span>';
+      const n = cantidad[f] ?? 0;
+      const clases = ['hd-cal__dia', f === hoy ? 'hd-cal__dia--hoy' : '', n > 0 ? 'hd-cal__dia--con' : '', f < hoy ? 'hd-cal__dia--pasado' : ''].filter(Boolean).join(' ');
+      const etiqueta = completar(a.diaAria, { fecha: fechaLarga(f), cantidad: n === 0 ? a.ninguno : n === 1 ? a.uno : completar(a.varios, { n: String(n) }) });
+      const puntos = n > 0 ? `<i class="hd-cal__puntos" aria-hidden="true">${'<b></b>'.repeat(Math.min(n, 3))}</i>` : '';
+      return `<button type="button" class="${clases}" data-accion="hd-agenda-dia" data-valor="${f}" aria-pressed="${f === elegido}" aria-label="${esc(etiqueta)}"><span>${partes(f).dia}</span>${puntos}</button>`;
+    })
+    .join('');
+}
+
+/**
+ * Agenda: mes con flechas, días que se pueden tocar todos (con un punto por trabajo) y la lista del día elegido.
+ * `inicial`: día elegido al entrar ("hoy" de la demo si no se dice). Sale armada desde el build (el navegador la
+ * vuelve a pintar al tocar): así también se ve completa en los celulares de la landing.
+ */
+let elegirDiaConTrabajos = false;
+
+/**
+ * Arma pantallas con la agenda parada en el primer día (desde "hoy") que tiene trabajos, en vez de "hoy".
+ * Lo usan los celulares de la landing, que no corren la demo (ahí "hoy" todavía no tiene el trabajo del recorrido).
+ */
+export function conAgendaEnDiaConTrabajos<T>(fn: () => T): T {
+  elegirDiaConTrabajos = true;
+  try {
+    return fn();
+  } finally {
+    elegirDiaConTrabajos = false;
+  }
+}
+
+export function agenda(rol: RolDemo, trabajos: TrabajoAgendaHtml[], inicialPedido = demo.config.hoy): string {
+  const conTrabajos = trabajos.map((t) => t.fecha).filter((f) => f >= demo.config.hoy).sort()[0];
+  const inicial = elegirDiaConTrabajos && conTrabajos ? conTrabajos : inicialPedido;
   const a = demo.agenda;
   const s = demo.selectorFecha;
+  const { anio, mes } = partes(inicial);
+  const cantidad: Record<string, number> = {};
+  trabajos.forEach((t) => (cantidad[t.fecha] = (cantidad[t.fecha] ?? 0) + 1));
+  const delDia = trabajos.filter((t) => t.fecha === inicial).length;
   const items = trabajos
-    .map((t) => `<li class="hd-agenda__trabajo" data-hd-trabajo="${esc(t.id)}" data-fecha="${esc(t.fecha)}" data-entra hidden>${t.html}</li>`)
+    .map((t) => `<li class="hd-agenda__trabajo" data-hd-trabajo="${esc(t.id)}" data-fecha="${esc(t.fecha)}" data-entra${t.fecha === inicial ? '' : ' hidden'}>${t.html}</li>`)
     .join('');
-  return `<div class="hd-agenda" data-hd-agenda data-rol-agenda="${rol}" data-inicial="${esc(inicial)}" data-fechas="${esc(JSON.stringify(trabajos.map((t) => t.fecha)))}">
+  const cuantos = delDia === 0 ? a.ninguno : delDia === 1 ? a.uno : completar(a.varios, { n: String(delDia) });
+  return `<div class="hd-agenda" data-hd-agenda data-rol-agenda="${rol}" data-inicial="${esc(inicial)}">
   <div class="hd-agenda__mes">
     <button type="button" class="hd-circulo" data-accion="hd-agenda-mes" data-valor="-1" aria-label="${esc(a.anterior)}">${icono('izquierda')}</button>
-    <p class="hd-agenda__titulo" data-hd-agenda-titulo aria-live="polite"></p>
+    <p class="hd-agenda__titulo" data-hd-agenda-titulo aria-live="polite">${esc(nombreMesTexto(anio, mes))}</p>
     <button type="button" class="hd-circulo" data-accion="hd-agenda-mes" data-valor="1" aria-label="${esc(a.siguiente)}">${icono('derecha')}</button>
   </div>
   <div class="hd-cal__semana" aria-hidden="true">${s.semana.map((d) => `<span>${esc(d)}</span>`).join('')}</div>
-  <div class="hd-cal__grilla" data-hd-agenda-grilla role="group" aria-label="${esc(a.titulo)}"></div>
+  <div class="hd-cal__grilla" data-hd-agenda-grilla role="group" aria-label="${esc(a.titulo)}">${celdasAgenda(anio, mes, inicial, cantidad)}</div>
 </div>
 <section class="hd-agenda__dia" data-hd-agenda-dia aria-live="polite">
-  <p class="hd-sobre hd-agenda__fecha" data-hd-agenda-fecha></p>
+  <p class="hd-sobre hd-agenda__fecha" data-hd-agenda-fecha>${esc(`${fechaLarga(inicial)} · ${cuantos}`)}</p>
   <ul class="hd-agenda__lista">${items}</ul>
-  <div class="hd-agenda__vacio" data-hd-agenda-vacio hidden>
+  <div class="hd-agenda__vacio" data-hd-agenda-vacio${delDia ? ' hidden' : ''}>
     <img class="hd-handy" src="/src/img/handy-lamparita.webp" alt="" width="202" height="346" loading="lazy" decoding="async" />
     <p><strong>${esc(a.vacioTitulo)}</strong><small>${esc(a.vacioTexto)}</small></p>
   </div>

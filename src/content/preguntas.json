@@ -10,6 +10,14 @@
       "respuesta": "Con una tarifa por cada trabajo hecho: el especialista deja el {tarifaEspecialista} de su presupuesto y el cliente paga un {tarifaCliente} de servicio. La plata del trabajo no pasa por Handy: va directo a la cuenta del especialista."
     },
     {
+      "pregunta": "¿Puedo pedir un horario que no está en la lista?",
+      "respuesta": "Sí. Podés pedir cualquier día y cualquier hora. Es un pedido: el especialista te confirma si puede o te propone otro horario, y vos decidís."
+    },
+    {
+      "pregunta": "¿Me pueden cobrar algo que no acepté?",
+      "respuesta": "No. Si en el trabajo hace falta un repuesto o más mano de obra, el especialista te lo propone en la app con el precio y la tarifa de Handy. Hasta que lo aceptes, no se suma nada al total."
+    },
+    {
       "pregunta": "¿En qué zonas?",
       "respuesta": "Arrancamos en Mar del Plata. Cada especialista declara las zonas donde trabaja, así que vas a ver a los que cubren tu barrio."
     },
@@ -30,6 +38,10 @@
     {
       "pregunta": "¿Me penalizan si rechazo un trabajo?",
       "respuesta": "No. Aceptás los trabajos que te sirven y rechazás los que no, sin penalización."
+    },
+    {
+      "pregunta": "¿Qué pasa si en el trabajo necesito un repuesto?",
+      "respuesta": "Lo agregás desde la app, como repuesto o mano de obra, con su precio. El cliente lo ve y lo acepta antes de que se sume a lo que cobrás."
     },
     {
       "pregunta": "¿Hay exclusividad u horarios?",

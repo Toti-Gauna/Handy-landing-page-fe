@@ -24,31 +24,37 @@
         "icono": "interruptor",
         "titulo": "Disponible cuando querés",
         "texto": "Prendés y apagás tu disponibilidad. Recibís pedidos solo cuando vos decidís.",
-        "pantalla": "espPedido"
+        "pantalla": "e-inicio"
       },
       {
         "icono": "etiqueta",
         "titulo": "Presupuestos con tu precio",
-        "texto": "Handy te sugiere un precio de referencia. El precio final lo ponés vos.",
-        "pantalla": "espPrecio"
+        "texto": "Handy te sugiere un precio de referencia. El precio final lo ponés vos y ves cuánto te queda después de la tarifa.",
+        "pantalla": "e-precio"
       },
       {
         "icono": "calendario",
         "titulo": "Agenda",
-        "texto": "Tus trabajos programados en un solo lugar, con día, franja y dirección.",
-        "pantalla": "espAgenda"
+        "texto": "Tocás cualquier día y ves todos tus trabajos, con franja, zona y lo que cobrás.",
+        "pantalla": "e-turnos"
       },
       {
         "icono": "chat",
-        "titulo": "Chat separado de tu WhatsApp",
-        "texto": "Hablás con cada cliente desde la app, sin mezclarlo con tus contactos.",
-        "pantalla": "espChat"
+        "titulo": "Chat con turnos, separado de tu WhatsApp",
+        "texto": "Hablás con cada cliente desde la app y le proponés precio, día y hora ahí mismo. El turno queda confirmado cuando acepta.",
+        "pantalla": "e-conversacion"
+      },
+      {
+        "icono": "mas",
+        "titulo": "Repuestos y mano de obra extra",
+        "texto": "Si en el trabajo hace falta algo más, lo agregás con su precio y el cliente lo acepta desde la app antes de que se sume.",
+        "pantalla": "e-adicional"
       },
       {
         "icono": "caja",
         "titulo": "Caja y registro de cada trabajo",
         "texto": "Cada trabajo queda anotado: cuánto cobraste y cuánto retuvo Handy.",
-        "pantalla": "espCaja"
+        "pantalla": "e-caja"
       }
     ],
     "bajada": "Una app hecha para el oficio, no para la oficina."

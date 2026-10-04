@@ -50,6 +50,78 @@
   }
 }
 
+/* ── Pantallas (las usan la demo y los celulares de la landing) ──────── */
+
+.demo-pantalla {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+  outline: none;
+}
+
+.demo-pantalla--hoja {
+  z-index: 10;
+  background: transparent;
+}
+
+.demo-velo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: rgb(30 30 30 / 0.5);
+  cursor: pointer;
+}
+
+/* Las hojas (.app-sheet) no están dentro de .app: les damos la misma base que a las pantallas. */
+.demo-hoja {
+  outline: none;
+  max-height: 88%;
+  overflow: auto;
+  color: #111;
+  font-family: var(--fuente);
+  line-height: 1.2;
+  text-align: left;
+}
+
+.demo-hoja .icono {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+/* Los botones de la app se ven como el diseño: sin estilos del navegador (especificidad 0). */
+:where(.demo-pantalla) :where(button) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(.demo-pantalla) :where(button:focus-visible) {
+  outline: 0.2em solid var(--color-azul-personajes);
+  outline-offset: 0.12em;
+}
+
+:where(.demo-pantalla) :where(button:active) {
+  filter: brightness(0.92);
+}
+
+.demo-pantalla .app-tarjeta__franja {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.demo-pantalla .app-nav__item {
+  flex: 1;
+}
+
 /* ── Base de las pantallas ───────────────────────────────────────────── */
 
 [data-demo-pantallas] .app,

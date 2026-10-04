@@ -20,6 +20,7 @@ import {
   handy,
   preguntas,
   telefono,
+  type PantallaTelefono,
   trailer,
   vitrina,
 } from './componentes.ts';
@@ -70,7 +71,7 @@ export function paginaInicio(ctx: Ctx): PaginaRender {
   const porDentro = apd.items
     .map(
       (it, i) => `<li class="por-dentro__item" data-revelar>
-  ${telefono(it.pantalla as 'turnos' | 'pagos', i === 0 ? 'telefono--inclinado-izq' : 'telefono--inclinado-der')}
+  ${telefono(it.pantalla as PantallaTelefono, i % 2 === 0 ? 'telefono--inclinado-izq' : 'telefono--inclinado-der')}
   <div class="por-dentro__texto"><h3>${plano(it.titulo)}</h3><p>${plano(it.texto)}</p></div>
 </li>`,
     )
@@ -93,7 +94,7 @@ export function paginaInicio(ctx: Ctx): PaginaRender {
     </div>
     <div class="hero__escena" data-escena>
       <div class="mosaicos-fondo" aria-hidden="true"></div>
-      ${telefono('inicioApp', 'telefono--hero')}
+      ${telefono('u-inicio', 'telefono--hero')}
       ${canoConGota({ clase: 'escena__cano', eager: true })}
       ${handy('lamparita', { clase: 'escena__lamparita', eager: true })}
       ${handy('engranaje', { clase: 'escena__engranaje', eager: true })}
@@ -121,7 +122,7 @@ ${bandaDemo(ctx, demo.banda.usuario)}
     </div>
     <div class="handia__escena" data-revelar>
       <span class="handia__halo" aria-hidden="true"></span>
-      ${telefono('handia', 'telefono--handia')}
+      ${telefono('u-handia', 'telefono--handia')}
       ${handy('lamparita', { clase: 'handia__lamparita', data: 'lamparita-handia' })}
     </div>
   </div>
@@ -193,7 +194,7 @@ export function paginaEspecialistas(ctx: Ctx): PaginaRender {
     </div>
     <div class="hero__escena" data-escena>
       <div class="mosaicos-fondo mosaicos-fondo--oscuro" aria-hidden="true"></div>
-      ${telefono('espPedido', 'telefono--hero')}
+      ${telefono('e-precio', 'telefono--hero')}
       ${handy('llave', { clase: 'escena__llave escena__llave--esp', eager: true })}
       ${handy('engranaje', { clase: 'escena__engranaje escena__engranaje--esp', eager: true })}
     </div>
@@ -226,7 +227,7 @@ ${trailer(e.trailer, 'trailer-especialista')}
       </div>
       <p class="cobro__nota">${plano(cc.notaFundadora)}</p>
     </div>
-    <div class="cobro__pantalla" data-revelar>${telefono('espFin')}</div>
+    <div class="cobro__pantalla" data-revelar>${telefono('e-fin')}</div>
   </div>
 </section>
 
