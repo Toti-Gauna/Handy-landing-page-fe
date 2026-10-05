@@ -436,9 +436,9 @@ function inicio(): PantallaDemo {
     app(`${cabecera('blanca')}
 <div class="du-cuerpo hd-scroll du-inicio">
   ${boton({ accion: 'aviso', valor: 'ubicacion', extra: E }, `${icono('pin')}<span>${esc(a.direccion)}</span>${icono('abajo')}`, 'hd-chip hd-chip--tinte du-direccion')}
-  ${prioridad()}
   <div ${E}>${tituloMarcado(a.titulo, 'hd-titulo hd-titulo--grande du-inicio__titulo', 'h2')}</div>
   <div class="hd-mosaicos du-rubros" role="group" aria-label="${esc(a.rubrosAria)}">${rubros}</div>
+  ${prioridad()}
   ${boton(
     { ir: 'u-handia', extra: E },
     `<span class="du-handia__luz" aria-hidden="true"><i></i>${lamparita('hd-handy du-handia__img')}</span><span class="du-handia__textos"><small>${esc(a.handia.titulo)}</small><strong>${esc(a.handia.texto)}</strong><span>${icono('chispas')}${esc(a.handia.detalle)}</span></span><span class="du-handia__flecha">${icono('flecha')}</span>`,
