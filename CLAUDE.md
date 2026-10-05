@@ -62,6 +62,8 @@ pastillas azules del Centro de ayuda (preguntas), cupones (camada fundadora) y e
 - `FORM_ENDPOINT` vacío → "Registro habilitado en breve", botón deshabilitado, contador oculto.
 - **No guardar registros en localStorage, cookies ni en el repo.**
 - Campo honeypot `sitio_web`: si viene completo se muestra éxito sin enviar.
+- `400 { error: "validacion", campos: [...] }` del backend → se marcan esos campos (`camposRechazados`); cualquier otro error → caja de error genérica.
+- Contrato y configuración: `docs/modulos/preregistro.md` (`.env.example` para local).
 
 ## Deploy
 

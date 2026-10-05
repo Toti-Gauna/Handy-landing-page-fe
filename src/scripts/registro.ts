@@ -4,7 +4,7 @@
 import { iniciarComun } from './comun';
 import { festejar, girar, sacudir } from './animaciones';
 import { CONTADOR_MINIMO, FORM_ENDPOINT, TIMEOUT_MS } from '../config';
-import { type Contador, type Tipo, contadorSchema, preregistroSchema } from '../schema/preregistro';
+import { type Contador, type Tipo, camposRechazados, contadorSchema, preregistroSchema } from '../schema/preregistro';
 import textos from '../content/registro.json';
 
 iniciarComun();
@@ -130,17 +130,21 @@ function marcarError(form: HTMLFormElement, campo: string) {
   $$<HTMLInputElement>(`[name="${campo}"]`, form).forEach((el) => el.setAttribute('aria-invalid', 'true'));
 }
 
-function validar(form: HTMLFormElement, datos: Record<string, unknown>) {
+function mostrarErrores(form: HTMLFormElement, campos: string[]) {
   limpiarErrores(form);
-  const r = preregistroSchema.safeParse(datos);
-  if (r.success) return r.data;
-  const campos = [...new Set(r.error.issues.map((i) => String(i.path[0] ?? 'resumen')))];
   campos.forEach((c) => marcarError(form, c));
   const resumen = $('[data-resumen]', form);
   if (resumen) resumen.textContent = errores.resumen;
   // Foco en el primer campo con error, en el orden del formulario.
   const primero = $$<HTMLElement>('[aria-invalid="true"]', form)[0];
   primero?.focus();
+}
+
+function validar(form: HTMLFormElement, datos: Record<string, unknown>) {
+  limpiarErrores(form);
+  const r = preregistroSchema.safeParse(datos);
+  if (r.success) return r.data;
+  mostrarErrores(form, [...new Set(r.error.issues.map((i) => String(i.path[0] ?? 'resumen')))]);
   return null;
 }
 
@@ -195,6 +199,16 @@ async function enviar(t: Tipo, datos: Record<string, unknown>) {
       body: JSON.stringify(datos),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
+    // 400 con campos: el servidor validó distinto (ej.: esquemas desincronizados). Se marcan como los del front.
+    if (r.status === 400) {
+      const campos = camposRechazados(await r.json().catch(() => null));
+      if (campos.length) {
+        frenar();
+        cargando(form, false);
+        mostrarErrores(form, campos);
+        return;
+      }
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     frenar();
     cargando(form, false);

@@ -61,6 +61,22 @@ export const preregistroSchema = z.discriminatedUnion('tipo', [
   preregistroEspecialistaSchema,
 ]);
 
+// Campos que el backend puede rechazar: los mismos nombres que el formulario.
+export const CAMPOS = ['nombre', 'email', 'whatsapp', 'barrio', 'necesidad', 'rubros', 'zona', 'cuit', 'acepta'] as const;
+
+// Respuesta 400 de POST /preregistro cuando la validación del servidor rechaza campos.
+export const errorValidacionSchema = z.object({
+  error: z.literal('validacion'),
+  campos: z.array(z.string()),
+});
+
+/** Campos rechazados que el formulario sabe marcar. Cualquier otra respuesta da []. */
+export function camposRechazados(respuesta: unknown): Campo[] {
+  const r = errorValidacionSchema.safeParse(respuesta);
+  if (!r.success) return [];
+  return [...new Set(r.data.campos)].filter((c): c is Campo => (CAMPOS as readonly string[]).includes(c));
+}
+
 // Respuesta de GET /preregistro/contador
 export const contadorSchema = z.object({
   usuarios: z.number().int().nonnegative(),
@@ -73,3 +89,4 @@ export type Preregistro = z.infer<typeof preregistroSchema>;
 export type PreregistroUsuario = z.infer<typeof preregistroUsuarioSchema>;
 export type PreregistroEspecialista = z.infer<typeof preregistroEspecialistaSchema>;
 export type Contador = z.infer<typeof contadorSchema>;
+export type Campo = (typeof CAMPOS)[number];

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "imagenes": "sh scripts/optimizar-imagenes.sh",
-    "test": "node --test src/demo/*.test.ts"
+    "test": "node --test src/demo/*.test.ts src/schema/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",
