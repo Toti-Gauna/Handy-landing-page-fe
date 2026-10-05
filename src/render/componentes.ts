@@ -256,6 +256,5 @@ export function intro(): string {
     </div>
     <div class="intro__progreso"><span class="intro__barra"><i data-intro-barra></i></span><span class="intro__numero" data-intro-numero>0</span></div>
   </div>
-  <button class="intro__saltar" type="button" data-intro-saltar>${esc(i.saltar)}</button>
 </div>`;
 }
