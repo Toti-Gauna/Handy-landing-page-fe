@@ -145,10 +145,4 @@ export function iniciarIntro() {
     secuenciaLista = true;
     salir();
   }, 5000);
-
-  raiz.querySelector('[data-intro-saltar]')?.addEventListener('click', () => {
-    tl.progress(1);
-    secuenciaLista = true;
-    salir();
-  });
 }
