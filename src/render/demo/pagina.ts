@@ -5,6 +5,7 @@ import { icono } from '../iconos.ts';
 import { boton as botonSitio, etiqueta } from '../componentes.ts';
 import { type Ctx, esc, plano, titular, url } from '../util.ts';
 import { ICONOS_CLIENTE } from './piezas.ts';
+import { moldesChat } from './comunes.ts';
 import type { PaginaRender } from '../paginas.ts';
 import { demoUsuario } from './usuario.ts';
 import { demoEspecialista } from './especialista.ts';
@@ -182,6 +183,7 @@ export function paginaDemo(ctx: Ctx): PaginaRender {
   </div>
   <p class="sr" aria-live="polite" data-demo-anuncio></p>
   <button type="button" class="demo-app-salir" data-demo-salir-app aria-label="${esc(demo.app.salirAria)}">${icono('cerrar')}<span>${esc(demo.app.salir)}</span></button>
+  ${moldesChat()}
   <template data-demo-iconos>${ICONOS_CLIENTE.map((n) => `<span data-icono="${n}">${icono(n)}</span>`).join('')}</template>
 </section>`;
   const headExtra = `

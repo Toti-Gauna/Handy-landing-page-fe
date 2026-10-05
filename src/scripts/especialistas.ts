@@ -1,4 +1,8 @@
 import { iniciarComun } from './comun';
+// Los celulares de la landing muestran las pantallas de la demo (src/render/demo/estaticas.ts): sus estilos.
+import '../styles/demo-app.css';
+import '../styles/demo-especialista.css';
+
 import { gsap, ScrollTrigger, movimientoReducido } from './animaciones';
 
 iniciarComun();

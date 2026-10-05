@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "imagenes": "sh scripts/optimizar-imagenes.sh"
+    "imagenes": "sh scripts/optimizar-imagenes.sh",
+    "test": "node --test src/demo/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",

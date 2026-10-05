@@ -84,16 +84,18 @@ export function footer(ctx: Ctx): string {
     ${handy('lamparita', { clase: 'footer__lamparita', data: 'lamparita-footer' })}
   </div>
   <div class="contenedor footer__grilla">
-    <p class="footer__producto">${esc(f.producto)}</p>
-    <ul class="footer__links">
-      <li>${contacto}</li>
-      <li><a href="${esc(url(ctx, '/privacidad/'))}"${ctx.pagina === 'privacidad' ? ' aria-current="page"' : ''}>${esc(f.privacidad)}</a></li>
-      <li><span>${esc(f.lugar)}</span></li>
-    </ul>
-  </div>
-  <div class="contenedor footer__marca">
-    <img class="footer__wordmark" src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" />
-    <span class="footer__bajada">${esc(sitio.bajada)}</span>
+    <div class="footer__marca">
+      <img class="footer__wordmark" src="/src/img/logo-handy.webp" alt="" width="720" height="194" loading="lazy" decoding="async" />
+      <span class="footer__bajada">${esc(sitio.bajada)}</span>
+    </div>
+    <div class="footer__info">
+      <p class="footer__producto">${esc(f.producto)}</p>
+      <ul class="footer__links">
+        <li>${contacto}</li>
+        <li><a href="${esc(url(ctx, '/privacidad/'))}"${ctx.pagina === 'privacidad' ? ' aria-current="page"' : ''}>${esc(f.privacidad)}</a></li>
+        <li><span>${esc(f.lugar)}</span></li>
+      </ul>
+    </div>
   </div>
 </footer>`;
 }

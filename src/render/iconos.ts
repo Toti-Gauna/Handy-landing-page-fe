@@ -73,6 +73,11 @@ const trazos: Record<string, string> = {
   // Demo · usuario
   lupa: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   chispas: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6.5 6.5 2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/>',
+  // Demo · usuario (ronda 3)
+  tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+  foco: '<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3Z"/>',
+  mueble: '<rect x="4" y="4" width="16" height="13" rx="1.5"/><path d="M4 10.5h16"/><path d="M11 7.2h2M11 13.8h2"/><path d="M6 17v3M18 17v3"/>',
+  tarjeta: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/>',
 };
 
 export function icono(nombre: string, clase = 'icono'): string {

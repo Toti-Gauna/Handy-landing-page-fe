@@ -1,6 +1,13 @@
 import sitio from '../content/sitio.json' with { type: 'json' };
 import { icono } from './iconos.ts';
 import { ETIQUETAS, type NombrePantalla, PANTALLAS } from './pantallas.ts';
+import { esPantallaDemo, pantallaDemoEstatica, tituloPantallaDemo } from './demo/estaticas.ts';
+
+/** Una pantalla del celular: las de pantallas.ts o cualquier pantalla de la demo por su id ("u-inicio", "e-precio"…). */
+export type PantallaTelefono = NombrePantalla | `u-${string}` | `e-${string}`;
+
+const htmlPantalla = (n: PantallaTelefono) => (esPantallaDemo(n) ? pantallaDemoEstatica(n) : PANTALLAS[n as NombrePantalla]());
+const etiquetaPantalla = (n: PantallaTelefono) => (esPantallaDemo(n) ? tituloPantallaDemo(n) : ETIQUETAS[n as NombrePantalla]);
 import { type Ctx, type Enlace, esc, plano, rico, sinMarcas, titular, url } from './util.ts';
 
 type Variante = 'azul' | 'amarillo' | 'blanco' | 'contorno' | 'contorno-blanco';
@@ -54,19 +61,21 @@ export const etiqueta = (texto: string, ic = 'pin', clase = '') =>
   `<p class="etiqueta ${clase}">${icono(ic)}<span>${plano(texto)}</span></p>`;
 
 /** Celular con proporción real (9:19.5). Recibe una pantalla por nombre o varias para la vitrina. */
-export function telefono(pantallas: NombrePantalla | NombrePantalla[], clase = '', activa = 0): string {
+export function telefono(pantallas: PantallaTelefono | PantallaTelefono[], clase = '', activa = 0): string {
   const lista = Array.isArray(pantallas) ? pantallas : [pantallas];
   const capas = lista
     .map(
       (n, i) =>
-        `<div class="telefono__capa${i === activa ? ' telefono__capa--activa' : ''}" data-capa="${i}">${PANTALLAS[n]()}</div>`,
+        `<div class="telefono__capa${i === activa ? ' telefono__capa--activa' : ''}" data-capa="${i}">${htmlPantalla(n)}</div>`,
     )
     .join('');
-  const etiquetas = lista.map((n) => ETIQUETAS[n]).join(' · ');
+  const etiquetas = lista.map(etiquetaPantalla).join(' · ');
+  // Las pantallas de la demo usan sus estilos (demo-app.css, con alcance [data-demo-pantallas]) y no se tocan: inert.
+  const demo = lista.some(esPantallaDemo) ? ' data-demo-pantallas inert' : '';
   return `<figure class="telefono ${clase}">
   <div class="telefono__marco" aria-hidden="true">
     <span class="telefono__boton telefono__boton--a"></span><span class="telefono__boton telefono__boton--b"></span><span class="telefono__boton telefono__boton--c"></span>
-    <div class="telefono__pantalla">${capas}<span class="telefono__isla"></span></div>
+    <div class="telefono__pantalla"${demo}>${capas}<span class="telefono__isla"></span></div>
   </div>
   <figcaption class="sr">${esc(sitio.pantallaIlustrativa)}: ${esc(etiquetas)}</figcaption>
 </figure>`;
@@ -85,7 +94,7 @@ export interface ItemVitrina {
  * a medida que scrolleás; en el celular cada paso trae su propia pantalla.
  */
 export function vitrina(items: ItemVitrina[], opciones: { numerada?: boolean; decorado?: string } = {}): string {
-  const nombres = items.map((it) => it.pantalla as NombrePantalla);
+  const nombres = items.map((it) => it.pantalla as PantallaTelefono);
   const pasos = items
     .map((it, i) => {
       const marca = opciones.numerada

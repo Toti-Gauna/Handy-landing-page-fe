@@ -80,12 +80,36 @@ export interface ModuloRol {
   entrar?: Record<string, (pantalla: HTMLElement, m: Motor) => void | (() => void)>;
   /** Vuelve el DOM dinámico del rol a como salió del build (al reiniciar o cambiar de rol). */
   reiniciar?: (m: Motor) => void;
+  /** Al entrar a cualquier pantalla (después de su entrar[id]). Lo usan las piezas comunes (agenda, contactos). */
+  cualquiera?: (pantalla: HTMLElement, m: Motor) => void | (() => void);
 }
 
 const modulos = new Map<Rol, ModuloRol>();
 
+/**
+ * Registra el comportamiento de un rol. Se puede llamar más de una vez por rol (el módulo del rol y las piezas
+ * comunes, como los selectores de fecha y hora): las acciones y entradas se suman; si un nombre se repite, gana el
+ * último. Todos los reiniciar() corren.
+ */
 export function registrarRol(rol: Rol, modulo: ModuloRol) {
-  modulos.set(rol, modulo);
+  const previo = modulos.get(rol);
+  if (!previo) {
+    modulos.set(rol, modulo);
+    return;
+  }
+  const reinicios = [previo.reiniciar, modulo.reiniciar].filter((f): f is (m: Motor) => void => !!f);
+  const todas = [previo.cualquiera, modulo.cualquiera].filter((f): f is NonNullable<ModuloRol['cualquiera']> => !!f);
+  modulos.set(rol, {
+    acciones: { ...previo.acciones, ...modulo.acciones },
+    entrar: { ...previo.entrar, ...modulo.entrar },
+    reiniciar: reinicios.length ? (m) => reinicios.forEach((f) => f(m)) : undefined,
+    cualquiera: todas.length
+      ? (el, m) => {
+          const limpiezas = todas.map((f) => f(el, m)).filter((x): x is () => void => typeof x === 'function');
+          return limpiezas.length ? () => limpiezas.forEach((f) => f()) : undefined;
+        }
+      : undefined,
+  });
 }
 
 const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -467,13 +491,15 @@ export function iniciarDemo() {
   }
 
   function entrar(id: string) {
-    const fn = modulos.get(rol)?.entrar?.[id];
-    if (!fn) return;
-    try {
-      const limpieza = conDuenio(id, () => fn(pantallas.get(id)!, motor));
-      if (typeof limpieza === 'function') agregarLimpieza(id, limpieza);
-    } catch (e) {
-      console.error(e);
+    const mod = modulos.get(rol);
+    for (const fn of [mod?.entrar?.[id], mod?.cualquiera]) {
+      if (!fn) continue;
+      try {
+        const limpieza = conDuenio(id, () => fn(pantallas.get(id)!, motor));
+        if (typeof limpieza === 'function') agregarLimpieza(id, limpieza);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
