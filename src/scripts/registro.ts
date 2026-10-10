@@ -1,10 +1,11 @@
 // Pre-registro: pestañas usuario/especialista, contador, validación con zod y envío al backend.
-// No se guarda nada en el navegador (ni localStorage ni cookies).
+// No se guarda nada en el navegador (ni localStorage ni cookies) y los pedidos van sin credenciales.
 
 import { iniciarComun } from './comun';
 import { festejar, girar, sacudir } from './animaciones';
 import { CONTADOR_MINIMO, FORM_ENDPOINT, TIMEOUT_MS } from '../config';
-import { type Contador, type Tipo, camposRechazados, contadorSchema, preregistroSchema } from '../schema/preregistro';
+import { type Contador, type Tipo, contadorSchema, preregistroSchema } from '../schema/preregistro';
+import { type MotivoError, clasificarAlta, motivoDeFalla } from '../schema/respuesta';
 import textos from '../content/registro.json';
 
 iniciarComun();
@@ -19,6 +20,7 @@ const forms: Record<Tipo, HTMLFormElement> = {
 };
 const tarjeta = $('[data-tarjeta]')!;
 const cajaError = $('[data-estado-error]')!;
+const textoError = $('[data-error-motivo]', cajaError)!;
 const exito = $('[data-exito]')!;
 const contadorEl = $('[data-contador]')!;
 
@@ -63,6 +65,7 @@ function mostrarContador() {
     contadorEl.hidden = true;
     return;
   }
+  // El backend publica una cota inferior (0 si hay menos de 20): el texto dice "{n} o más", nunca un número exacto.
   const n = contador ? (tipo === 'usuario' ? contador.usuarios : contador.especialistas) : null;
   contadorEl.textContent =
     n !== null && n >= CONTADOR_MINIMO
@@ -73,7 +76,10 @@ function mostrarContador() {
 
 async function pedirContador() {
   try {
-    const r = await fetch(`${FORM_ENDPOINT}/preregistro/contador`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const r = await fetch(`${FORM_ENDPOINT}/preregistro/contador`, {
+      credentials: 'omit',
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
     if (!r.ok) return;
     const ok = contadorSchema.safeParse(await r.json());
     if (ok.success) {
@@ -89,28 +95,28 @@ async function pedirContador() {
 
 const errores = textos.errores as Record<string, string>;
 
+/** Arma el cuerpo EXACTO del contrato (esquema estricto): solo los campos del tipo, sin vacíos ni extras. */
 function leer(form: HTMLFormElement, t: Tipo): Record<string, unknown> {
   const fd = new FormData(form);
   const texto = (k: string) => String(fd.get(k) ?? '').trim();
   const opcional = (k: string) => texto(k) || undefined;
   const comunes = {
     tipo: t,
-    nombre: texto('nombre'),
-    email: texto('email'),
     acepta: fd.get('acepta') === 'on',
+    aviso: form.dataset.aviso ?? '',
     sitio_web: opcional('sitio_web'),
   };
   const datos: Record<string, unknown> =
     t === 'usuario'
-      ? { ...comunes, whatsapp: opcional('whatsapp'), barrio: texto('barrio'), necesidad: opcional('necesidad') }
+      ? { ...comunes, email: texto('email') }
       : {
           ...comunes,
+          nombre: texto('nombre'),
           whatsapp: texto('whatsapp'),
           rubros: fd.getAll('rubros').map(String),
           zona: texto('zona'),
-          cuit: opcional('cuit'),
+          email: opcional('email'),
         };
-  // No mandar claves vacías: el backend recibe solo lo que se completó.
   Object.keys(datos).forEach((k) => datos[k] === undefined && delete datos[k]);
   return datos;
 }
@@ -171,12 +177,13 @@ function cargando(form: HTMLFormElement, si: boolean): () => void {
   return si ? girar($('.form__engranaje', form)) : () => {};
 }
 
-function mostrarExito(t: Tipo, nombre: string) {
+function mostrarExito(t: Tipo, nombre = '') {
   tarjeta.hidden = true;
   contadorEl.hidden = true;
-  const primerNombre = nombre.split(/\s+/)[0];
   const titulo = $('[data-exito-titulo]', exito)!;
-  titulo.textContent = (titulo.dataset.plantilla ?? '').replace('{nombre}', primerNombre);
+  // El usuario no deja nombre: texto neutro. El especialista recibe el saludo con su primer nombre.
+  const plantilla = (t === 'usuario' ? titulo.dataset.usuario : titulo.dataset.especialista) ?? '';
+  titulo.textContent = plantilla.replace('{nombre}', nombre.split(/\s+/)[0]);
   const texto = $('[data-exito-texto]', exito)!;
   texto.textContent = (t === 'usuario' ? texto.dataset.usuario : texto.dataset.especialista) ?? '';
   const compartir = $<HTMLAnchorElement>('[data-compartir]', exito)!;
@@ -188,38 +195,37 @@ function mostrarExito(t: Tipo, nombre: string) {
   festejar($('[data-festejo]', exito));
 }
 
+/** Caja de error: los datos quedan en el formulario y "Reintentar" vuelve a enviar. */
+function mostrarFalla(motivo: MotivoError) {
+  textoError.textContent = textos.error.motivos[motivo];
+  cajaError.hidden = false;
+  $<HTMLButtonElement>('[data-reintentar]', cajaError)?.focus();
+  sacudir($('.estado__handy', cajaError));
+}
+
 async function enviar(t: Tipo, datos: Record<string, unknown>) {
   const form = forms[t];
   cajaError.hidden = true;
   const frenar = cargando(form, true);
+  let resultado: ReturnType<typeof clasificarAlta>;
   try {
     const r = await fetch(`${FORM_ENDPOINT}/preregistro`, {
       method: 'POST',
+      credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datos),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    // 400 con campos: el servidor validó distinto (ej.: esquemas desincronizados). Se marcan como los del front.
-    if (r.status === 400) {
-      const campos = camposRechazados(await r.json().catch(() => null));
-      if (campos.length) {
-        frenar();
-        cargando(form, false);
-        mostrarErrores(form, campos);
-        return;
-      }
-    }
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    frenar();
-    cargando(form, false);
-    mostrarExito(t, String(datos.nombre));
-  } catch {
-    frenar();
-    cargando(form, false);
-    cajaError.hidden = false;
-    $<HTMLButtonElement>('[data-reintentar]', cajaError)?.focus();
-    sacudir($('.estado__handy', cajaError));
+    resultado = clasificarAlta(r.status, await r.json().catch(() => null));
+  } catch (e) {
+    resultado = { tipo: 'error', motivo: motivoDeFalla(e) };
   }
+  frenar();
+  cargando(form, false);
+  // Éxito SOLO con el 201 del backend. Con cualquier otra cosa se conserva lo tipeado.
+  if (resultado.tipo === 'ok') mostrarExito(t, String(datos.nombre ?? ''));
+  else if (resultado.tipo === 'validacion') mostrarErrores(form, resultado.campos);
+  else mostrarFalla(resultado.motivo);
 }
 
 (Object.entries(forms) as [Tipo, HTMLFormElement][]).forEach(([t, form]) => {
@@ -229,7 +235,7 @@ async function enviar(t: Tipo, datos: Record<string, unknown>) {
     const datos = leer(form, t);
     // Honeypot completo: es un bot. Le mostramos éxito sin mandar nada.
     if (datos.sitio_web) {
-      mostrarExito(t, String(datos.nombre || ''));
+      mostrarExito(t);
       return;
     }
     const validos = validar(form, datos);

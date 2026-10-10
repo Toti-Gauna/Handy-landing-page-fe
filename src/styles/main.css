@@ -3706,10 +3706,6 @@ main {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.opciones--cuit {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .opcion {
   position: relative;
   cursor: pointer;
@@ -3827,6 +3823,19 @@ main {
   width: 1px;
   height: 1px;
   overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.form__aviso {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-texto-suave);
+}
+
+.form__aviso a {
+  color: var(--color-azul);
+  text-decoration: underline;
 }
 
 .form__resumen:empty {
@@ -3988,6 +3997,21 @@ main {
 
 .legal__seccion p + p {
   margin-top: 10px;
+}
+
+.legal__nota {
+  margin-bottom: 6px;
+  color: var(--color-texto-suave);
+}
+
+.legal__subseccion {
+  margin-top: 18px;
+}
+
+.legal__subseccion h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 6px;
 }
 
 .no-encontrado {

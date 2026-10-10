@@ -5,40 +5,99 @@
   },
   "titulo": "Privacidad",
   "bajada": "Qué hacemos con los datos que dejás en el pre-registro, en criollo.",
-  "secciones": [
+  "_nota": "Textos tomados de los borradores del backend (docs/privacy/*.txt, ids en registro.json → consentimiento). Son borradores provisionales sin revisión legal: lo que está en `pendientes` y los grupos con estado PENDIENTE se completan con la versión definitiva, que lleva un id nuevo. No agregar datos ni usos que el aviso no diga.",
+  "pendientes": {
+    "email": "nuestro email de contacto (lo publicamos en esta página antes del lanzamiento)",
+    "fecha": "se completa con la versión definitiva",
+    "pais": "un país que todavía estamos confirmando"
+  },
+  "grupos": [
     {
-      "titulo": "Qué datos guardamos",
-      "parrafos": [
-        "Si te anotás como usuario: nombre, email, barrio y, si los completás, tu WhatsApp y lo que necesitarías arreglar.",
-        "Si te anotás como especialista: nombre, WhatsApp, email, rubros, zona donde trabajás y si tenés CUIT.",
-        "También guardamos la fecha en que te anotaste y que aceptaste estas condiciones."
+      "id": "aviso-usuarios",
+      "estado": "PENDIENTE",
+      "titulo": "Si te anotás como usuario",
+      "secciones": [
+        {
+          "titulo": "Aviso de privacidad",
+          "parrafos": [
+            "Tus datos los trata Ignacio Gauna, responsable de esta base, con una única finalidad: avisarte cuando Handy esté disponible en Mar del Plata. No se los cedemos a nadie ni los usamos para otra cosa.",
+            "Solo te pedimos tu email. Podés pedir acceso, rectificación o supresión escribiendo a {email}, y te respondemos en los plazos de la Ley 25.326.",
+            "Dejar tus datos es voluntario: si no los dejás, no pasa nada más que no te avisemos."
+          ]
+        }
       ]
     },
     {
-      "titulo": "Para qué los usamos",
-      "parrafos": [
-        "Para avisarte cuando Handy salga en tiendas ({fechaLarga}). Si sos especialista, también para contarte cómo seguir con el alta.",
-        "No los usamos para nada más."
-      ]
-    },
-    {
-      "titulo": "Dónde se guardan",
-      "parrafos": [
-        "En servidores ubicados en Estados Unidos, fuera de Argentina. Por eso te pedimos que lo aceptes expresamente al anotarte."
-      ]
-    },
-    {
-      "id": "baja",
-      "titulo": "Cómo pedir la baja",
-      "parrafos": [
-        "Escribinos a {email} desde el email con el que te anotaste y borramos tus datos. También podés pedir ver o corregir lo que guardamos.",
-        "Estos derechos te los da la Ley 25.326 de Protección de Datos Personales."
+      "id": "aviso-especialistas",
+      "estado": "PENDIENTE",
+      "titulo": "Si te anotás como especialista",
+      "bajada": "Última actualización: {fecha}.",
+      "secciones": [
+        {
+          "titulo": "1. Quién es responsable de tus datos",
+          "parrafos": [
+            "Ignacio Gauna, Mar del Plata, Provincia de Buenos Aires. Contacto para temas de privacidad: {email}.",
+            "Handy es un proyecto en desarrollo. Cuando exista una sociedad, este aviso se actualiza con sus datos y te avisamos por el mismo medio por el que te contactamos."
+          ]
+        },
+        {
+          "titulo": "2. Qué datos pedimos",
+          "parrafos": [
+            "Nombre y apellido, teléfono, rubro en el que trabajás, zona de Mar del Plata donde trabajás, y correo electrónico si querés dejarlo.",
+            "No pedimos DNI, CUIT, matrícula, antecedentes ni documentación en esta instancia."
+          ]
+        },
+        {
+          "titulo": "3. Para qué los usamos",
+          "parrafos": [
+            "Solo para dos cosas: contactarte por WhatsApp, teléfono o correo para contarte cómo funciona Handy y hacer el alta como especialista; y avisarte cuando la aplicación esté disponible.",
+            "No los usamos para publicidad de terceros ni para armar listas para vender."
+          ]
+        },
+        {
+          "titulo": "4. Es voluntario",
+          "parrafos": ["Darnos estos datos es voluntario. Si no nos los das, no vamos a poder contactarte. No hay ninguna otra consecuencia."]
+        },
+        {
+          "titulo": "5. A quién se los damos",
+          "parrafos": [
+            "A nadie. No cedemos ni vendemos estos datos.",
+            "Los datos se guardan en los servicios de Cloudflare y Neon, que actúan únicamente como proveedores técnicos y no pueden usarlos para otra cosa. Esos servicios almacenan la información en servidores ubicados fuera de la Argentina, en {pais}; al enviar el formulario prestás tu consentimiento expreso para esa transferencia, en los términos del artículo 12 de la Ley 25.326."
+          ]
+        },
+        {
+          "titulo": "6. Cuánto tiempo los guardamos",
+          "parrafos": [
+            "Hasta 12 meses desde que te registrás, o hasta que nos pidas que los borremos, lo que pase primero. Si te das de alta como especialista, pasan a regirse por los términos de la aplicación, que vas a poder leer y aceptar en ese momento."
+          ]
+        },
+        {
+          "id": "baja",
+          "titulo": "7. Tus derechos",
+          "parrafos": [
+            "Podés pedirnos en cualquier momento acceder a tus datos, corregirlos, actualizarlos o borrarlos. Es gratis. Escribí a {email} desde el correo o con el teléfono que registraste.",
+            "Te contestamos el pedido de acceso dentro de los 10 días corridos y, si corresponde corregir o borrar, lo hacemos dentro de los 5 días hábiles, conforme los artículos 14 y 16 de la Ley 25.326."
+          ]
+        },
+        {
+          "titulo": "8. Órgano de control",
+          "parrafos": [
+            "La Agencia de Acceso a la Información Pública, en su carácter de órgano de control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales."
+          ]
+        },
+        {
+          "titulo": "9. Seguridad",
+          "parrafos": ["Guardamos los datos con acceso restringido y no los compartimos por canales abiertos."]
+        },
+        {
+          "titulo": "10. Cambios",
+          "parrafos": ["Si cambiamos este aviso, publicamos la versión nueva en esta misma dirección con su fecha."]
+        }
       ]
     },
     {
       "titulo": "Quién es responsable",
       "parrafos": ["Handy es un producto de Eclipse."]
     }
-  ],
-  "emailPendiente": "nuestro email de contacto (lo publicamos en esta página antes del lanzamiento)"
+  ]
 }
