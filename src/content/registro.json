@@ -54,7 +54,7 @@
   "enviando": "Enviando…",
   "errores": {
     "resumen": "Revisá los campos marcados.",
-    "nombre": "Escribí tu nombre y apellido.",
+    "nombre": "Escribí tu nombre y apellido, solo con letras (sin números ni símbolos).",
     "email": "Revisá el email: parece que le falta algo.",
     "whatsapp": "Revisá el número: van entre 8 y 15 dígitos.",
     "rubros": "Elegí al menos un rubro.",

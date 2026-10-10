@@ -37,6 +37,16 @@ test('esquema estricto: campos extra o retirados se rechazan', () => {
   assert.equal(preregistroSchema.safeParse({ ...usuario, necesidad: 'x' }).success, false);
 });
 
+test('nombre: solo letras, espacios y . \' ’ - (sin HTML, fórmulas ni números)', () => {
+  for (const nombre of ['<img src=x onerror=alert(1)>', '=HYPERLINK("x")', '+cmd', 'Ana 123']) {
+    assert.equal(preregistroSchema.safeParse({ ...especialista, nombre }).success, false, nombre);
+  }
+  assert.equal(
+    preregistroSchema.safeParse({ ...especialista, nombre: "María José O'Connor-Díaz" }).success,
+    true,
+  );
+});
+
 test('acepta y aviso son obligatorios', () => {
   assert.equal(preregistroSchema.safeParse({ ...usuario, acepta: false }).success, false);
   const { aviso: _a, ...sinAviso } = usuario;

@@ -65,7 +65,10 @@ export const preregistroUsuarioSchema = z.strictObject({
 
 export const preregistroEspecialistaSchema = z.strictObject({
   tipo: z.literal('especialista'),
-  nombre: texto(2, 80).refine(sinControl),
+  // Solo letras, espacios y . ' ’ -: el nombre llega a la pantalla (y a exportaciones) del equipo.
+  nombre: texto(2, 80)
+    .refine(sinControl)
+    .refine((v) => /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(v)),
   whatsapp,
   rubros: z
     .array(z.enum(RUBROS))
