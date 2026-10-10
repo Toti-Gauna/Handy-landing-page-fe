@@ -44,7 +44,7 @@
           "titulo": "2. Qué datos pedimos",
           "parrafos": [
             "Nombre y apellido, teléfono, rubro en el que trabajás, zona de Mar del Plata donde trabajás, y correo electrónico si querés dejarlo.",
-            "No pedimos DNI, CUIT, matrícula, antecedentes ni documentación en esta instancia."
+            "No pedimos DNI, CUIT, antecedentes ni documentación en esta instancia."
           ]
         },
         {
