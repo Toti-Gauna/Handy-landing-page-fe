@@ -7,7 +7,7 @@ import tarifas from '../content/tarifas.json' with { type: 'json' };
 import registro from '../content/registro.json' with { type: 'json' };
 import privacidad from '../content/privacidad.json' with { type: 'json' };
 import demo from '../content/demo.json' with { type: 'json' };
-import { RUBROS, OPCIONES_CUIT } from '../schema/preregistro.ts';
+import { RUBROS } from '../schema/preregistro.ts';
 import { icono } from './iconos.ts';
 import {
   bandaDemo,
@@ -262,28 +262,38 @@ ${bandaFinal(ctx, e.bandaFinal)}
 function campo(
   nombre: string,
   c: { label: string; placeholder?: string },
-  opciones: { tipo?: string; opcional?: boolean; autocomplete?: string; inputmode?: string; area?: boolean; form: string },
+  opciones: { tipo?: string; opcional?: boolean; autocomplete?: string; inputmode?: string; ayuda?: string; form: string },
 ): string {
   const id = `${opciones.form}-${nombre}`;
   const opcional = opciones.opcional ? ` <span class="campo__opcional">(${esc(registro.opcional)})</span>` : '';
-  const comunes = `id="${id}" name="${nombre}" placeholder="${esc(c.placeholder ?? '')}" aria-describedby="${id}-error"${opciones.opcional ? '' : ' required'}${opciones.autocomplete ? ` autocomplete="${opciones.autocomplete}"` : ''}`;
-  const control = opciones.area
-    ? `<textarea ${comunes} rows="3" maxlength="500"></textarea>`
-    : `<input ${comunes} type="${opciones.tipo ?? 'text'}"${opciones.inputmode ? ` inputmode="${opciones.inputmode}"` : ''} />`;
+  const ayuda = opciones.ayuda ? `\n  <p class="campo__ayuda" id="${id}-ayuda">${esc(opciones.ayuda)}</p>` : '';
+  const comunes = `id="${id}" name="${nombre}" placeholder="${esc(c.placeholder ?? '')}" aria-describedby="${opciones.ayuda ? `${id}-ayuda ` : ''}${id}-error"${opciones.opcional ? '' : ' required'}${opciones.autocomplete ? ` autocomplete="${opciones.autocomplete}"` : ''}`;
+  const control = `<input ${comunes} type="${opciones.tipo ?? 'text'}"${opciones.inputmode ? ` inputmode="${opciones.inputmode}"` : ''} />`;
   return `<div class="campo" data-campo="${nombre}">
-  <label class="campo__label" for="${id}">${esc(c.label)}${opcional}</label>
+  <label class="campo__label" for="${id}">${esc(c.label)}${opcional}</label>${ayuda}
   ${control}
   <p class="campo__error" id="${id}-error" data-error-de="${nombre}"></p>
 </div>`;
 }
 
-function comunesFinales(form: string, ctx: Ctx): string {
+/** Mail de contacto para los avisos: el real si ya está en sitio.json, si no el texto de "pendiente". */
+const mailContacto = (pendiente: string) => {
+  const email = emailContacto();
+  return email ? `[${email}](mailto:${email})` : pendiente;
+};
+
+function comunesFinales(form: string, tipo: 'usuario' | 'especialista', ctx: Ctx): string {
   const r = registro.campos;
-  return `<div class="campo campo--check" data-campo="acepta">
+  const cons = registro.consentimiento[tipo];
+  const resumen = rico(ctx, cons.resumen, { email: mailContacto(registro.consentimiento.emailPendiente) });
+  return `<div class="form__aviso" data-aviso-texto>
+  <p>${resumen} <a href="${esc(url(ctx, cons.verAviso))}" target="_blank" rel="noopener">${esc(r.acepta.link)}</a></p>
+</div>
+<div class="campo campo--check" data-campo="acepta">
   <label class="check">
     <input type="checkbox" name="acepta" id="${form}-acepta" required aria-describedby="${form}-acepta-error" />
     <span class="check__caja" aria-hidden="true">${icono('check')}</span>
-    <span>${esc(r.acepta.texto)} <a href="${esc(url(ctx, '/privacidad/'))}" target="_blank" rel="noopener">${esc(r.acepta.link)}</a></span>
+    <span>${esc(cons.acepta)}</span>
   </label>
   <p class="campo__error" id="${form}-acepta-error" data-error-de="acepta"></p>
 </div>
@@ -312,12 +322,6 @@ export function paginaRegistro(ctx: Ctx): PaginaRender {
 </label>`,
     )
     .join('');
-  const cuit = OPCIONES_CUIT.map(
-    (o) => `<label class="opcion opcion--radio">
-  <input type="radio" name="cuit" value="${o}" required />
-  <span class="opcion__caja">${esc(c.cuit.opciones[o])}</span>
-</label>`,
-  ).join('');
 
   const cuerpo = `
 <section class="registro" aria-labelledby="registro-titulo">
@@ -339,38 +343,30 @@ export function paginaRegistro(ctx: Ctx): PaginaRender {
         <button class="pestanas__boton" type="button" role="tab" id="tab-especialista" aria-controls="panel-especialista" aria-selected="false" tabindex="-1" data-tab="especialista">${esc(r.pestanas.especialista)}</button>
       </div>
 
-      <form class="form" id="panel-usuario" role="tabpanel" aria-labelledby="tab-usuario" data-form="usuario" novalidate>
-        ${campo('nombre', c.nombre, { form: 'u', autocomplete: 'given-name' })}
+      <form class="form" id="panel-usuario" role="tabpanel" aria-labelledby="tab-usuario" data-form="usuario" data-aviso="${esc(r.consentimiento.usuario.aviso)}" novalidate>
         ${campo('email', c.email, { form: 'u', tipo: 'email', autocomplete: 'email', inputmode: 'email' })}
-        ${campo('whatsapp', c.whatsapp, { form: 'u', tipo: 'tel', opcional: true, autocomplete: 'tel', inputmode: 'tel' })}
-        ${campo('barrio', c.barrio, { form: 'u', autocomplete: 'address-level3' })}
-        ${campo('necesidad', c.necesidad, { form: 'u', opcional: true, area: true })}
-        ${comunesFinales('u', ctx)}
+        ${comunesFinales('u', 'usuario', ctx)}
       </form>
 
-      <form class="form" id="panel-especialista" role="tabpanel" aria-labelledby="tab-especialista" data-form="especialista" novalidate hidden>
+      <form class="form" id="panel-especialista" role="tabpanel" aria-labelledby="tab-especialista" data-form="especialista" data-aviso="${esc(r.consentimiento.especialista.aviso)}" novalidate hidden>
         ${campo('nombre', c.nombre, { form: 'e', autocomplete: 'name' })}
         ${campo('whatsapp', c.whatsapp, { form: 'e', tipo: 'tel', autocomplete: 'tel', inputmode: 'tel' })}
-        ${campo('email', c.email, { form: 'e', tipo: 'email', autocomplete: 'email', inputmode: 'email' })}
         <fieldset class="campo campo--grupo" data-campo="rubros" aria-describedby="e-rubros-ayuda e-rubros-error">
           <legend class="campo__label">${esc(c.rubros.label)}</legend>
           <p class="campo__ayuda" id="e-rubros-ayuda">${esc(c.rubros.ayuda)}</p>
           <div class="opciones opciones--rubros">${rubrosChecks}</div>
           <p class="campo__error" id="e-rubros-error" data-error-de="rubros"></p>
         </fieldset>
-        ${campo('zona', c.zona, { form: 'e' })}
-        <fieldset class="campo campo--grupo" data-campo="cuit" aria-describedby="e-cuit-error">
-          <legend class="campo__label">${esc(c.cuit.label)}</legend>
-          <div class="opciones opciones--cuit">${cuit}</div>
-          <p class="campo__error" id="e-cuit-error" data-error-de="cuit"></p>
-        </fieldset>
-        ${comunesFinales('e', ctx)}
+        ${campo('zona', c.zona, { form: 'e', ayuda: c.zona.ayuda })}
+        ${campo('email', c.email, { form: 'e', tipo: 'email', autocomplete: 'email', inputmode: 'email', opcional: true })}
+        ${comunesFinales('e', 'especialista', ctx)}
       </form>
 
       <div class="estado estado--error" data-estado-error hidden role="alert">
         ${handy('llave', { clase: 'estado__handy', data: 'llave-error' })}
         <div>
           <p class="estado__titulo">${esc(r.error.titulo)}</p>
+          <p data-error-motivo></p>
           <p>${esc(r.error.texto)}</p>
           <button class="boton boton--azul" type="button" data-reintentar>${icono('reintentar')}${esc(r.error.reintentar)}</button>
         </div>
@@ -381,7 +377,7 @@ export function paginaRegistro(ctx: Ctx): PaginaRender {
       <div class="exito__escena" data-festejo>
         ${handy('grupo', { clase: 'exito__handys', data: 'grupo-exito' })}
       </div>
-      <h2 class="exito__titulo" data-exito-titulo data-plantilla="${esc(r.exito.titulo)}"></h2>
+      <h2 class="exito__titulo" data-exito-titulo data-usuario="${esc(r.exito.titulo)}" data-especialista="${esc(r.exito.tituloEspecialista)}"></h2>
       <p class="exito__texto" data-exito-texto data-usuario="${esc(r.exito.texto)}" data-especialista="${esc(r.exito.textoEspecialista)}"></p>
       <div class="exito__acciones">
         <a class="boton boton--whatsapp boton--grande" data-compartir target="_blank" rel="noopener" data-mensaje="${esc(r.exito.mensajeWhatsapp)}" href="https://wa.me/">${icono('whatsapp')}${esc(r.exito.compartir)}</a>
@@ -395,17 +391,27 @@ export function paginaRegistro(ctx: Ctx): PaginaRender {
 
 // ── Privacidad ────────────────────────────────────────────────────────────
 
+interface SeccionLegal {
+  id?: string;
+  titulo: string;
+  parrafos: string[];
+}
+
 export function paginaPrivacidad(ctx: Ctx): PaginaRender {
   const p = privacidad;
-  const email = emailContacto();
-  const extra = { email: email ? `[${email}](mailto:${email})` : p.emailPendiente };
-  const secciones = p.secciones
-    .map(
-      (s: { id?: string; titulo: string; parrafos: string[] }) => `<section class="legal__seccion"${s.id ? ` id="${esc(s.id)}"` : ''}>
-  <h2>${plano(s.titulo)}</h2>
-  ${s.parrafos.map((t) => `<p>${rico(ctx, t, extra)}</p>`).join('\n  ')}
-</section>`,
-    )
+  const extra = { email: mailContacto(p.pendientes.email), fecha: p.pendientes.fecha, pais: p.pendientes.pais };
+  const parrafos = (ps: string[]) => ps.map((t) => `<p>${rico(ctx, t, extra)}</p>`).join('\n  ');
+  const seccion = (s: SeccionLegal) => `<section class="legal__subseccion"${s.id ? ` id="${esc(s.id)}"` : ''}>
+  <h3>${plano(s.titulo)}</h3>
+  ${parrafos(s.parrafos)}
+</section>`;
+  const grupos = p.grupos
+    .map((g: { id?: string; estado?: string; titulo: string; bajada?: string; parrafos?: string[]; secciones?: SeccionLegal[] }) => `<section class="legal__seccion"${g.id ? ` id="${esc(g.id)}"` : ''}${g.estado ? ` data-estado="${esc(g.estado)}"` : ''}>
+  <h2>${plano(g.titulo)}</h2>
+  ${g.bajada ? `<p class="legal__nota">${rico(ctx, g.bajada, extra)}</p>` : ''}
+  ${parrafos(g.parrafos ?? [])}
+  ${(g.secciones ?? []).map(seccion).join('\n')}
+</section>`)
     .join('\n');
   const cuerpo = `
 <article class="legal contenedor">
@@ -413,7 +419,7 @@ export function paginaPrivacidad(ctx: Ctx): PaginaRender {
     <h1>${titular(p.titulo)}</h1>
     <p>${plano(p.bajada)}</p>
   </header>
-  ${secciones}
+  ${grupos}
 </article>`;
   return { meta: p.meta, cuerpo };
 }

@@ -25,7 +25,7 @@ Objetivo único de la landing: **pre-registros reales** de usuarios y especialis
   - `tarifas.json` es la única fuente de porcentajes y del ejemplo de $ 45.000.
   - Lo que está sin confirmar se marca con `"estado": "PENDIENTE"` o valor `"PENDIENTE"`.
 - `src/brand/tokens.ts`: colores, tipografía y radios. Se inyectan como variables CSS (`--color-*`, `--radio-*`).
-- `src/schema/preregistro.ts`: esquema zod del formulario. **Copia sincronizada con Handy-landing-page-be**: si cambiás uno, cambiá el otro. Los `id` de `rubros.json` tienen que coincidir con `RUBROS` (el build falla si no).
+- `src/schema/preregistro.ts`: esquema zod del formulario. **Copia idéntica (byte a byte) de `src/schemas/preregistro.ts` de Handy-landing-page-be**: no se edita acá; si cambia el contrato, se cambia en el BE y se vuelve a copiar (`HANDY_BE_SCHEMA=<ruta al del BE> npm test` verifica la sincronía). Lo propio de la landing (interpretar respuestas del BE) va en `src/schema/respuesta.ts`. Los `id` de `rubros.json` tienen que coincidir con `RUBROS` (el build falla si no).
 - `src/config.ts`: `FORM_ENDPOINT` (o variable `VITE_FORM_ENDPOINT` en el build), `CONTADOR_MINIMO = 20`.
 - `src/scripts/`: comportamiento por página. `animaciones.ts` tiene todo lo de GSAP (respeta `prefers-reduced-motion`).
 - `src/img/`: webp generados desde `assets/brand` con `npm run imagenes` (ImageMagick).
@@ -57,18 +57,21 @@ pastillas azules del Centro de ayuda (preguntas), cupones (camada fundadora) y e
 
 ## Reglas del registro
 
-- POST `FORM_ENDPOINT + '/preregistro'`; contador con GET `FORM_ENDPOINT + '/preregistro/contador'` → `{ usuarios, especialistas }`.
-- El contador se muestra solo si el número de ese tipo es `>= CONTADOR_MINIMO`; si no, "Sumate a la lista".
+Contrato con Handy-landing-page-be (Fase 1, ya implementado): `docs/modulos/preregistro.md`.
+
+- Especialista: `nombre`, `whatsapp`, `rubros`, `zona`, `email` **opcional**. Usuario: **solo `email`**. Sin CUIT, barrio, necesidad ni WhatsApp de usuario. Esquema estricto: no mandar campos extra ni vacíos.
+- `aviso` obligatorio: id de la versión del aviso mostrada (`registro.json → consentimiento.<tipo>.aviso`, tiene que existir en `privacy-notices.ts` del BE). `acepta` sin tildar por defecto. Los textos del aviso salen de los borradores del BE (`docs/privacy/*.txt`) y están marcados `"estado": "PENDIENTE"` hasta la versión definitiva: texto nuevo = id nuevo.
+- POST `FORM_ENDPOINT + '/preregistro'` con `credentials: 'omit'`; **éxito solo con el `201 { ok: true }`**. Cualquier otro estado, la red o 15 s de espera conservan lo tipeado y muestran el error (`src/schema/respuesta.ts`, textos en `registro.json → error.motivos`).
+- Contador con GET `FORM_ENDPOINT + '/preregistro/contador'` → `{ usuarios, especialistas }`: es una **cota inferior** (0 si hay menos de 20; desde 20, múltiplos de 5). Se muestra solo si `>= CONTADOR_MINIMO` y con "{n} o más"; si no, "Sumate a la lista". Nunca presentarlo como cifra exacta.
 - `FORM_ENDPOINT` vacío → "Registro habilitado en breve", botón deshabilitado, contador oculto.
-- **No guardar registros en localStorage, cookies ni en el repo.**
-- Campo honeypot `sitio_web`: si viene completo se muestra éxito sin enviar.
-- `400 { error: "validacion", campos: [...] }` del backend → se marcan esos campos (`camposRechazados`); cualquier otro error → caja de error genérica.
-- Contrato y configuración: `docs/modulos/preregistro.md` (`.env.example` para local).
+- **No guardar registros en localStorage, cookies ni en el repo.** Sin credenciales ni secretos en el front: solo `VITE_FORM_ENDPOINT` y `VITE_BASE`, ambos públicos.
+- Campo honeypot `sitio_web` (oculto: fuera de pantalla, `aria-hidden`, `tabindex="-1"`, `autocomplete="off"`): si viene completo se muestra éxito sin enviar; nunca se manda al backend.
+- `400 { error: "validacion", campos: [...] }` → se marcan esos campos (`camposRechazados`; `aviso` no es un campo visible y da error genérico); `403`, `413`, `429`, `503`, red y timeout → caja de error con su texto y "Reintentar".
 
 ## Deploy
 
 - GitHub Actions (`.github/workflows/deploy.yml`) publica en GitHub Pages en cada push a `main`.
-- Base de Vite: `/Handy-landing-page-fe/`. Los links del contenido se escriben con `/` inicial (`/registro/`) y el render les agrega la base.
+- Base de Vite: `/Handy-landing-page-fe/` por defecto (GitHub Pages); `VITE_BASE=/ npm run build` (o `npm run build:raiz`) la cambia para publicar en la raíz de un dominio (Hostinger, https://handyc.com). Los links del contenido se escriben con `/` inicial (`/registro/`) y el render les agrega la base.
 - GitHub Pages no tiene fallback de SPA: cada página es una carpeta con su `index.html`. Linkear siempre con barra final (`/especialistas/`).
 
 ## Videos
@@ -81,7 +84,9 @@ Si se agregan trailers en `assets/video/`, completar `trailer.video` y `trailer.
 ```sh
 npm ci
 npm run dev        # http://localhost:5173/Handy-landing-page-fe/
-npm run build      # typecheck + build a dist/
+npm run build      # typecheck + build a dist/ (base de GitHub Pages)
+npm run build:raiz # igual, con base / (handyc.com en Hostinger)
+npm test           # demo + esquema/respuestas del pre-registro
 npm run preview
 ```
 

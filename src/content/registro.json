@@ -11,8 +11,8 @@
     "especialista": "Soy especialista"
   },
   "contador": {
-    "usuario": "Ya se anotaron {n} vecinos",
-    "especialista": "Ya se anotaron {n} especialistas",
+    "usuario": "Ya se anotaron {n} vecinos o más",
+    "especialista": "Ya se anotaron {n} especialistas o más",
     "sumate": "Sumate a la lista"
   },
   "deshabilitado": {
@@ -22,48 +22,84 @@
   },
   "opcional": "opcional",
   "campos": {
-    "nombre": { "label": "Nombre", "placeholder": "Cómo te llamás" },
-    "email": { "label": "Email", "placeholder": "tu@email.com" },
-    "whatsapp": { "label": "WhatsApp", "placeholder": "223 123 4567" },
-    "barrio": { "label": "Barrio", "placeholder": "Ej.: La Perla" },
-    "necesidad": { "label": "¿Qué necesitarías arreglar?", "placeholder": "Ej.: una pérdida en el baño" },
-    "rubros": { "label": "Rubros", "ayuda": "Marcá todos los que hacés." },
-    "zona": { "label": "Zona donde trabajás", "placeholder": "Ej.: Centro, Güemes, Puerto" },
-    "cuit": {
-      "label": "¿Tenés CUIT?",
-      "opciones": { "si": "Sí", "no": "No", "en_tramite": "En trámite" }
+    "nombre": {
+      "label": "Nombre",
+      "placeholder": "Nombre y apellido"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "tu@email.com"
+    },
+    "whatsapp": {
+      "label": "WhatsApp",
+      "placeholder": "223 123 4567"
+    },
+    "rubros": {
+      "label": "Rubros",
+      "ayuda": "Marcá todos los que hacés."
+    },
+    "zona": {
+      "label": "Zona donde trabajás",
+      "placeholder": "Ej.: Centro, Güemes, Puerto",
+      "ayuda": "Barrios o zonas de Mar del Plata donde trabajás, separados por comas."
+    },
+    "honeypot": {
+      "label": "No completes este campo"
     },
     "acepta": {
-      "texto": "Acepto que mis datos se guarden en servidores fuera de Argentina para avisarme del lanzamiento.",
-      "link": "Ver política de privacidad"
-    },
-    "honeypot": { "label": "No completes este campo" }
+      "link": "Leé el aviso completo"
+    }
   },
   "enviar": "Anotarme",
   "enviando": "Enviando…",
   "errores": {
     "resumen": "Revisá los campos marcados.",
-    "nombre": "Escribí tu nombre.",
+    "nombre": "Escribí tu nombre y apellido, solo con letras (sin números ni símbolos).",
     "email": "Revisá el email: parece que le falta algo.",
     "whatsapp": "Revisá el número: van entre 8 y 15 dígitos.",
-    "barrio": "Contanos en qué barrio estás.",
-    "necesidad": "Usá menos de 500 caracteres.",
     "rubros": "Elegí al menos un rubro.",
-    "zona": "Contanos en qué zona trabajás.",
-    "cuit": "Elegí una opción.",
+    "zona": "Contanos en qué zona trabajás. Usá letras, números y signos simples (coma, punto, guion, barra).",
     "acepta": "Necesitamos tu permiso para guardar tus datos."
   },
   "error": {
     "titulo": "No pudimos guardar tus datos",
-    "texto": "Puede ser la conexión o un problema nuestro. Tus datos siguen en el formulario.",
-    "reintentar": "Reintentar"
+    "texto": "Tus datos siguen en el formulario.",
+    "reintentar": "Reintentar",
+    "motivos": {
+      "generico": "Puede ser la conexión o un problema nuestro. Probá de nuevo en un rato.",
+      "red": "No pudimos conectarnos. Revisá tu conexión y probá de nuevo.",
+      "timeout": "El servidor tardó demasiado en responder. Probá de nuevo en un rato.",
+      "limite": "Hubo demasiados intentos desde tu conexión. Esperá unos minutos y probá de nuevo.",
+      "no_disponible": "El registro no está disponible en este momento. Probá de nuevo más tarde.",
+      "origen": "Este formulario no está habilitado desde esta dirección. Entrá desde la página oficial de Handy.",
+      "grande": "Lo que escribiste es demasiado largo. Revisá los campos y probá de nuevo."
+    }
   },
   "exito": {
-    "titulo": "¡Listo, {nombre}!",
+    "titulo": "¡Listo, ya estás en la lista!",
+    "tituloEspecialista": "¡Listo, {nombre}!",
     "texto": "Te avisamos el 28/10.",
     "textoEspecialista": "Te avisamos el 28/10 y te contamos cómo seguir con el alta.",
     "compartir": "Compartir por WhatsApp",
     "mensajeWhatsapp": "Me anoté en Handy, la app para encontrar especialistas del hogar verificados en Mar del Plata. Sale el 28/10: {url}",
     "volver": "Volver al inicio"
+  },
+  "consentimiento": {
+    "_nota": "Textos tomados de los borradores del backend (docs/privacy/*.txt). `aviso` es el id de la versión que se envía en el alta y tiene que existir en src/configuration/privacy-notices.ts del BE. Son borradores provisionales: no cambiar el texto sin cambiar el id.",
+    "emailPendiente": "nuestro email de contacto (lo publicamos antes del lanzamiento)",
+    "usuario": {
+      "aviso": "usr-leg09-borrador-2026-09-15",
+      "estado": "PENDIENTE",
+      "resumen": "Tus datos los trata Ignacio Gauna, responsable de esta base, con una única finalidad: avisarte cuando Handy esté disponible en Mar del Plata. No se los cedemos a nadie ni los usamos para otra cosa. Podés pedir acceso, rectificación o supresión escribiendo a {email}, y te respondemos en los plazos de la Ley 25.326. Dejar tus datos es voluntario: si no los dejás, no pasa nada más que no te avisemos.",
+      "acepta": "Leí el aviso y acepto que usen mi email para avisarme cuando Handy esté disponible.",
+      "verAviso": "/privacidad/#aviso-usuarios"
+    },
+    "especialista": {
+      "aviso": "esp-04a-borrador-2026-09-30",
+      "estado": "PENDIENTE",
+      "resumen": "Tus datos los usa Ignacio Gauna, responsable de Handy, solo para contactarte por el lanzamiento y el alta de especialistas. No se los damos a nadie más. Podés pedir verlos, corregirlos o borrarlos cuando quieras escribiendo a {email}. Completar el formulario es voluntario; si no lo completás, no podemos avisarte.",
+      "acepta": "Leí el aviso y acepto que guarden mis datos en servidores fuera de la Argentina y que me contacten por el alta como especialista y por el lanzamiento.",
+      "verAviso": "/privacidad/#aviso-especialistas"
+    }
   }
 }

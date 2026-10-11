@@ -1,7 +1,8 @@
-// Copia sincronizada con Handy-landing-page-be; si cambiás uno, cambiá el otro.
+// Copia sincronizada con Handy-landing-page-fe (src/schema/preregistro.ts): si cambiás uno, cambiá
+// el otro, y los enums de handy-internal-portal/src/contracts/landing-api.ts. Contrato objetivo
+// alineado con LEG-04 04-A (docs/contract-delta.md): sin CUIT; usuario solo con email.
 //
-// El esquema no lleva textos para el usuario: los mensajes de error salen de
-// src/content/registro.json (en el front) según el campo que falló.
+// El esquema no lleva textos para el usuario: los mensajes salen del front según el campo fallido.
 
 import { z } from 'zod';
 
@@ -16,14 +17,21 @@ export const RUBROS = [
   'aire_acondicionado',
 ] as const;
 
-export const OPCIONES_CUIT = ['si', 'no', 'en_tramite'] as const;
-
 const texto = (min: number, max: number) => z.string().trim().min(min).max(max);
+
+// Sin caracteres de control ni invisibles/bidireccionales (\p{C}): ni NUL (rompe PostgreSQL) ni texto
+// que engañe a una pantalla del CRM.
+const sinControl = (v: string): boolean => !/\p{C}/u.test(v);
+
+// Zona de Mar del Plata: letras, números y puntuación simple; sin "=+-@<>" iniciales (fórmulas de planilla,
+// HTML) y sin saltos de línea. Es un filtro, no una dirección exacta: no se piden calles ni números.
+const zona = texto(2, 120).regex(/^[\p{L}\p{N}][\p{L}\p{N} .,'()/-]*$/u);
 
 // Acepta +54 9 223 123-4567, 2231234567, (223) 123 4567, etc. Entre 8 y 15 dígitos.
 const whatsapp = z
   .string()
   .trim()
+  .max(40)
   .regex(/^\+?[\d\s().-]+$/)
   .refine((v) => {
     const digitos = v.replace(/\D/g, '').length;
@@ -31,29 +39,48 @@ const whatsapp = z
   });
 
 const comunes = {
-  nombre: texto(2, 80),
-  email: z.string().trim().toLowerCase().max(120).email(),
-  // Checkbox de consentimiento: obligatorio.
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(120)
+    .email()
+    .regex(/^[\x21-\x7e]+$/),
+  // Checkbox de consentimiento: obligatorio y sin tildar por defecto.
   acepta: z.literal(true),
-  // Honeypot: tiene que llegar vacío. Si viene completo, es un bot.
+  // Versión del aviso de privacidad que se mostró. El servidor tiene su propia lista de versiones
+  // permitidas y fija el hash del texto: el navegador nunca manda el texto.
+  aviso: z.string().regex(/^[a-z0-9._-]{1,64}$/),
+  // Honeypot: tiene que llegar vacío. El servidor lo evalúa antes de validar y no lo guarda.
   sitio_web: z.string().max(0).optional(),
 };
 
-export const preregistroUsuarioSchema = z.object({
+export const preregistroUsuarioSchema = z.strictObject({
   tipo: z.literal('usuario'),
-  ...comunes,
-  whatsapp: whatsapp.optional(),
-  barrio: texto(2, 80),
-  necesidad: z.string().trim().max(500).optional(),
+  email: comunes.email,
+  acepta: comunes.acepta,
+  aviso: comunes.aviso,
+  sitio_web: comunes.sitio_web,
 });
 
-export const preregistroEspecialistaSchema = z.object({
+export const preregistroEspecialistaSchema = z.strictObject({
   tipo: z.literal('especialista'),
-  ...comunes,
+  // Solo letras, espacios y . ' ’ -: el nombre llega a la pantalla (y a exportaciones) del equipo.
+  nombre: texto(2, 80)
+    .refine(sinControl)
+    .refine((v) => /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(v)),
   whatsapp,
-  rubros: z.array(z.enum(RUBROS)).min(1).max(RUBROS.length),
-  zona: texto(2, 120),
-  cuit: z.enum(OPCIONES_CUIT),
+  rubros: z
+    .array(z.enum(RUBROS))
+    .min(1)
+    .max(RUBROS.length)
+    .refine((v) => new Set(v).size === v.length),
+  zona,
+  // Opcional: si se completa, tiene que ser válido.
+  email: comunes.email.optional(),
+  acepta: comunes.acepta,
+  aviso: comunes.aviso,
+  sitio_web: comunes.sitio_web,
 });
 
 export const preregistroSchema = z.discriminatedUnion('tipo', [
@@ -62,20 +89,13 @@ export const preregistroSchema = z.discriminatedUnion('tipo', [
 ]);
 
 // Campos que el backend puede rechazar: los mismos nombres que el formulario.
-export const CAMPOS = ['nombre', 'email', 'whatsapp', 'barrio', 'necesidad', 'rubros', 'zona', 'cuit', 'acepta'] as const;
+export const CAMPOS = ['nombre', 'email', 'whatsapp', 'rubros', 'zona', 'acepta', 'aviso'] as const;
 
 // Respuesta 400 de POST /preregistro cuando la validación del servidor rechaza campos.
 export const errorValidacionSchema = z.object({
   error: z.literal('validacion'),
   campos: z.array(z.string()),
 });
-
-/** Campos rechazados que el formulario sabe marcar. Cualquier otra respuesta da []. */
-export function camposRechazados(respuesta: unknown): Campo[] {
-  const r = errorValidacionSchema.safeParse(respuesta);
-  if (!r.success) return [];
-  return [...new Set(r.data.campos)].filter((c): c is Campo => (CAMPOS as readonly string[]).includes(c));
-}
 
 // Respuesta de GET /preregistro/contador
 export const contadorSchema = z.object({

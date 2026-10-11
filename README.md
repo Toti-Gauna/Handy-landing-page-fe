@@ -37,3 +37,14 @@ En el repo: **Settings → Pages → Source: GitHub Actions**.
 Para conectar el backend (Handy-landing-page-be), definir la variable de Actions `FORM_ENDPOINT`
 (Settings → Secrets and variables → Actions → Variables) con la URL base, sin barra final.
 Mientras esté vacía, el registro muestra "Registro habilitado en breve".
+
+### Hostinger (dominio en la raíz)
+
+Build estático con base `/` (sin tocar el deploy de GitHub Pages) y subir el contenido de `dist/` a `public_html/`:
+
+```sh
+npm ci
+VITE_BASE=/ VITE_FORM_ENDPOINT=https://api.handyc.com npm run build
+```
+
+Detalle y qué no incluye el `dist/`: [docs/modulos/preregistro.md](docs/modulos/preregistro.md#build-y-publicación).
